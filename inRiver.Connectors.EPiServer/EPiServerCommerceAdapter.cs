@@ -434,7 +434,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                     #region SKU and ChannelNode
                     if (updatedEntity.EntityType.Id.Equals("Item") && data != null && data.Split(',').Contains("SKUs"))
                     {
-                        //TODO testa SKU
                         Field currentField = RemoteManager.DataService.GetField(entityId, "SKUs");
 
                         List<Field> fieldHistory = RemoteManager.DataService.GetFieldHistory(entityId, "SKUs");
