@@ -460,7 +460,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                             EpiApi.DeleteCatalogEntry(skuToDelete.Attribute("id").Value, this.config);
                         }
 
-                        //TODO Det måste skapas upp XML filer för  att delete items som ligger under ChannelNode också. Eftersom de ligger under channelnode i EPi
                         if (skusToAdd.Count > 0)
                         {
                             new AddUtility(this.config).Add(
@@ -706,7 +705,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 foreach (StructureEntity existingEntity in existingEntitiesInChannel)
                 {
                     string targetEntityPath = ChannelHelper.GetTargetEntityPath(existingEntity.EntityId, existingEntitiesInChannel, existingEntity.ParentId);
-                    children.AddRange(ChannelHelper.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
+
+                    children.AddRange(
+                        ChannelHelper.GetChildrenEntitiesInChannel(targetEntityId, targetEntityPath));
                 }
 
                 this.config.ChannelStructureEntities.AddRange(parents);
@@ -715,6 +716,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 // Remove duplicates
                 this.config.ChannelStructureEntities =
                     this.config.ChannelStructureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
+
+                //Adding existing Entities. If it occurs more than one time in channel. We can not remove duplicates.
+                this.config.ChannelStructureEntities.AddRange(existingEntitiesInChannel);
 
                 ChannelHelper.BuildEntityIdAndTypeDict(this.config);
 
