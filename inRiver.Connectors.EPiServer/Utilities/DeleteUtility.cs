@@ -157,12 +157,15 @@
                     elementList.Add(copyOfElement);
                 }
 
-                foreach (StructureEntity childStructureEntity in ChannelHelper.GetChildrenEntitiesInChannel(existingEntity.EntityId, existingEntity.Path))
+                if (this.DeleteUtilConfig.ChannelEntities.ContainsKey(existingEntity.EntityId))
                 {
-                    XElement copyOfDescendant = new XElement(childStructureEntity.Type + "_" + childStructureEntity.EntityId);
-                    if (elementList.All(p => p.Name.LocalName != copyOfDescendant.Name.LocalName))
+                    foreach (Link outboundLinks in this.DeleteUtilConfig.ChannelEntities[existingEntity.EntityId].OutboundLinks)
                     {
-                        elementList.Add(copyOfDescendant);
+                        XElement copyOfDescendant = new XElement(outboundLinks.Target.EntityType.Id + "_" + outboundLinks.Target.Id);
+                        if (elementList.All(p => p.Name.LocalName != copyOfDescendant.Name.LocalName))
+                        {
+                            elementList.Add(copyOfDescendant);
+                        }
                     }
                 }
             }
