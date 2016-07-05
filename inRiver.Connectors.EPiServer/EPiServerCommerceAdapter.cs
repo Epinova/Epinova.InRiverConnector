@@ -763,6 +763,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             }
 
             this.config.ChannelStructureEntities = new List<StructureEntity>();
+            this.config.ChannelEntities = new Dictionary<int, Entity>();
 
             IntegrationLogger.Write(LogLevel.Debug, string.Format("Received link deleted for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId));
             ConnectorEvent linkDeletedConnectorEvent = ConnectorEventHelper.InitiateConnectorEvent(this.config, ConnectorEventType.ChannelLinkDeleted, string.Format("Received link deleted for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId), 0);
