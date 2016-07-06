@@ -323,19 +323,48 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
             {
                 if (field != null)
                 {
-                    XElement dataElement = new XElement(
-                        "Data",
-                        new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()));
-                    if (field.FieldType.Multivalue)
+                    CVL cvl = CvLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
+                    if (cvl == null)
                     {
-                        dataElement.Add(new XElement("Item", new XAttribute("value", string.Empty)));
+                        return elemets;
+                    }
+
+                    if (cvl.DataType == DataType.LocaleString)
+                    {
+                        Dictionary<string, XElement> valuesPerLanguage = new Dictionary<string, XElement>
+                                                                     {
+                                                                         {
+                                                                             configuration.ChannelDefaultLanguage.Name,
+                                                                             new XElement("Data", new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()))
+                                                                         }
+                                                                     };
+
+                        foreach (KeyValuePair<CultureInfo, CultureInfo> keyValuePair in configuration.LanguageMapping)
+                        {
+                            if (!valuesPerLanguage.ContainsKey(keyValuePair.Key.Name))
+                            {
+                                valuesPerLanguage.Add(
+                                    keyValuePair.Key.Name,
+                                    new XElement("Data", new XAttribute("language", keyValuePair.Key.Name.ToLower())));
+                            }
+                        }
+
+                        if (valuesPerLanguage.Count > 0)
+                        {
+                            foreach (string key in valuesPerLanguage.Keys)
+                            {
+                                elemets.Add(valuesPerLanguage[key]);
+                            }
+                        }
                     }
                     else
                     {
-                        dataElement.Add(new XAttribute("value", string.Empty));
-                    }
+                        XElement dataElement = new XElement(
+                            "Data",
+                            new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()));
 
-                    elemets.Add(dataElement);
+                        elemets.Add(dataElement);
+                    }
                 }
 
                 return elemets;
