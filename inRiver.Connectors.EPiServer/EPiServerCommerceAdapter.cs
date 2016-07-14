@@ -826,7 +826,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             }
         }
 
-        public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+                public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             if (channelId != this.config.ChannelId)
             {
@@ -862,21 +862,33 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 var targetEntityStructure = ChannelHelper.GetEntityInChannelWithParent(this.config.ChannelId, targetEntityId, sourceEntityId);
 
                 StructureEntity parentStructureEntity = ChannelHelper.GetParentStructureEntity(this.config.ChannelId, sourceEntityId, targetEntityId, targetEntityStructure);
-                this.config.ChannelStructureEntities.Add(parentStructureEntity);
 
-                this.config.ChannelStructureEntities.AddRange(
-                    ChannelHelper.GetChildrenEntitiesInChannel(
-                        parentStructureEntity.EntityId,
-                        parentStructureEntity.Path));
+                if (parentStructureEntity != null)
+                {
+                    this.config.ChannelStructureEntities.Add(parentStructureEntity);
 
-                ChannelHelper.BuildEntityIdAndTypeDict(this.config);
+                    this.config.ChannelStructureEntities.AddRange(
+                        ChannelHelper.GetChildrenEntitiesInChannel(
+                            parentStructureEntity.EntityId,
+                            parentStructureEntity.Path));
 
-                ConnectorEventHelper.UpdateConnectorEvent(linkUpdatedConnectorEvent, "Done fetching channel entities", 10);
+                    ChannelHelper.BuildEntityIdAndTypeDict(this.config);
 
-                new AddUtility(this.config).Add(
-                        channelEntity,
+                    ConnectorEventHelper.UpdateConnectorEvent(
                         linkUpdatedConnectorEvent,
-                        out resourceIncluded);
+                        "Done fetching channel entities",
+                        10);
+
+                    new AddUtility(this.config).Add(channelEntity, linkUpdatedConnectorEvent, out resourceIncluded);
+                }
+                else
+                {
+                    linkAddedStopWatch.Stop();
+                    resourceIncluded = false;
+                    IntegrationLogger.Write(LogLevel.Error, string.Format("Not possible to located source entity {0} in channel structure for target entity {1}", sourceEntityId, targetEntityId));
+                    ConnectorEventHelper.UpdateConnectorEvent(linkUpdatedConnectorEvent, string.Format("Not possible to located source entity {0} in channel structure for target entity {1}", sourceEntityId, targetEntityId), -1, true);
+                    return;
+                }
 
                 linkAddedStopWatch.Stop();
             }
