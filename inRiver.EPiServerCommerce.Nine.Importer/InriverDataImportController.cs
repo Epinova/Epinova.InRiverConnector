@@ -1090,7 +1090,7 @@
             }
             catch (Exception exception)
             {
-                Log.ErrorFormat("Unable to create/update metadata for REsource ID: {0}.\n{1}", inriverResource.ResourceId, exception.Message);
+                Log.ErrorFormat("Unable to create/update metadata for Resource ID: {0}.\n{1}", inriverResource.ResourceId, exception.Message);
             }
         }
 
