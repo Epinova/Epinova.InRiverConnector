@@ -554,61 +554,96 @@
 
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
 
-            List<StructureEntity> allResourceLocations = config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
-
-            List<Link> links = new List<Link>();
-
-            foreach (Link inboundLink in resource.InboundLinks)
-            {
-                if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
-                {
-                    links.Add(inboundLink);
-                }
-            }
-
-            foreach (Link link in links)
-            {
-                Entity linkedEntity = link.Source;
-                List<string> ids = new List<string> { linkedEntity.Id.ToString(CultureInfo.InvariantCulture) };
-                if (config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
-                {
-                    List<string> skuIds = SkuItemIds(linkedEntity, config);
-                    foreach (string skuId in skuIds)
-                    {
-                        ids.Add(skuId);
-                    }
-
-                    if (config.UseThreeLevelsInCommerce == false)
-                    {
-                        ids.Remove(linkedEntity.Id.ToString(CultureInfo.InvariantCulture));
-                    }
-                }
-
-                foreach (string id in ids)
-                {
-                    if (!parents.ContainsKey(id))
-                    {
-                        parents.Add(id, linkedEntity.MainPictureId);
-                    }
-                }
-            }
-
             string resourceId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(resource.Id, config);
             resourceId = resourceId.Replace("_", string.Empty);
 
-            if (parents.Any() && parentEntities != null)
+            if (action == "unlinked")
             {
-                List<int> nonExistingIds =
-                    (from id in parents.Keys where !parentEntities.ContainsKey(int.Parse(id)) select int.Parse(id))
-                        .ToList();
+                var resourceParents = config.ChannelEntities.Where(i => !i.Key.Equals(resource.Id));
 
-                if (nonExistingIds.Any())
+                foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
                 {
-                    foreach (Entity entity in RemoteManager.DataService.GetEntities(nonExistingIds, LoadLevel.DataOnly))
+                    List<string> ids = new List<string> { resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture) };
+
+                    if (config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
                     {
-                        if (!parentEntities.ContainsKey(entity.Id))
+                        List<string> skuIds = SkuItemIds(resourceParent.Value, config);
+
+                        foreach (string skuId in skuIds)
                         {
-                            parentEntities.Add(entity.Id, entity);
+                            ids.Add(skuId);
+                        }
+
+                        if (config.UseThreeLevelsInCommerce == false)
+                        {
+                            ids.Remove(resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture));
+                        }
+                    }
+
+                    foreach (string id in ids)
+                    {
+                        if (!parents.ContainsKey(id))
+                        {
+                            parents.Add(id, resourceParent.Value.MainPictureId);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                List<StructureEntity> allResourceLocations = config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
+
+                List<Link> links = new List<Link>();
+
+                foreach (Link inboundLink in resource.InboundLinks)
+                {
+                    if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
+                    {
+                        links.Add(inboundLink);
+                    }
+                }
+
+                foreach (Link link in links)
+                {
+                    Entity linkedEntity = link.Source;
+                    List<string> ids = new List<string> { linkedEntity.Id.ToString(CultureInfo.InvariantCulture) };
+                    if (config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
+                    {
+                        List<string> skuIds = SkuItemIds(linkedEntity, config);
+                        foreach (string skuId in skuIds)
+                        {
+                            ids.Add(skuId);
+                        }
+
+                        if (config.UseThreeLevelsInCommerce == false)
+                        {
+                            ids.Remove(linkedEntity.Id.ToString(CultureInfo.InvariantCulture));
+                        }
+                    }
+
+                    foreach (string id in ids)
+                    {
+                        if (!parents.ContainsKey(id))
+                        {
+                            parents.Add(id, linkedEntity.MainPictureId);
+                        }
+                    }
+                }
+
+                if (parents.Any() && parentEntities != null)
+                {
+                    List<int> nonExistingIds =
+                        (from id in parents.Keys where !parentEntities.ContainsKey(int.Parse(id)) select int.Parse(id))
+                            .ToList();
+
+                    if (nonExistingIds.Any())
+                    {
+                        foreach (Entity entity in RemoteManager.DataService.GetEntities(nonExistingIds, LoadLevel.DataOnly))
+                        {
+                            if (!parentEntities.ContainsKey(entity.Id))
+                            {
+                                parentEntities.Add(entity.Id, entity);
+                            }
                         }
                     }
                 }
