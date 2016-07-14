@@ -86,57 +86,30 @@ namespace inRiver.EPiServerCommerce.MediaPublisher
             List<InRiverImportResource> resourcesForImport = new List<InRiverImportResource>();
             foreach (var resource in resources.ResourceFiles.Resource)
             {
-                if (resource.action == "deleted")
+                InRiverImportResource newRes = new InRiverImportResource();
+                newRes.Action = resource.action;
+                newRes.Codes = new List<string>();
+                if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
                 {
-                    InRiverImportResource newRes = new InRiverImportResource();
-                    newRes.Action = resource.action;
-                    newRes.Codes = new List<string>();
-                    if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
+                    foreach (EntryCode entryCode in resource.ParentEntries.EntryCode)
                     {
-                        foreach (EntryCode entryCode in resource.ParentEntries.EntryCode)
+                        if (!string.IsNullOrEmpty(entryCode.Value))
                         {
-                            if (!string.IsNullOrEmpty(entryCode.Value))
-                            {
-                                newRes.Codes = new List<string>();
+                            newRes.Codes = new List<string>();
 
-                                newRes.Codes.Add(entryCode.Value);
-                                newRes.EntryCodes.Add(new inRiver.EPiServerCommerce.Interfaces.EntryCode()
-                                {
-                                    Code = entryCode.Value,
-                                    IsMainPicture = entryCode.IsMainPicture
-                                });
-                            }
+                            newRes.Codes.Add(entryCode.Value);
+                            newRes.EntryCodes.Add(new Interfaces.EntryCode()
+                            {
+                                Code = entryCode.Value,
+                                IsMainPicture = entryCode.IsMainPicture
+                            });
                         }
                     }
-
-                    newRes.ResourceId = resource.id;
-                    resourcesForImport.Add(newRes);
                 }
-                else
+
+                if (resource.action != "deleted")
                 {
-                    InRiverImportResource newRes = new InRiverImportResource();
-                    newRes.Action = resource.action;
-                    if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
-                    {
-                        foreach (EntryCode entryCode in resource.ParentEntries.EntryCode)
-                        {
-                            if (!string.IsNullOrEmpty(entryCode.Value))
-                            {
-                                newRes.Codes = new List<string>();
-
-                                newRes.Codes.Add(entryCode.Value);
-                                newRes.EntryCodes.Add(new inRiver.EPiServerCommerce.Interfaces.EntryCode()
-                                {
-                                    Code = entryCode.Value,
-                                    IsMainPicture = entryCode.IsMainPicture
-                                });
-                            }
-                        }
-                    }
-
                     newRes.MetaFields = this.GenerateMetaFields(resource);
-
-                    newRes.ResourceId = resource.id;
 
                     // path is ".\some file.ext"
                     if (resource.Paths != null && resource.Paths.Path != null)
@@ -145,9 +118,10 @@ namespace inRiver.EPiServerCommerce.MediaPublisher
                         filePath = filePath.Replace("/", "\\");
                         newRes.Path = baseResourcePath + filePath;
                     }
-                    
-                    resourcesForImport.Add(newRes);
                 }
+
+                newRes.ResourceId = resource.id;
+                resourcesForImport.Add(newRes);
             }
 
             if (resourcesForImport.Count == 0)
