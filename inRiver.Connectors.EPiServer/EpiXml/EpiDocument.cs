@@ -317,23 +317,26 @@
                     }
 
                     IntegrationLogger.Write(LogLevel.Debug, string.Format("Trying to add channelNode {0} to Nodes", id));
+                    
+                    XElement nodeElement = epiElements["Nodes"].Find(e =>
+                    {
+                        XElement xElement = e.Element("Code");
+                        return xElement != null && xElement.Value.Equals(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entity.Id, config));
+                    });
 
                     int linkIndex = structureEntity.SortOrder;
-                    XElement nodeElement = EpiElement.CreateNodeElement(entity, parentId, linkIndex, config);
-                    XElement codeElement = nodeElement.Element("Code");
-                    if (codeElement != null && !addedNodes.Contains(codeElement.Value))
+                    
+                    if (nodeElement == null)
                     {
-                        epiElements["Nodes"].Add(nodeElement);
-                        addedNodes.Add(codeElement.Value);
+                        epiElements["Nodes"].Add(EpiElement.CreateNodeElement(entity, parentId, linkIndex, config));
+                        addedNodes.Add(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entity.Id, config));
 
                         IntegrationLogger.Write(LogLevel.Debug, string.Format("Added channelNode {0} to Nodes", id));
                     }
                     else
                     {
                         XElement parentNode = nodeElement.Element("ParentNode");
-                        if (parentNode != null
-                            && (parentNode.Value != config.ChannelId.ToString(CultureInfo.InvariantCulture)
-                                && parentId == config.ChannelId.ToString(CultureInfo.InvariantCulture)))
+                        if (parentNode != null && (parentNode.Value != config.ChannelId.ToString(CultureInfo.InvariantCulture) && parentId == config.ChannelId.ToString(CultureInfo.InvariantCulture)))
                         {
                             string oldParent = parentNode.Value;
                             parentNode.Value = config.ChannelId.ToString(CultureInfo.InvariantCulture);
@@ -348,19 +351,26 @@
                             }
                         }
 
-                        // add relation
-                        epiElements["Relations"].Add(
-                            EpiElement.CreateNodeRelationElement(
-                                parentId,
-                                id.ToString(CultureInfo.InvariantCulture),
-                                linkIndex,
-                                config));
-                        addedRelations.Add(
-                            ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
-                                id.ToString(CultureInfo.InvariantCulture),
-                                config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config));
+                        if (!addedRelations.Contains(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
+                                    id.ToString(CultureInfo.InvariantCulture),
+                                    config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config)))
+                        {
+                            // add relation
+                            epiElements["Relations"].Add(
+                                EpiElement.CreateNodeRelationElement(
+                                    parentId,
+                                    id.ToString(CultureInfo.InvariantCulture),
+                                    linkIndex,
+                                    config));
 
-                        IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", id));
+                            addedRelations.Add(
+                                ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
+                                    id.ToString(CultureInfo.InvariantCulture),
+                                    config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config));
+
+                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", id));
+                        }
+                        
                     }
 
                     continue;
