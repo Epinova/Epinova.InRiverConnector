@@ -295,7 +295,7 @@
                     continue;
                 }
 
-                Entity entity = null;
+                Entity entity;
 
                 if (config.ChannelEntities.ContainsKey(id))
                 {
@@ -304,7 +304,16 @@
                 else
                 {
                     entity = RemoteManager.DataService.GetEntity(id, LoadLevel.DataOnly);
+                    
                     config.ChannelEntities.Add(id, entity);
+                }
+
+                if (entity == null)
+                {
+                    //missmatch with entity data and ChannelStructure. 
+
+                    config.ChannelEntities.Remove(id);
+                    continue;
                 }
 
                 if (structureEntity.Type == "ChannelNode")
