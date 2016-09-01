@@ -705,9 +705,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 foreach (StructureEntity existingEntity in existingEntitiesInChannel)
                 {
                     string targetEntityPath = ChannelHelper.GetTargetEntityPath(existingEntity.EntityId, existingEntitiesInChannel, existingEntity.ParentId);
-
-                    children.AddRange(
-                        ChannelHelper.GetChildrenEntitiesInChannel(targetEntityId, targetEntityPath));
+                    children.AddRange(RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
                 }
 
                 this.config.ChannelStructureEntities.AddRange(parents);
