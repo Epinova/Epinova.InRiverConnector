@@ -31,10 +31,6 @@
             string channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
             
-            this.DeleteUtilConfig.ChannelStructureEntities = ChannelHelper.GetAllEntitiesInChannel(
-                channelEntity.Id,
-                Configuration.ExportEnabledEntityTypes);
-
             ChannelHelper.BuildEntityIdAndTypeDict(this.DeleteUtilConfig);
 
             if (!this.DeleteUtilConfig.ChannelEntities.ContainsKey(targetEntity.Id))
@@ -110,6 +106,10 @@
             List<string> linkEntityIds = new List<string>();
             if (ChannelHelper.LinkTypeHasLinkEntity(linkTypeId))
             {
+                this.DeleteUtilConfig.ChannelStructureEntities = ChannelHelper.GetAllEntitiesInChannel(
+                                                                    channelEntity.Id,
+                                                                    Configuration.ExportEnabledEntityTypes);
+
                 List<StructureEntity> newEntityNodes = ChannelHelper.FindEntitiesElementInStructure(this.DeleteUtilConfig.ChannelStructureEntities, parentEnt.Id, targetEntity.Id, linkTypeId);
 
                 List<string> pars = new List<string>();
@@ -187,20 +187,16 @@
                 if (elementEntityType == "Item" && this.DeleteUtilConfig.ItemsToSkus)
                 {
                     Entity deletedEntity = null;
-                    StructureEntity entityExistInCache = this.DeleteUtilConfig.ChannelStructureEntities.Find(i => i.EntityId.Equals(int.Parse(elementEntityId)));
-
-                    if (entityExistInCache != null)
+                    
+                    try
                     {
-                        try
-                        {
-                            deletedEntity = RemoteManager.DataService.GetEntity(
-                                int.Parse(elementEntityId),
-                                LoadLevel.DataOnly);
-                        }
-                        catch (Exception ex)
-                        {
-                            IntegrationLogger.Write(LogLevel.Warning, "Error when getting entity:" + ex);
-                        }
+                        deletedEntity = RemoteManager.DataService.GetEntity(
+                            int.Parse(elementEntityId),
+                            LoadLevel.DataOnly);
+                    }
+                    catch (Exception ex)
+                    {
+                        IntegrationLogger.Write(LogLevel.Warning, "Error when getting entity:" + ex);
                     }
 
                     if (deletedEntity != null)
@@ -390,20 +386,16 @@
                             List<string> entitiesToDelete = new List<string>();
 
                             Entity deletedEntity = null;
-                            StructureEntity entityExistInCache = this.DeleteUtilConfig.ChannelStructureEntities.Find(i => i.EntityId.Equals(deletedElementEntityId));
-
-                            if (entityExistInCache != null)
+                            
+                            try
                             {
-                                try
-                                {
-                                    deletedEntity = RemoteManager.DataService.GetEntity(
-                                        deletedElementEntityId,
-                                        LoadLevel.DataOnly);
-                                }
-                                catch (Exception ex)
-                                {
-                                    IntegrationLogger.Write(LogLevel.Warning, "Error when getting entity:" + ex);
-                                }
+                                deletedEntity = RemoteManager.DataService.GetEntity(
+                                    deletedElementEntityId,
+                                    LoadLevel.DataOnly);
+                            }
+                            catch (Exception ex)
+                            {
+                                IntegrationLogger.Write(LogLevel.Warning, "Error when getting entity:" + ex);
                             }
 
                             if (deletedEntity != null)
@@ -522,9 +514,21 @@
                         break;
                 }
 
-                deletedResources.RemoveAll(
-                       r => this.DeleteUtilConfig.ChannelStructureEntities.Any(e => e.EntityId.ToString().Equals(r.Substring(this.DeleteUtilConfig.ChannelIdPrefix.Length))));
+                foreach (string resourceId in deletedResources)
+                {
+                    string resourceIdWithoutPrefix = resourceId.Substring(this.DeleteUtilConfig.ChannelIdPrefix.Length);
 
+                    int resourceIdAsInt;
+
+                    if (Int32.TryParse(resourceIdWithoutPrefix, out resourceIdAsInt))
+                    {
+                        if (RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, resourceIdAsInt))
+                        {
+                            deletedResources.Remove(resourceId);
+                        }
+                    }
+                }
+                
                 if (deletedResources != null && deletedResources.Count != 0)
                 {
                     XDocument resDoc = Resources.HandleResourceDelete(deletedResources);
