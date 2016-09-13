@@ -396,6 +396,11 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 bool resourceIncluded = false;
                 string channelName = EpiMappingHelper.GetNameForEntity(channelEntity, this.config, 100);
 
+                this.config.ChannelStructureEntities =
+                    ChannelHelper.GetStructureEntitiesForEntityInChannel(this.config.ChannelId, entityId);
+
+                ChannelHelper.BuildEntityIdAndTypeDict(this.config);
+
                 if (updatedEntity.EntityType.Id.Equals("Resource"))
                 {
                     XDocument resDoc = Resources.HandleResourceUpdate(updatedEntity, this.config, folderDateTime);
@@ -425,11 +430,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                             "Updated entity found. Type: {0}, id: {1}",
                             updatedEntity.EntityType.Id,
                             updatedEntity.Id));
-
-                    this.config.ChannelStructureEntities =
-                        ChannelHelper.GetStructureEntitiesForEntityInChannel(this.config.ChannelId, entityId);
-
-                    ChannelHelper.BuildEntityIdAndTypeDict(this.config);
 
                     #region SKU and ChannelNode
                     if (updatedEntity.EntityType.Id.Equals("Item") && data != null && data.Split(',').Contains("SKUs"))
