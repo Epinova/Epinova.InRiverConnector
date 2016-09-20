@@ -125,7 +125,8 @@
 
         internal static XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
         {
-            XElement resourceElement = EpiElement.CreateResourceElement(resource, "unlinked", config);
+            Dictionary<int, Entity> parentEntities = config.ChannelEntities;
+            XElement resourceElement = EpiElement.CreateResourceElement(resource, "unlinked", config, parentEntities);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
