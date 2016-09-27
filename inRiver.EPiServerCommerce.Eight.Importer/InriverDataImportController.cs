@@ -1358,8 +1358,7 @@ namespace inRiver.EPiServerCommerce.Eight.Importer
                     // Change the filename.
                     editableMediaData.RouteSegment = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
                 }
-
-                if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
+                else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
                 {
                     // Change the fileId.
                     editableMediaData.RouteSegment = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
