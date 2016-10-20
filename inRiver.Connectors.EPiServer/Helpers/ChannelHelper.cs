@@ -455,7 +455,10 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
                     IntegrationLogger.Write(LogLevel.Debug, $"Entity {entityId} exists in channel node {node.EntityId}");
                 }
 
-                dictionary.Add(node.EntityId.ToString(), result);
+                if (!dictionary.ContainsKey(node.EntityId.ToString()))
+                {
+                    dictionary.Add(node.EntityId.ToString(), result);
+                }
             }
 
             return dictionary;
