@@ -295,13 +295,13 @@
 
         public static List<XElement> GetDictionaryValues(FieldType fieldType, Configuration configuration)
         {
-            CVL currentCVL = BusinessHelper.CvLs.FirstOrDefault(c => c.Id.Equals(fieldType.CVLId));
+            CVL currentCVL = BusinessHelper.CvLs.ToList().FirstOrDefault(c => c.Id.Equals(fieldType.CVLId));
             if (currentCVL == null)
             {
                 return null;
             }
 
-            List<CVLValue> currentCvlValues = BusinessHelper.CVLValues.Where(cv => cv.CVLId.Equals(fieldType.CVLId)).ToList();
+            List<CVLValue> currentCvlValues = BusinessHelper.CVLValues.ToList().Where(cv => cv.CVLId.Equals(fieldType.CVLId)).ToList();
             if (!currentCvlValues.Any())
             {
                 return null;
