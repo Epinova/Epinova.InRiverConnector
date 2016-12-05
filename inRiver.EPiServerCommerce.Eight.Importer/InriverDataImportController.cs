@@ -1353,16 +1353,19 @@ namespace inRiver.EPiServerCommerce.Eight.Importer
 
                 // Assign to file and publish changes
                 editableMediaData.BinaryData = blob;
+                string rawFilename = null;
                 if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
                 {
                     // Change the filename.
-                    editableMediaData.RouteSegment = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
+                    rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
                 }
                 else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
                 {
                     // Change the fileId.
-                    editableMediaData.RouteSegment = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
+                    rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
                 }
+
+                editableMediaData.RouteSegment = UrlSegment.GetUrlFriendlySegment(rawFilename);
             }
 
             ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
