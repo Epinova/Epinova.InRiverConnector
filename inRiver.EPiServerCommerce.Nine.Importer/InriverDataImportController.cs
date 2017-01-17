@@ -1,4 +1,6 @@
-﻿namespace inRiver.EPiServerCommerce.Nine.Importer
+﻿using EPiServer.Web.Internal;
+
+namespace inRiver.EPiServerCommerce.Nine.Importer
 {
     using System;
     using System.Collections.Generic;
@@ -1382,7 +1384,7 @@
             if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
             {
                 // Update binary information
-                BlobFactory blobFactory = ServiceLocator.Current.GetInstance<BlobFactory>();
+                IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
 
                 FileInfo fileInfo = new FileInfo(updatedResource.Path);
                 if (fileInfo.Exists == false)
@@ -1425,7 +1427,7 @@
         private MediaData CreateNewFile(out ContentReference contentReference, IInRiverImportResource inriverResource)
         {
             IContentRepository repository = this.ContentRepository; // ServiceLocator.Current.GetInstance<IContentRepository>();
-            BlobFactory blobFactory = ServiceLocator.Current.GetInstance<BlobFactory>();
+            IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
             ContentMediaResolver mediaDataResolver = ServiceLocator.Current.GetInstance<ContentMediaResolver>();
             IContentTypeRepository contentTypeRepository = ServiceLocator.Current.GetInstance<IContentTypeRepository>();
 

@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("inRiver.EPiServerCommerce.Nine.Importer")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Custom built at Optimera for Episerver 10")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("inRiver.EPiServerCommerce.Nine.Importer")]
