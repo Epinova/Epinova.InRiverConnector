@@ -44,8 +44,8 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
 
         private readonly ICatalogSystem _catalogSystem = ServiceLocator.Current.GetInstance<ICatalogSystem>();
         private Injected<IContentRepository> _contentRepository = new Injected<IContentRepository>();
+        private Injected<ReferenceConverter> _referenceConverter = new Injected<ReferenceConverter>();
         private Injected<IPermanentLinkMapper> _permanentLinkMapper { get; set; }
-        private Injected<ReferenceConverter> _referenceConverter { get; set; }
 
         public IContentRepository ContentRepository
         {
@@ -815,44 +815,6 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
             return resourceRiverFolder;
         }
 
-        private static void DeleteMediaLinkForCatalogEntry(CommerceMedia media, CatalogEntryDto catalogEntryDto, ICatalogSystem catalogSystem)
-        {
-            var assetRow = media.ToItemAssetRow(catalogEntryDto);
-
-            foreach (CatalogEntryDto.CatalogItemAssetRow row in catalogEntryDto.CatalogItemAsset)
-            {
-                if (row.AssetKey == assetRow.AssetKey)
-                {
-                    row.Delete();
-                    break;
-                }
-            }
-
-            if (catalogEntryDto.HasChanges())
-            {
-                catalogSystem.SaveCatalogEntry(catalogEntryDto);
-            }
-        }
-
-        private static void DeleteMediaLinkForCatalogNode(CommerceMedia media, CatalogNodeDto catalogNodeDto, ICatalogSystem catalogSystem)
-        {
-            var assetRow = media.ToItemAssetRow(catalogNodeDto);
-
-            foreach (CatalogNodeDto.CatalogItemAssetRow row in catalogNodeDto.CatalogItemAsset)
-            {
-                if (row.AssetKey == assetRow.AssetKey)
-                {
-                    row.Delete();
-                    break;
-                }
-            }
-
-            if (catalogNodeDto.HasChanges())
-            {
-                catalogSystem.SaveCatalogNode(catalogNodeDto);
-            }
-        }
-
         private void MoveNode(string nodeCode, int newParent)
         {
             CatalogNodeDto catalogNodeDto = CatalogContext.Current.GetCatalogNodeDto(
@@ -870,7 +832,7 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
             Log.Info("Starting importing the xml into EPiServer Commerce.");
             CatalogImportExport cie = new CatalogImportExport();
             cie.ImportExportProgressMessage += this.ProgressHandler;
-            cie.Import(catalogXmlStream, AppContext.Current.ApplicationId, string.Empty, true);
+            cie.Import(catalogXmlStream, true);
             Log.Info("Done importing the xml into EPiServer Commerce.");
         }
 
@@ -926,7 +888,7 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
 
                 CatalogImportExport cie = new CatalogImportExport();
                 cie.ImportExportProgressMessage += this.ProgressHandler;
-                cie.Import(stream, AppContext.Current.ApplicationId, string.Empty, true);
+                cie.Import(stream, true);
 
                 if (stream.Position > 0)
                 {
@@ -988,8 +950,8 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
             {
                 return;
             }
-
-            this.DeleteLinksBetweenMediaAndCodes(existingMediaData.ContentGuid, inriverResource.Codes);
+            
+            DeleteLinksBetweenMediaAndCodes(existingMediaData, inriverResource.Codes);
         }
 
         private void HandleDelete(IInRiverImportResource inriverResource)
@@ -1019,31 +981,7 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
                 }
             }
 
-            CommerceMedia media = new CommerceMedia(existingMediaData.ContentGuid.ToString(), "episerver.core.icontentmedia", "default", 0, 0);
-
-            var relations = CatalogContext.Current.GetCatalogRelationDto(media.AssetKey);
-
-            foreach (CatalogRelationDto.CatalogItemAssetRow row in relations.CatalogItemAsset)
-            {
-                row.Delete();
-            }
-
-            foreach (var row in relations.CatalogEntryRelation)
-            {
-                row.Delete();
-            }
-
-            foreach (var row in relations.CatalogNodeRelation)
-            {
-                row.Delete();
-            }
-
-            if (relations.HasChanges())
-            {
-                CatalogContext.Current.SaveCatalogRelationDto(relations);
-            }
-
-            this.ContentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
+            ContentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
 
             if (this.RunIDeleteActionsHandlers)
             {
@@ -1356,22 +1294,29 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
             return catalogNodeDto;
         }
 
-        private void DeleteLinksBetweenMediaAndCodes(Guid contentGuid, IEnumerable<string> codes)
-        {
-            ICatalogSystem system = ServiceLocator.Current.GetInstance<ICatalogSystem>();
-
-            CommerceMedia media = new CommerceMedia(contentGuid.ToString(), "episerver.core.icontentmedia", "default", 0, 0);
+        private void DeleteLinksBetweenMediaAndCodes(MediaData media, IEnumerable<string> codes)
+        {          
             foreach (string code in codes)
             {
-                CatalogEntryDto catalogEntryDto = system.GetCatalogEntryDto(code, new CatalogEntryResponseGroup(CatalogEntryResponseGroup.ResponseGroup.Assets));
-                if (catalogEntryDto?.CatalogEntry.Count > 0)
+                var contentReference = _referenceConverter.Service.GetContentLink(code);
+                if (ContentReference.IsNullOrEmpty(contentReference))
+                    continue;
+
+                EntryContentBase catalogEntry;
+                NodeContent nodeContent;
+                if (ContentRepository.TryGet(contentReference, out nodeContent))
                 {
-                    DeleteMediaLinkForCatalogEntry(media, catalogEntryDto, system);
+                    var writableClone = nodeContent.CreateWritableClone<NodeContent>();
+                    var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+                    writableClone.CommerceMediaCollection.Remove(mediaToRemove);
+                    ContentRepository.Save(writableClone, AccessLevel.NoAccess);
                 }
-                else
+                else if (ContentRepository.TryGet(contentReference, out catalogEntry))
                 {
-                    CatalogNodeDto catalogNodeDto = system.GetCatalogNodeDto(code, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.Assets));
-                    DeleteMediaLinkForCatalogNode(media, catalogNodeDto, system);
+                    var writableClone = nodeContent.CreateWritableClone<EntryContentBase>();
+                    var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+                    writableClone.CommerceMediaCollection.Remove(mediaToRemove);
+                    ContentRepository.Save(writableClone, AccessLevel.NoAccess);
                 }
             }
         }
