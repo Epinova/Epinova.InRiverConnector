@@ -67,7 +67,7 @@
     <Compile Include="EPiServerCommerceAdapter.cs" />
     <Compile Include="Communication\EpiApi.cs" />
     <Compile Include="Communication\RestEndpoint.cs" />
-    <Compile Include="Communication\SingletonEPiLock.cs" />
+    <Compile Include="Communication\EpiLockObject.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Enums\CVLDataMode.cs" />
     <Compile Include="Enums\PublicationMode.cs" />

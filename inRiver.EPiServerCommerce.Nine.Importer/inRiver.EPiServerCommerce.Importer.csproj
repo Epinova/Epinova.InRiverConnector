@@ -217,7 +217,7 @@
     <Compile Include="ResourceModels\IInRiverResource.cs" />
     <Compile Include="ResourceModels\InRiverGenericMedia.cs" />
     <Compile Include="SecuredApiController.cs" />
-    <Compile Include="Singleton.cs" />
+    <Compile Include="ImportStatusContainer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

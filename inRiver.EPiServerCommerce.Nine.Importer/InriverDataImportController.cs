@@ -150,12 +150,12 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             Log.Debug("IsImporting");
 
-            if (Singleton.Instance.IsImporting)
+            if (ImportStatusContainer.Instance.IsImporting)
             {
                 return "importing";
             }
 
-            return Singleton.Instance.Message;
+            return ImportStatusContainer.Instance.Message;
         }
 
         [HttpPost]
@@ -556,15 +556,15 @@ namespace inRiver.EPiServerCommerce.Importer
         [HttpPost]
         public string ImportCatalogXml([FromBody] string path)
         {
-            Singleton.Instance.Message = "importing";
+            ImportStatusContainer.Instance.Message = "importing";
 
             Task importTask = Task.Run(
                () =>
                    {
                        try
                        {
-                           Singleton.Instance.Message = "importing";
-                           Singleton.Instance.IsImporting = true;
+                           ImportStatusContainer.Instance.Message = "importing";
+                           ImportStatusContainer.Instance.IsImporting = true;
 
                            List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
                            if (catalogImportHandlers.Any() && this.RunICatalogImportHandlers)
@@ -578,13 +578,13 @@ namespace inRiver.EPiServerCommerce.Importer
                        }
                        catch (Exception ex)
                        {
-                           Singleton.Instance.IsImporting = false;
+                           ImportStatusContainer.Instance.IsImporting = false;
                            Log.Error("Catalog Import Failed", ex);
-                           Singleton.Instance.Message = "ERROR: " + ex.Message;
+                           ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
                        }
 
-                       Singleton.Instance.IsImporting = false;
-                       Singleton.Instance.Message = "Import Sucessful";
+                       ImportStatusContainer.Instance.IsImporting = false;
+                       ImportStatusContainer.Instance.Message = "Import Sucessful";
                    });
 
             if (importTask.Status != TaskStatus.RanToCompletion)
@@ -592,7 +592,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 return "importing";
             }
 
-            return Singleton.Instance.Message;
+            return ImportStatusContainer.Instance.Message;
         }
 
         [HttpPost]
@@ -613,8 +613,8 @@ namespace inRiver.EPiServerCommerce.Importer
                     {
                         try
                         {
-                            Singleton.Instance.Message = "importing";
-                            Singleton.Instance.IsImporting = true;
+                            ImportStatusContainer.Instance.Message = "importing";
+                            ImportStatusContainer.Instance.IsImporting = true;
 
                             List<IResourceImporterHandler> importerHandlers =
                                 ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
@@ -686,9 +686,9 @@ namespace inRiver.EPiServerCommerce.Importer
                             }
                             catch (Exception exception)
                             {
-                                Singleton.Instance.IsImporting = false;
+                                ImportStatusContainer.Instance.IsImporting = false;
                                 Log.Error("Resource Import Failed", exception);
-                                Singleton.Instance.Message = "ERROR: " + exception.Message;
+                                ImportStatusContainer.Instance.Message = "ERROR: " + exception.Message;
                                 return;
                             }
 
@@ -704,13 +704,13 @@ namespace inRiver.EPiServerCommerce.Importer
                         }
                         catch (Exception ex)
                         {
-                            Singleton.Instance.IsImporting = false;
+                            ImportStatusContainer.Instance.IsImporting = false;
                             Log.Error("Resource Import Failed", ex);
-                            Singleton.Instance.Message = "ERROR: " + ex.Message;
+                            ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
                         }
 
-                        Singleton.Instance.Message = "Resource Import successful";
-                        Singleton.Instance.IsImporting = false;
+                        ImportStatusContainer.Instance.Message = "Resource Import successful";
+                        ImportStatusContainer.Instance.IsImporting = false;
                     });
 
             return importTask.Status != TaskStatus.RanToCompletion;

@@ -15,7 +15,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
     {
         internal static void DeleteCatalog(int catalogId, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -31,7 +31,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static void DeleteCatalogNode(int catalogNodeId, int catalogId, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -48,7 +48,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static void DeleteCatalogEntry(string entityId, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -65,7 +65,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static void UpdateLinkEntityData(Entity linkEntity, int channelId, Entity channelEntity, Configuration config, string parentId)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -96,7 +96,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static List<string> GetLinkEntityAssociationsForEntity(string linkType, int channelId, Entity channelEntity, Configuration config, List<string> parentIds, List<string> targetIds)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 List<string> ids = new List<string>();
                 try
@@ -135,7 +135,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static void CheckAndMoveNodeIfNeeded(string nodeId, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -153,7 +153,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static void UpdateEntryRelations(string catalogEntryId, int channelId, Entity channelEntity, Configuration config, string parentId, Dictionary<string, bool> shouldExistInChannelNodes, string linkTypeId, List<string> linkEntityIdsToRemove)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -207,7 +207,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static bool StartImportIntoEpiServerCommerce(string filePath, Guid guid, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -228,7 +228,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static bool StartAssetImportIntoEpiServerCommerce(string manifest, string baseFilePpath, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -249,7 +249,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static bool ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {
@@ -274,7 +274,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         internal static bool DeleteCompleted(string catalogName, DeleteCompletedEventType eventType, Configuration config)
         {
-            lock (SingletonEPiLock.Instance)
+            lock (EpiLockObject.Instance)
             {
                 try
                 {

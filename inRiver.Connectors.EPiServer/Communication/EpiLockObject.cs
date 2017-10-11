@@ -2,26 +2,26 @@
 {
     using System.Diagnostics.CodeAnalysis;
 
-    public class SingletonEPiLock
+    public class EpiLockObject
     {
-        private static SingletonEPiLock instance = new SingletonEPiLock();
+        private static EpiLockObject instance = new EpiLockObject();
 
         // Explicit static constructor to tell C# compiler
         // not to mark type as beforefieldinit
         [SuppressMessage("StyleCop.CSharp.MaintainabilityRules", "SA1409:RemoveUnnecessaryCode", Justification = "Reviewed. Suppression is OK here.")]
-        static SingletonEPiLock()
+        static EpiLockObject()
         {
         }
 
-        private SingletonEPiLock()
+        private EpiLockObject()
         {
         }
 
-        public static SingletonEPiLock Instance
+        public static EpiLockObject Instance
         {
             get
             {
-                return instance ?? (instance = new SingletonEPiLock());
+                return instance ?? (instance = new EpiLockObject());
             }
         }
     }
