@@ -1,65 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.15
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libs", "libs", "{387B6479-BF15-456D-B66A-FA927D575BF5}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "8.0", "8.0", "{CDF96036-BF13-42A8-B5C5-A30B2338B0C8}"
-	ProjectSection(SolutionItems) = preProject
-		..\Connectors\EPiServer\lib\8.0\AjaxControlToolkit.dll = ..\Connectors\EPiServer\lib\8.0\AjaxControlToolkit.dll
-		..\Connectors\EPiServer\lib\8.0\Castle.Core.dll = ..\Connectors\EPiServer\lib\8.0\Castle.Core.dll
-		..\Connectors\EPiServer\lib\8.0\Castle.Windsor.dll = ..\Connectors\EPiServer\lib\8.0\Castle.Windsor.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.ApplicationModules.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.ApplicationModules.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.BaseLibrary.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.BaseLibrary.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Business.Commerce.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Business.Commerce.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Configuration.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Configuration.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Data.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Data.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Enterprise.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Enterprise.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Events.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Events.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Framework.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Framework.dll
-		..\Connectors\EPiServer\lib\8.0\EPiServer.Implementation.dll = ..\Connectors\EPiServer\lib\8.0\EPiServer.Implementation.dll
-		..\Connectors\EPiServer\lib\8.0\log4net.dll = ..\Connectors\EPiServer\lib\8.0\log4net.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.BusinessFoundation.Data.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.BusinessFoundation.Data.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.BusinessFoundation.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.BusinessFoundation.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.Commerce.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.Commerce.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.DataProvider.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.DataProvider.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.FileUploader.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.FileUploader.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.MetaDataPlus.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.MetaDataPlus.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.Search.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.Search.dll
-		..\Connectors\EPiServer\lib\8.0\Mediachase.SqlDataProvider.dll = ..\Connectors\EPiServer\lib\8.0\Mediachase.SqlDataProvider.dll
-		..\Connectors\EPiServer\lib\8.0\StructureMap.dll = ..\Connectors\EPiServer\lib\8.0\StructureMap.dll
-	EndProjectSection
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "9.0", "9.0", "{78FBAB35-1ECD-4A17-ACF9-56A52E7F7F0A}"
-	ProjectSection(SolutionItems) = preProject
-		..\Connectors\EPiServer\lib\9.0\AjaxControlToolkit.dll = ..\Connectors\EPiServer\lib\9.0\AjaxControlToolkit.dll
-		..\Connectors\EPiServer\lib\9.0\Castle.Core.dll = ..\Connectors\EPiServer\lib\9.0\Castle.Core.dll
-		..\Connectors\EPiServer\lib\9.0\Castle.Windsor.dll = ..\Connectors\EPiServer\lib\9.0\Castle.Windsor.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.ApplicationModules.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.ApplicationModules.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.Business.Commerce.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.Business.Commerce.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.Configuration.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.Configuration.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.Data.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.Data.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.Enterprise.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.Enterprise.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.Events.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.Events.dll
-		..\Connectors\EPiServer\lib\9.0\EPiServer.Framework.dll = ..\Connectors\EPiServer\lib\9.0\EPiServer.Framework.dll
-		..\Connectors\EPiServer\lib\9.0\log4net.dll = ..\Connectors\EPiServer\lib\9.0\log4net.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.BusinessFoundation.Data.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.BusinessFoundation.Data.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.BusinessFoundation.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.BusinessFoundation.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.Commerce.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.Commerce.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.DataProvider.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.DataProvider.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.FileUploader.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.FileUploader.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.MetaDataPlus.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.MetaDataPlus.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.Search.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.Search.dll
-		..\Connectors\EPiServer\lib\9.0\Mediachase.SqlDataProvider.dll = ..\Connectors\EPiServer\lib\9.0\Mediachase.SqlDataProvider.dll
-		..\Connectors\EPiServer\lib\9.0\StructureMap.dll = ..\Connectors\EPiServer\lib\9.0\StructureMap.dll
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.CommerceAdapter", "inRiver.Connectors.EPiServer\inRiver.EPiServerCommerce.CommerceAdapter.csproj", "{F6FC6A0D-D026-4FC3-873C-19AF480821D5}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.Eight.Importer", "inRiver.EPiServerCommerce.Eight.Importer\inRiver.EPiServerCommerce.Eight.Importer.csproj", "{070F4061-00BB-4D2B-80DD-5C8A912E8E55}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.Interfaces", "inRiver.EPiServerCommerce.Interfaces\inRiver.EPiServerCommerce.Interfaces.csproj", "{0C76565D-930B-4478-9101-AAD7BCED1D6F}"
 EndProject
@@ -77,10 +21,6 @@ Global
 		{F6FC6A0D-D026-4FC3-873C-19AF480821D5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F6FC6A0D-D026-4FC3-873C-19AF480821D5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F6FC6A0D-D026-4FC3-873C-19AF480821D5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{070F4061-00BB-4D2B-80DD-5C8A912E8E55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{070F4061-00BB-4D2B-80DD-5C8A912E8E55}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{070F4061-00BB-4D2B-80DD-5C8A912E8E55}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{070F4061-00BB-4D2B-80DD-5C8A912E8E55}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0C76565D-930B-4478-9101-AAD7BCED1D6F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0C76565D-930B-4478-9101-AAD7BCED1D6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C76565D-930B-4478-9101-AAD7BCED1D6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -96,9 +36,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(NestedProjects) = preSolution
-		{CDF96036-BF13-42A8-B5C5-A30B2338B0C8} = {387B6479-BF15-456D-B66A-FA927D575BF5}
-		{78FBAB35-1ECD-4A17-ACF9-56A52E7F7F0A} = {387B6479-BF15-456D-B66A-FA927D575BF5}
 	EndGlobalSection
 EndGlobal
