@@ -566,15 +566,14 @@ namespace inRiver.EPiServerCommerce.Importer
                            Singleton.Instance.Message = "importing";
                            Singleton.Instance.IsImporting = true;
 
-                           FileStream catalogXmlStream = File.OpenRead(path);
                            List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
                            if (catalogImportHandlers.Any() && this.RunICatalogImportHandlers)
                            {
-                               this.ImportCatalogXmlWithHandlers(catalogXmlStream, catalogImportHandlers, path);
+                               this.ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
                            }
                            else
                            {
-                               this.ImportCatalogXml(catalogXmlStream);
+                               this.ImportCatalogXmlFromPath(path);
                            }
                        }
                        catch (Exception ex)
@@ -820,16 +819,16 @@ namespace inRiver.EPiServerCommerce.Importer
             CatalogContext.Current.SaveCatalogNode(catalogNodeDto);
         }
 
-        private void ImportCatalogXml(FileStream catalogXmlStream)
+        private void ImportCatalogXmlFromPath(string path)
         {
             Log.Info("Starting importing the xml into EPiServer Commerce.");
             CatalogImportExport cie = new CatalogImportExport();
             cie.ImportExportProgressMessage += this.ProgressHandler;
-            cie.Import(catalogXmlStream, true);
+            cie.Import(path, true);
             Log.Info("Done importing the xml into EPiServer Commerce.");
         }
 
-        private void ImportCatalogXmlWithHandlers(Stream catalogXml, List<ICatalogImportHandler> catalogImportHandlers, string path)
+        private void ImportCatalogXmlWithHandlers(string filePath, List<ICatalogImportHandler> catalogImportHandlers)
         {
             // Read catalog xml to allow handlers to work on it
             // NOTE! If it is very large, it might consume alot of memory.
@@ -839,8 +838,12 @@ namespace inRiver.EPiServerCommerce.Importer
 
             try
             {
+                // The handlers might have changed the xml, so we pass it on
+                string originalFileName = Path.GetFileNameWithoutExtension(filePath);
+                string filenameBeforePreImport = originalFileName + "-beforePreImport.xml";
 
-                XDocument catalogDoc = XDocument.Load(catalogXml);
+                XDocument catalogDoc = XDocument.Load(filePath);
+                catalogDoc.Save(filenameBeforePreImport);
 
                 if (catalogImportHandlers.Any())
                 {
@@ -857,40 +860,24 @@ namespace inRiver.EPiServerCommerce.Importer
                         }
                     }
                 }
-
-                // The handlers might have changed the xml, so we pass it on
-                string filename = Path.GetFileNameWithoutExtension(path);
-                string filenameWithTemp = filename + "-preImport.xml";
-
-                if (!File.Exists(path))
+                
+                if (!File.Exists(filePath))
                 {
-                    Log.Error("Catalog.xml for path " + path + " does not exist. Importer is not able to continue with this process.");
+                    Log.Error("Catalog.xml for path " + filePath + " does not exist. Importer is not able to continue with this process.");
                     return;
                 }
+                var directoryPath = Path.GetDirectoryName(filePath);
 
-                string afterPreImportXmlPath = Path.Combine(Path.GetDirectoryName(path), filenameWithTemp);
-
-                FileStream fs = new FileStream(afterPreImportXmlPath, FileMode.Create);
+                FileStream fs = new FileStream(filePath, FileMode.Create);
                 catalogDoc.Save(fs);
-                FileStream stream = new FileStream(afterPreImportXmlPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
-                catalogXml.Dispose();
-
-                catalogDoc = null;
-                stream.Position = 0;
+                fs.Dispose();
 
                 CatalogImportExport cie = new CatalogImportExport();
                 cie.ImportExportProgressMessage += this.ProgressHandler;
-                cie.Import(stream, true);
 
-                if (stream.Position > 0)
-                {
-                    stream.Position = 0;
-                }
+                cie.Import(directoryPath, true);
 
-                catalogDoc = XDocument.Load(stream);
-                stream.Dispose();
-                fs.Dispose();
+                catalogDoc = XDocument.Load(filePath);
 
                 if (catalogImportHandlers.Any())
                 {
@@ -906,11 +893,6 @@ namespace inRiver.EPiServerCommerce.Importer
                             Log.Error("Failed to run PostImport on " + handler.GetType().FullName, e);
                         }
                     }
-                }
-
-                if (File.Exists(afterPreImportXmlPath))
-                {
-                    File.Delete(afterPreImportXmlPath);
                 }
             }
             catch (Exception exception)
