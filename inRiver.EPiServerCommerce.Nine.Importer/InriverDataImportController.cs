@@ -33,116 +33,31 @@ namespace inRiver.EPiServerCommerce.Importer
 {
     public class InriverDataImportController : SecuredApiController
     {
+        private readonly ICatalogSystem _catalogSystem;
+        private readonly IContentRepository _contentRepository;
+        private readonly ReferenceConverter _referenceConverter;
+
+        public InriverDataImportController(ICatalogSystem catalogSystem, IContentRepository contentRepository, ReferenceConverter referenceConverter)
+        {
+            _catalogSystem = catalogSystem;
+            _contentRepository = contentRepository;
+            _referenceConverter = referenceConverter;
+        }
+
         private static readonly ILog Log = LogManager.GetLogger(typeof(InriverDataImportController));
+        
+        private bool RunICatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
 
-        private readonly ICatalogSystem _catalogSystem = ServiceLocator.Current.GetInstance<ICatalogSystem>();
-        private Injected<IContentRepository> _contentRepository = new Injected<IContentRepository>();
-        private Injected<ReferenceConverter> _referenceConverter = new Injected<ReferenceConverter>();
-        private Injected<IPermanentLinkMapper> _permanentLinkMapper { get; set; }
+        private bool RunIResourceImporterHandlers => GetBoolSetting("inRiver.RunIResourceImporterHandlers");
 
-        public IContentRepository ContentRepository
+        private bool RunIDeleteActionsHandlers => GetBoolSetting("inRiver.RunIDeleteActionsHandlers");
+
+        private bool RunIInRiverEventsHandlers => GetBoolSetting("inRiver.RunIInRiverEventsHandlers");
+
+        private bool GetBoolSetting(string key)
         {
-            get { return this._contentRepository.Service; }
-        }
-
-        private bool RunICatalogImportHandlers
-        {
-            get
-            {
-                if (ConfigurationManager.AppSettings.Count > 0)
-                {
-                    var setting = ConfigurationManager.AppSettings["inRiver.RunICatalogImportHandlers"];
-                    if (setting != null)
-                    {
-                        bool result;
-                        if (bool.TryParse(setting, out result))
-                        {
-                            return result;
-                        }
-
-                        return true;
-                    }
-
-                    return true;
-                }
-
-                return true;
-            }
-        }
-
-        private bool RunIResourceImporterHandlers
-        {
-            get
-            {
-                if (ConfigurationManager.AppSettings.Count > 0)
-                {
-                    var setting = ConfigurationManager.AppSettings["inRiver.RunIResourceImporterHandlers"];
-                    if (setting != null)
-                    {
-                        bool result;
-                        if (bool.TryParse(setting, out result))
-                        {
-                            return result;
-                        }
-
-                        return true;
-                    }
-
-                    return true;
-                }
-
-                return true;
-            }
-        }
-
-        private bool RunIDeleteActionsHandlers
-        {
-            get
-            {
-                if (ConfigurationManager.AppSettings.Count > 0)
-                {
-                    var setting = ConfigurationManager.AppSettings["inRiver.RunIDeleteActionsHandlers"];
-                    if (setting != null)
-                    {
-                        bool result;
-                        if (bool.TryParse(setting, out result))
-                        {
-                            return result;
-                        }
-
-                        return true;
-                    }
-
-                    return true;
-                }
-
-                return true;
-            }
-        }
-
-        private bool RunIInRiverEventsHandlers
-        {
-            get
-            {
-                if (ConfigurationManager.AppSettings.Count > 0)
-                {
-                    var setting = ConfigurationManager.AppSettings["inRiver.RunIInRiverEventsHandlers"];
-                    if (setting != null)
-                    {
-                        bool result;
-                        if (bool.TryParse(setting, out result))
-                        {
-                            return result;
-                        }
-
-                        return true;
-                    }
-
-                    return true;
-                }
-
-                return true;
-            }
+            var setting = ConfigurationManager.AppSettings[key];
+            return setting != null && setting.Equals(key, StringComparison.CurrentCultureIgnoreCase);
         }
 
         [HttpGet]
@@ -638,9 +553,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
                                         try
                                         {
-                                            MediaData existingMediaData =
-                                                this.ContentRepository.Get<MediaData>(
-                                                    this.EntityIdToGuid(resource.ResourceId));
+                                            MediaData existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(resource.ResourceId));
                                             if (existingMediaData != null)
                                             {
                                                 found = true;
@@ -914,7 +827,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = this.ContentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception)
             {
@@ -934,7 +847,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = this.ContentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception)
             {
@@ -956,7 +869,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 }
             }
 
-            ContentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
+            _contentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
 
             if (this.RunIDeleteActionsHandlers)
             {
@@ -973,7 +886,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = this.ContentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception ex)
             {
@@ -1184,25 +1097,25 @@ namespace inRiver.EPiServerCommerce.Importer
         {          
             foreach (string code in codes)
             {
-                var contentReference = _referenceConverter.Service.GetContentLink(code);
+                var contentReference = _referenceConverter.GetContentLink(code);
                 if (ContentReference.IsNullOrEmpty(contentReference))
                     continue;
 
                 EntryContentBase catalogEntry;
                 NodeContent nodeContent;
-                if (ContentRepository.TryGet(contentReference, out nodeContent))
+                if (_contentRepository.TryGet(contentReference, out nodeContent))
                 {
                     var writableClone = nodeContent.CreateWritableClone<NodeContent>();
                     var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
                     writableClone.CommerceMediaCollection.Remove(mediaToRemove);
-                    ContentRepository.Save(writableClone, AccessLevel.NoAccess);
+                    _contentRepository.Save(writableClone, AccessLevel.NoAccess);
                 }
-                else if (ContentRepository.TryGet(contentReference, out catalogEntry))
+                else if (_contentRepository.TryGet(contentReference, out catalogEntry))
                 {
                     var writableClone = nodeContent.CreateWritableClone<EntryContentBase>();
                     var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
                     writableClone.CommerceMediaCollection.Remove(mediaToRemove);
-                    ContentRepository.Save(writableClone, AccessLevel.NoAccess);
+                    _contentRepository.Save(writableClone, AccessLevel.NoAccess);
                 }
             }
         }
@@ -1252,12 +1165,11 @@ namespace inRiver.EPiServerCommerce.Importer
 
             ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
 
-            this.ContentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
+            _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
         private MediaData CreateNewFile(out ContentReference contentReference, IInRiverImportResource inriverResource)
         {
-            IContentRepository repository = this.ContentRepository; // ServiceLocator.Current.GetInstance<IContentRepository>();
             IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
             ContentMediaResolver mediaDataResolver = ServiceLocator.Current.GetInstance<ContentMediaResolver>();
             IContentTypeRepository contentTypeRepository = ServiceLocator.Current.GetInstance<IContentTypeRepository>();
@@ -1306,7 +1218,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
             // Get new empty file data instance in the media folder for inRiver Resource
             // TODO: Place resource inside a sub folder, but we need to organize the folder structure.
-            MediaData newFile = repository.GetDefault<MediaData>(this.GetInRiverResourceFolder(), contentType.ID);
+            MediaData newFile = _contentRepository.GetDefault<MediaData>(this.GetInRiverResourceFolder(), contentType.ID);
             if (resourceWithoutFile)
             {
                 // find name
@@ -1362,7 +1274,7 @@ namespace inRiver.EPiServerCommerce.Importer
             newFile.ContentGuid = this.EntityIdToGuid(inriverResource.ResourceId);
             try
             {
-                contentReference = repository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
+                contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
                 return newFile;
             }
             catch (Exception exception)
