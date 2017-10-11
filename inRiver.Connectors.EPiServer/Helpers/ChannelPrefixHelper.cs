@@ -1,12 +1,10 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+﻿using System.Collections.Generic;
+using System.Linq;
+using inRiver.Remoting;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
-    using System.Collections.Generic;
-    using System.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Objects;
-
     public class ChannelPrefixHelper
     {
         internal static string GetEPiCodeWithChannelPrefix(object code, Configuration configuration)

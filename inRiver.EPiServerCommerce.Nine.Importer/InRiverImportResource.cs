@@ -1,9 +1,8 @@
-﻿namespace inRiver.EPiServerCommerce.Nine.Importer
+﻿using System.Collections.Generic;
+using inRiver.EPiServerCommerce.Interfaces;
+
+namespace inRiver.EPiServerCommerce.Nine.Importer
 {
-    using System.Collections.Generic;
-
-    using inRiver.EPiServerCommerce.Interfaces;
-
     /// <summary>
     /// Describes a resource coming from inRiver.
     /// </summary>

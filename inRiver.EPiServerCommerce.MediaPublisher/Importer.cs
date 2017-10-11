@@ -1,20 +1,19 @@
-﻿#region Generated Code
+﻿using inRiver.EPiServerCommerce.MediaPublisher.Poco;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading;
+using System.Xml;
+using System.Xml.Serialization;
+
+using inRiver.EPiServerCommerce.Interfaces;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+
 namespace inRiver.EPiServerCommerce.MediaPublisher
 {
-    #endregion
-    using System;
-    using System.Collections.Generic;
-    using System.Configuration;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Threading;
-    using System.Xml;
-    using System.Xml.Serialization;
-
-    using inRiver.EPiServerCommerce.Interfaces;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-
     public class Importer : IResourceImport
     {
         private Dictionary<string, string> settings = new Dictionary<string, string>(); 
@@ -91,7 +90,7 @@ namespace inRiver.EPiServerCommerce.MediaPublisher
                 newRes.Codes = new List<string>();
                 if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
                 {
-                    foreach (EntryCode entryCode in resource.ParentEntries.EntryCode)
+                    foreach (Poco.EntryCode entryCode in resource.ParentEntries.EntryCode)
                     {
                         if (!string.IsNullOrEmpty(entryCode.Value))
                         {

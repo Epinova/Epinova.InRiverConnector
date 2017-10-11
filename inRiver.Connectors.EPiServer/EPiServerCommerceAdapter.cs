@@ -1,36 +1,28 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
+using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.EPiServerCommerce.CommerceAdapter.Utilities;
+using inRiver.EPiServerCommerce.Interfaces.Enums;
+using inRiver.Integration.Configuration;
+using inRiver.Integration.Export;
+using inRiver.Integration.Interface;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Connect;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+using inRiver.Remoting.Query;
 using System.Linq;
-using inRiver.Integration.Reporting;
-// ReSharper disable All
 
 namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
-    using System;
-    using System.Collections;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Reflection;
-    using System.Threading.Tasks;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-    using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Utilities;
-    using inRiver.EPiServerCommerce.Interfaces.Enums;
-    using inRiver.Integration.Configuration;
-    using inRiver.Integration.Export;
-    using inRiver.Integration.Interface;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Connect;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-    using inRiver.Remoting.Query;
-
     public class XmlExporter : ServerListener, IOutboundConnector, IChannelListener, ICVLListener
     {
         private bool started;

@@ -1,18 +1,16 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Reflection;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public class EpiElement
     {
         public static XElement InRiverEntityTypeToMetaClass(string name, string entityTypeName)
@@ -423,12 +421,6 @@
                     new XAttribute("value", value)));
         }
 
-        [Obsolete]
-        public static XElement CreateNodeEntryRelationElement(Link link, Configuration config)
-        {
-            return CreateNodeEntryRelationElement(link.Source.Id.ToString(CultureInfo.InvariantCulture), link.Target.Id.ToString(CultureInfo.InvariantCulture), link.Index, config);
-        }
-
         public static XElement CreateNodeEntryRelationElement(string sourceId, string targetId, int sortOrder, Configuration config, Dictionary<int, Entity> channelEntities = null)
         {
             return new XElement(
@@ -445,12 +437,6 @@
                 new XElement("ChildNodeCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(targetId, config)),
                 new XElement("ParentNodeCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(sourceId, config)),
                 new XElement("SortOrder", sortOrder));
-        }
-
-        [Obsolete]
-        public static XElement CreateEntryRelationElement(Link link, Configuration config)
-        {
-            return CreateEntryRelationElement(link.Source.Id.ToString(CultureInfo.InvariantCulture), link.Source.EntityType.Id, link.Target.Id.ToString(CultureInfo.InvariantCulture), link.Index, config);
         }
 
         public static XElement CreateEntryRelationElement(string sourceId, string parentEntityType, string targetId, int sortOrder, Configuration config, Dictionary<int, Entity> channelEntities = null)
@@ -484,23 +470,6 @@
                 new XElement("SortOrder", sortOrder));
         }
 
-        [Obsolete]
-        public static XElement CreateCatalogAssociationElement(Link link, Configuration config)
-        {
-            // Unique Name with no spaces required for EPiServer Commerce
-            string name = EpiMappingHelper.GetAssociationName(link, config);
-            string description = link.LinkEntity == null ? link.LinkType.Id : ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(link.LinkEntity.Id, config);
-            description = description ?? string.Empty;
-
-            return new XElement(
-                "CatalogAssociation",
-                new XElement("Name", name),
-                new XElement("Description", description),
-                new XElement("SortOrder", link.Index),
-                new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(link.Source.Id, config)),
-                CreateAssociationElement(link, config));
-        }
-
         public static XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Entity linkEntity, Configuration config, Dictionary<int, Entity> channelEntities = null)
         {
             // Unique Name with no spaces required for EPiServer Commerce
@@ -517,16 +486,6 @@
                 CreateAssociationElement(structureEntity, config));
         }
 
-        [Obsolete]
-        public static XElement CreateAssociationElement(Link link, Configuration config)
-        {
-            return new XElement(
-                "Association",
-                new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(link.Target.Id, config)),
-                new XElement("SortOrder", link.Index),
-                    new XElement("Type", link.LinkType.Id));
-        }
-
         public static XElement CreateAssociationElement(StructureEntity structureEntity, Configuration config)
         {
             return new XElement(
@@ -534,13 +493,6 @@
                 new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(structureEntity.EntityId, config)),
                 new XElement("SortOrder", structureEntity.SortOrder),
                     new XElement("Type", structureEntity.LinkTypeIdFromParent));
-        }
-
-        public static XElement GetLinkItemFields(Entity linkEntity, Configuration config)
-        {
-            return new XElement(
-                "LinkItemMetaFields",
-                from Field f in linkEntity.Fields where !EpiMappingHelper.SkipField(f.FieldType, config) && !f.IsEmpty() select InRiverFieldToMetaField(f, config));
         }
 
         public static XElement CreateResourceElement(Entity resource, string action, Configuration config, Dictionary<int, Entity> parentEntities = null)

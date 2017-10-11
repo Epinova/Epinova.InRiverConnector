@@ -1,20 +1,17 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public static class EpiDocument
     {
         public static XDocument CreateImportDocument(Entity channelEntity, XElement metaClasses, XElement associationTypes, Dictionary<string, List<XElement>> epiElementsFromStructure, Configuration config)
@@ -130,24 +127,6 @@
                                  { "Associations", new List<XElement>() }
                              };
             return result;
-        }
-
-        private static XElement CreateCatalogElement(Entity channelEntity, Dictionary<string, List<XElement>> epiElementsFromStructure, Configuration config)
-        {
-            XElement catalogElement = EpiElement.CreateCatalogElement(channelEntity, config);
-            if (catalogElement == null)
-            {
-                return null;
-            }
-
-            catalogElement.Add(
-                 new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, config))),
-                 new XElement("Nodes", new XAttribute("totalCount", epiElementsFromStructure["Nodes"].Count), epiElementsFromStructure["Nodes"]),
-                 new XElement("Entries", new XAttribute("totalCount", epiElementsFromStructure["Entries"].Count), epiElementsFromStructure["Entries"]),
-                 new XElement("Relations", epiElementsFromStructure["Relations"].OrderByDescending(e => e.Name.LocalName)),
-                 new XElement("Associations", epiElementsFromStructure["Associations"]));
-
-            return catalogElement;
         }
 
         private static void FillElementList(Dictionary<string, List<XElement>> epiElements, Configuration config)

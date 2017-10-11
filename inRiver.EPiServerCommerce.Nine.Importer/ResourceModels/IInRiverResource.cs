@@ -1,11 +1,9 @@
-namespace inRiver.EPiServerCommernce.Nine.Importer.ResourceModels
+using System.Collections.Generic;
+using EPiServer.Core;
+using inRiver.EPiServerCommerce.Interfaces;
+
+namespace inRiver.EPiServerCommerce.Nine.Importer.ResourceModels
 {
-    using System.Collections.Generic;
-
-    using EPiServer.Core;
-
-    using inRiver.EPiServerCommerce.Interfaces;
-
     public interface IInRiverResource : IContentData
     {
         int ResourceFileId { get; set; }

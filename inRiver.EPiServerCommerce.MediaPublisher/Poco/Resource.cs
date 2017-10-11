@@ -1,13 +1,7 @@
-using System;
-using System.ComponentModel;
-using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Collections.Generic;
-using System.Globalization;
 
-namespace inRiver.EPiServerCommerce.MediaPublisher
-{
-	
+namespace inRiver.EPiServerCommerce.MediaPublisher.Poco
+{	
 	public class Resource
 	{
 		// ATTRIBUTES
@@ -26,9 +20,5 @@ namespace inRiver.EPiServerCommerce.MediaPublisher
 		
 		[XmlElement("ParentEntries")]
 		public ParentEntries ParentEntries { get; set; }
-		
-		// CONSTRUCTOR
-		public Resource()
-		{}
 	}
 }

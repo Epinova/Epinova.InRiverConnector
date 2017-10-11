@@ -1,7 +1,7 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces
-{
-    using inRiver.EPiServerCommerce.Interfaces.Enums;
+﻿using inRiver.EPiServerCommerce.Interfaces.Enums;
 
+namespace inRiver.EPiServerCommerce.Interfaces
+{
     public interface IInRiverEventsHandler
     {
         /// <summary>

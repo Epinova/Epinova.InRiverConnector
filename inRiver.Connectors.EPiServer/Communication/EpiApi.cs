@@ -1,17 +1,16 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.EPiServerCommerce.Interfaces;
+using inRiver.EPiServerCommerce.Interfaces.Enums;
+using inRiver.Integration.Logging;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Net;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.EPiServerCommerce.Interfaces;
-    using inRiver.EPiServerCommerce.Interfaces.Enums;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     internal class EpiApi
     {
         internal static void DeleteCatalog(int catalogId, Configuration config)

@@ -1,3 +1,7 @@
-# EPiServer 
+# Changes from original connector
 
-Issues on connectors shall be reported through [Zendesk](https://inriver.zendesk.com)
+## Inventory and price exports
+
+The original connector contained loads of code for dealing with inventory and price updates. This was not documented anywhere, nor reflected in default connector settings.
+
+This has been *removed*. The PIM should not be responsible for this in any way. 

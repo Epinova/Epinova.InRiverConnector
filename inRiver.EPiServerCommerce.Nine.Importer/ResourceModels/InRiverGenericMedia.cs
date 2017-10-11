@@ -1,12 +1,10 @@
-﻿namespace inRiver.EPiServerCommernce.Nine.Importer.ResourceModels
+﻿using System.Collections.Generic;
+using EPiServer.Core;
+using EPiServer.DataAnnotations;
+using inRiver.EPiServerCommerce.Interfaces;
+
+namespace inRiver.EPiServerCommerce.Nine.Importer.ResourceModels
 {
-    using System.Collections.Generic;
-
-    using EPiServer.Core;
-    using EPiServer.DataAnnotations;
-
-    using inRiver.EPiServerCommerce.Interfaces;
-
     /// <summary>
     /// This media type will be used if there is no more specific type
     /// available.

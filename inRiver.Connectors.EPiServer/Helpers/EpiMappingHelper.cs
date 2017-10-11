@@ -1,15 +1,13 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+﻿using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using inRiver.Remoting;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Objects;
-
     public class EpiMappingHelper
     {
         private static int firstProductItemLinkType = -2;
@@ -41,19 +39,6 @@
             }
 
             return "CatalogEntry";
-        }
-
-        public static bool IsRelation(Link link, Configuration config)
-        {
-            if ((config.BundleEntityTypes.Contains(link.LinkType.SourceEntityTypeId) && !config.BundleEntityTypes.Contains(link.LinkType.TargetEntityTypeId))
-                            || (config.PackageEntityTypes.Contains(link.LinkType.SourceEntityTypeId) && !config.PackageEntityTypes.Contains(link.LinkType.TargetEntityTypeId))
-                            || (config.DynamicPackageEntityTypes.Contains(link.LinkType.SourceEntityTypeId) && !config.DynamicPackageEntityTypes.Contains(link.LinkType.TargetEntityTypeId)))
-            {
-                return true;
-            }
-
-            return link.LinkType.SourceEntityTypeId.Equals("Product") && link.LinkType.TargetEntityTypeId.Equals("Item")
-                   && link.LinkType.Index == FirstProductItemLinkType;
         }
 
         public static bool IsRelation(string sourceEntityTypeId, string targetEntityTypeId, int sortOrder, Configuration config)

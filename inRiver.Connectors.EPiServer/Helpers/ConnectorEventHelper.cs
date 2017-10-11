@@ -1,14 +1,12 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using inRiver.Integration.Reporting;
+using inRiver.Remoting;
+using inRiver.Remoting.Connect;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.Integration.Reporting;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Connect;
-
     public class ConnectorEventHelper
     {
         internal static ConnectorEvent InitiateConnectorEvent(Configuration config, ConnectorEventType messageType, string message, int percentage, bool error = false)

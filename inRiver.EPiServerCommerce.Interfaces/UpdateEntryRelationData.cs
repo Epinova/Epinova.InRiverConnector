@@ -1,7 +1,7 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces
-{
-    using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
+namespace inRiver.EPiServerCommerce.Interfaces
+{
     public class UpdateEntryRelationData
     {
         public string ChannelName { get; set; }

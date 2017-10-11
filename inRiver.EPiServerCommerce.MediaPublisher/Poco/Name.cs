@@ -1,22 +1,11 @@
-using System;
-using System.ComponentModel;
-using System.Xml.Schema;
 using System.Xml.Serialization;
-using System.Collections.Generic;
-using System.Globalization;
 
-namespace inRiver.EPiServerCommerce.MediaPublisher
+namespace inRiver.EPiServerCommerce.MediaPublisher.Poco
 {
-	
 	public class Name
-	{
-		
+	{		
 		// ELEMENTS
 		[XmlText]
 		public string Value { get; set; }
-		
-		// CONSTRUCTOR
-		public Name()
-		{}
 	}
 }

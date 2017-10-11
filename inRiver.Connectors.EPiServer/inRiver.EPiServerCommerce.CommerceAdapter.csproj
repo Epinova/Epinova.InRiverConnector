@@ -74,7 +74,6 @@
     <Compile Include="EpiXml\EpiDocument.cs" />
     <Compile Include="EpiXml\EpiElement.cs" />
     <Compile Include="EpiXml\Resources.cs" />
-    <Compile Include="OldHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

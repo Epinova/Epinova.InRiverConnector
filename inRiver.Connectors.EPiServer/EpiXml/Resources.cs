@@ -1,18 +1,17 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
-    using System.Linq;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public static class Resources
     {
         public static XDocument GetDocumentAndSaveFilesToDisk(List<StructureEntity> channelEntities, Configuration config, string folderDateTime)
@@ -51,58 +50,7 @@
 
             return resourceDocument;
         }
-
-        //internal static XDocument GetDocumentAndSaveFilesToDisk(Dictionary<int, Entity> entitiesInStructure, Configuration config, string folderDateTime, XDocument channelStructure)
-        //{
-        //    XDocument resourceDocument = new XDocument();
-        //    try
-        //    {
-        //        if (!Directory.Exists(config.ResourcesRootPath))
-        //        {
-        //            Directory.CreateDirectory(config.ResourcesRootPath);
-        //        }
-
-        //        Dictionary<int, List<Entity>> resourceIdsWithLinkedEntities = new Dictionary<int, List<Entity>>();
-
-        //        foreach (Entity entity in entitiesInStructure.Values)
-        //        {
-        //            foreach (Link link in entity.OutboundLinks.Where(l => l.LinkType.TargetEntityTypeId.Equals("Resource")))
-        //            {
-        //                XElement node = channelStructure.Descendants().FirstOrDefault(n => n.Name.LocalName == "Resource_" + link.Target.Id);
-        //                if (node == null)
-        //                {
-        //                    continue;
-        //                }
-                        
-        //                if (!resourceIdsWithLinkedEntities.ContainsKey(link.Target.Id))
-        //                {
-        //                    resourceIdsWithLinkedEntities.Add(link.Target.Id, new List<Entity> { entity });
-        //                }
-        //                else
-        //                {
-        //                    resourceIdsWithLinkedEntities[link.Target.Id].Add(entity);
-        //                }
-        //            }
-        //        }
-
-        //        List<Entity> resources = RemoteManager.DataService.GetEntities(resourceIdsWithLinkedEntities.Keys.ToList(), LoadLevel.DataOnly);
-        //        foreach (Entity res in resources)
-        //        {
-        //            SaveFileToDisk(res, config, folderDateTime);
-        //        }
-
-        //        EntityType reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
-        //        XElement resourceMetaClasses = EpiElement.CreateResourceMetaFieldsElement(reourceType, config);
-        //        resourceDocument = CreateResourceDocument(resourceMetaClasses, resourceIdsWithLinkedEntities, resources, "added", config);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        IntegrationLogger.Write(LogLevel.Error, string.Format("Could not add resources"), ex);
-        //    }
-
-        //    return resourceDocument;
-        //}
-
+        
         internal static XDocument HandleResourceUpdate(Entity updatedResource, Configuration config, string folderDateTime)
         {
             SaveFileToDisk(updatedResource, config, folderDateTime);
@@ -127,29 +75,6 @@
         {
             Dictionary<int, Entity> parentEntities = config.ChannelEntities;
             XElement resourceElement = EpiElement.CreateResourceElement(resource, "unlinked", config, parentEntities);
-            XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
-            if (resourceFieldsElement != null)
-            {
-                resourceFieldsElement.Remove();
-            }
-
-            XElement pathsElement = resourceElement.Element("Paths");
-            if (pathsElement != null)
-            {
-                pathsElement.Remove();
-            }
-
-            return
-                new XDocument(
-                    new XElement(
-                        "Resources",
-                        new XElement("ResourceMetaFields"),
-                        new XElement("ResourceFiles", resourceElement)));
-        }
-
-        internal static XDocument HandleResourceDelete(Entity resource, Entity parent, Configuration config)
-        {
-            XElement resourceElement = EpiElement.CreateResourceElement(resource, "deleted", config);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {

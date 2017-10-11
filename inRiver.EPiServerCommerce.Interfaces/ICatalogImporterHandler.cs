@@ -1,7 +1,7 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces
-{
-    using System.Xml.Linq;
+﻿using System.Xml.Linq;
 
+namespace inRiver.EPiServerCommerce.Interfaces
+{
     public interface ICatalogImportHandler
     {
         /// <summary>

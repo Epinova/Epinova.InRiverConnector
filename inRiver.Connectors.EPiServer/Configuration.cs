@@ -1,18 +1,17 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Xml;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Xml;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public class Configuration
     {
         private static readonly string[] ExportDisabledEntityTypes = { "Channel", "Assortment", "Resource", "Task", "Section", "Publication" };
@@ -129,14 +128,6 @@
             }
         }
 
-        public static string DeletefolderDateTime
-        {
-            get
-            {
-                return "Deleted";
-            }
-        }
-
         public static string MimeType
         {
             get
@@ -161,22 +152,6 @@
             }
         }
 
-        public static string CVLKeyValueDelimiter
-        {
-            get
-            {
-                return "|;";
-            }
-        }
-
-        public static string CVLLocaleStringDelimiter
-        {
-            get
-            {
-                return "|,";
-            }
-        }
-
         public static string EPiCommonField
         {
             get
@@ -184,9 +159,7 @@
                 return "EPiMetaFieldName";
             }
         }
-
-        #region SKU Related
-
+        
         public static string SKUFieldName
         {
             get
@@ -202,8 +175,6 @@
                 return "Data";
             }
         }
-
-        #endregion
 
         public XDocument MappingDocument { get; set; }
 
@@ -221,19 +192,6 @@
                 }
 
                 return int.Parse(this.settings["CHANNEL_ID"]);
-            }
-        }
-
-        public int EpiMajorVersion
-        {
-            get
-            {
-                if (!this.settings.ContainsKey("EPI_MAJOR_VERSION"))
-                {
-                    return 8;
-                }
-
-                return int.Parse(this.settings["EPI_MAJOR_VERSION"]);
             }
         }
 

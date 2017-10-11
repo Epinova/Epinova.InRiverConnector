@@ -1,43 +1,36 @@
 ﻿using EPiServer.Web.Internal;
+using inRiver.EPiServerCommerce.Nine.Importer.ResourceModels;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web.Http;
+using System.Xml.Linq;
+using EPiServer;
+using EPiServer.Commerce.Catalog.ContentTypes;
+using EPiServer.Commerce.SpecializedProperties;
+using EPiServer.Core;
+using EPiServer.DataAbstraction;
+using EPiServer.DataAccess;
+using EPiServer.Framework.Blobs;
+using EPiServer.Security;
+using EPiServer.ServiceLocation;
+using EPiServer.Web;
+using inRiver.EPiServerCommerce.Interfaces;
+using log4net;
+using Mediachase.Commerce.Assets;
+using Mediachase.Commerce.Catalog;
+using Mediachase.Commerce.Catalog.Dto;
+using Mediachase.Commerce.Catalog.ImportExport;
+using Mediachase.Commerce.Catalog.Managers;
+using Mediachase.Commerce.Catalog.Objects;
 
 namespace inRiver.EPiServerCommerce.Nine.Importer
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Configuration;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Http;
-    using System.Xml.Linq;
-
-    using EPiServer;
-    using EPiServer.Commerce.Catalog.ContentTypes;
-    using EPiServer.Commerce.SpecializedProperties;
-    using EPiServer.Core;
-    using EPiServer.DataAbstraction;
-    using EPiServer.DataAccess;
-    using EPiServer.Framework.Blobs;
-    using EPiServer.Security;
-    using EPiServer.ServiceLocation;
-    using EPiServer.Web;
-
-    using inRiver.EPiServerCommerce.Interfaces;
-    using inRiver.EPiServerCommernce.Nine.Importer;
-    using inRiver.EPiServerCommernce.Nine.Importer.ResourceModels;
-
-    using log4net;
-
-    using Mediachase.Commerce.Assets;
-    using Mediachase.Commerce.Catalog;
-    using Mediachase.Commerce.Catalog.Dto;
-    using Mediachase.Commerce.Catalog.ImportExport;
-    using Mediachase.Commerce.Catalog.Managers;
-    using Mediachase.Commerce.Catalog.Objects;
-    using Mediachase.Commerce.Core;
-
     public class InriverDataImportController : SecuredApiController
     {
         private static readonly ILog Log = LogManager.GetLogger(typeof(InriverDataImportController));
@@ -992,7 +985,6 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
             }
         }
 
-        // TODO: Check if resources can be assigned to channel nodes (category in Commerce)
         private void ImportImageAndAttachToEntry(IInRiverImportResource inriverResource)
         {
             // Find existing resource
@@ -1066,94 +1058,6 @@ namespace inRiver.EPiServerCommerce.Nine.Importer
             }
         }
 
-        protected void AddOrUpdateMediaOnEntry(EntryCode entryCode, ContentReference linkToContent, CommerceMedia media)
-        {
-
-            IContentRepository contentRepository = this._contentRepository.Service;
-            ContentReference link = this._referenceConverter.Service.GetContentLink(entryCode.Code);
-
-            CatalogContentBase contentData = contentRepository.Get<CatalogContentBase>(link);
-            if (contentData != null)
-            {
-                IAssetContainer assetContainer = contentData as IAssetContainer;
-
-                if (assetContainer != null)
-                {
-                    CatalogContentBase writableClone = null;
-                    // Is it here already? Should be imported in previous step
-                    CommerceMedia existingMedia =
-                        assetContainer.CommerceMediaCollection.FirstOrDefault(m => m.AssetLink.Equals(linkToContent));
-                    if (existingMedia == null)
-                    {
-                        // Not attached to entry, add it
-                        writableClone = contentData.CreateWritableClone();
-                        assetContainer = writableClone as IAssetContainer;
-
-                        if (entryCode.IsMainPicture)
-                        {
-                            // Main picture should be first
-                            assetContainer.CommerceMediaCollection.Insert(0, media);
-                        }
-                        else
-                        {
-                            assetContainer.CommerceMediaCollection.Add(media);
-                        }
-                    }
-                    else
-                    {
-                        // We have it already, check it if should be main picture
-                        if (entryCode.IsMainPicture && existingMedia.SortOrder != 0)
-                        {
-                            writableClone = this.SetSortOrderOnMedia(contentData, linkToContent, 0);
-                        }
-                        else if (entryCode.IsMainPicture == false && existingMedia.SortOrder == 0)
-                        {
-                            // This means there is something odd with the sort order, we set it to something more than 0, 
-                            // so we have a real chance to set the main picture
-                            writableClone = this.SetSortOrderOnMedia(contentData, linkToContent, 1);
-                        }
-                    }
-
-                    if (writableClone != null)
-                    {
-                        VersionStatus status = writableClone.Status;
-                        SaveAction saveAction = status == VersionStatus.Published
-                            ? SaveAction.Publish
-                            : SaveAction.Save;
-                        saveAction = saveAction | SaveAction.ForceCurrentVersion;
-
-                        // Save what we changed
-                        this._contentRepository.Service.Save(writableClone, saveAction, AccessLevel.NoAccess);
-                    }
-                }
-            }
-        }
-
-        protected CatalogContentBase SetSortOrderOnMedia(CatalogContentBase contentData, ContentReference linkToContent, int sortOrder)
-        {
-            var writableClone = contentData.CreateWritableClone();
-            var assetContainer = writableClone as IAssetContainer;
-            // Look it up again, from the writable clone
-            var existingMedia = assetContainer.CommerceMediaCollection.FirstOrDefault(m => m.AssetLink.Equals(linkToContent));
-
-            Log.DebugFormat("Setting sort order to {0} with Episerver ID {1} on '{2}'", sortOrder, existingMedia.AssetLink, contentData.Name);
-            existingMedia.SortOrder = sortOrder;
-            return writableClone;
-        }
-
-        /// <summary>
-        /// Looks up a content reference based on it's guid or url
-        /// </summary>
-        /// <param name="assetId"></param>
-        /// <returns></returns>
-        private ContentReference GetAssetLink(Guid assetId)
-        {
-            PermanentContentLinkMap permanentContentLinkMap = this._permanentLinkMapper.Service.Find(assetId) as PermanentContentLinkMap;
-
-            if (permanentContentLinkMap == null)
-                return ContentReference.EmptyReference;
-            return permanentContentLinkMap.ContentReference;
-        }
 
         private void AddLinkToCatalogNode(MediaData contentMedia, CommerceMedia media, CatalogNodeDto catalogNodeDto, EntryCode entryCode)
         {

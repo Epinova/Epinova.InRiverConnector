@@ -1,19 +1,17 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Packaging;
+using System.Linq;
+using System.Xml.Linq;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    using System.IO;
-    using System.IO.Packaging;
-    using System.Linq;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public class DocumentFileHelper
     {
         public static void SaveDocument(string channelIdentifier, XDocument doc, Configuration config, string folderDateTime)
@@ -61,51 +59,6 @@
             ZipFile(filePath, fullZippedFileName);
 
             return fullZippedFileName;
-        }
-
-        public static void ZipDirectoryAndSubdirectory(string zippedFileName, Configuration configuration)
-        {
-            IntegrationLogger.Write(LogLevel.Debug, "Zipping resource directory");
-            Stopwatch dirZipStopWatch = new Stopwatch();
-            try
-            {
-                dirZipStopWatch.Start();
-                string directoryToZip = Path.Combine(configuration.ResourcesRootPath, "temp");
-                DirectoryInfo directoryInfo = new DirectoryInfo(directoryToZip);
-                string fullZippedFileName = Path.Combine(configuration.ResourcesRootPath, zippedFileName);
-                using (Package zip = Package.Open(fullZippedFileName, FileMode.Create))
-                {
-                    foreach (DirectoryInfo di in directoryInfo.GetDirectories())
-                    {
-                        foreach (FileInfo fi in di.GetFiles())
-                        {
-                            string destFilename = string.Format(".\\{0}\\{1}", di.Name, fi.Name);
-                            ZipFile(zip, fi, destFilename);
-                        }
-                    }
-
-                    foreach (FileInfo fi in directoryInfo.GetFiles())
-                    {
-                        if (fi.Name.Equals(zippedFileName))
-                        {
-                            continue;
-                        }
-
-                        string destFilename = string.Format(".\\{0}", fi.Name);
-                        ZipFile(zip, fi, destFilename);
-                    }
-                }
-
-                dirZipStopWatch.Stop();
-            }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error, "Exception in ZipDirectoryAndSubdirectoryAndRemoveFiles", ex);
-            }
-
-            IntegrationLogger.Write(
-                LogLevel.Information,
-                string.Format("Resource directory zipped, took {0}!", BusinessHelper.GetElapsedTimeFormated(dirZipStopWatch)));
         }
 
         public static void ZipFile(Package zip, FileInfo fi, string destFilename)

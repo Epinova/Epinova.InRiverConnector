@@ -1,10 +1,8 @@
-﻿namespace inRiver.EPiServerCommerce.MediaPublisher
+﻿using System.Collections.Generic;
+using inRiver.EPiServerCommerce.Interfaces;
+
+namespace inRiver.EPiServerCommerce.MediaPublisher
 {
-    using System;
-    using System.Collections.Generic;
-
-    using inRiver.EPiServerCommerce.Interfaces;
-
     /// <summary>
     /// Describes a resource coming from inRiver.
     /// </summary>
@@ -12,7 +10,7 @@
     {
         public InRiverImportResource()
         {
-            EntryCodes = new List<Interfaces.EntryCode>();
+            EntryCodes = new List<EntryCode>();
         }
 
         /// <summary>
@@ -22,11 +20,8 @@
 
         public List<string> Codes { get; set; } 
 
-        public List<Interfaces.EntryCode> EntryCodes { get; set; }
+        public List<EntryCode> EntryCodes { get; set; }
 
-        /// <summary>
-        /// 
-        /// </summary>
         public string Action { get; set; }
 
         public int ResourceId { get; set; }

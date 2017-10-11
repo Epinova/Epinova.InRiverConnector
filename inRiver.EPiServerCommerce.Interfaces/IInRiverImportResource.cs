@@ -1,8 +1,8 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces
-{
-    using System;
-    using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
+namespace inRiver.EPiServerCommerce.Interfaces
+{
     public interface IInRiverImportResource
     {
         /// <summary>

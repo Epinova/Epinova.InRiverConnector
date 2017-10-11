@@ -1,25 +1,20 @@
-﻿using System.Runtime.CompilerServices;
-using inRiver.Integration.Logging;
+﻿using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
+using inRiver.Remoting;
+using inRiver.Remoting.Objects;
 
 namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.Linq;
-    using System.Security.Cryptography;
-    using System.Text;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Objects;
-
     public class ChannelHelper
     {
-        #region Channel
-
         public static Guid GetChannelGuid(Entity channel, Configuration configuration)
         {
             string value = channel.Id.ToString(CultureInfo.InvariantCulture);
@@ -109,34 +104,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
             }
 
             return parentNodeId;
-        }
-
-        public static List<StructureEntity> GetAllParentChannelNodesAndChannel(int entityId, List<StructureEntity> channelEntities)
-        {
-            IList<StructureEntity> channelAndChannelNodes = new List<StructureEntity>();
-
-            foreach (StructureEntity structureEntity in channelEntities.FindAll(i => i.EntityId.Equals(entityId)))
-            {
-                List<int> entities =
-                    structureEntity.Path.Split(new[] { "/" }, StringSplitOptions.RemoveEmptyEntries)
-                        .ToList()
-                        .Select(int.Parse)
-                        .ToList();
-
-                foreach (StructureEntity se in channelEntities.FindAll(se => entities.Contains(se.EntityId)))
-                {
-                    if (se.Type.Equals("ChannelNode") && !channelAndChannelNodes.Contains(se))
-                    {
-                        channelAndChannelNodes.Add(se);
-                    }
-                    else if (se.Type.Equals("Channel") && !channelAndChannelNodes.Contains(se))
-                    {
-                        channelAndChannelNodes.Insert(0, se);
-                    }
-                }
-            }
-
-            return channelAndChannelNodes.ToList();
         }
 
         internal static List<StructureEntity> FindEntitiesElementInStructure(List<StructureEntity> channelEntities, int sourceEntityId, int targetEntityId, string linktype)
@@ -234,31 +201,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
             }
 
             return result;
-        }
-
-        public static List<StructureEntity> GetAllChannelStructureEntitiesFromPath(string path)
-        {
-            var result = new List<StructureEntity>();
-            if (!string.IsNullOrEmpty(path))
-            {
-                var response = RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(path);
-                if (response.Any())
-                {
-                    result.AddRange(response);
-                }
-            }
-
-            return result;
-        }
-
-        public static void AddEntityParentStructureEntity(int channelId, int sourceEntityId, List<StructureEntity> channelEntities)
-        {
-            List<StructureEntity> structureEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, sourceEntityId);
-
-            if (structureEntities.Any())
-            {
-                channelEntities.AddRange(structureEntities);
-            }
         }
 
         public static List<StructureEntity> GetStructureEntitiesForEntityInChannel(int channelId, int entityId)
@@ -464,9 +406,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
             return dictionary;
         }
 
-        #endregion
-
-        #region Inventory
 
         /*
          * Get Inventory data from the entity (Product, Item).  
@@ -582,8 +521,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 
             return (int)reservedQuantityField.Data;
         }
-
-        #endregion
 
         #region Pricing
 

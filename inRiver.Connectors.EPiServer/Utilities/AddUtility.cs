@@ -1,20 +1,18 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
+using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.Integration.Logging;
+using inRiver.Remoting.Connect;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
 {
-    using System;
-    using System.Collections.Generic;
-    using System.IO;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-    using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting.Connect;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public class AddUtility
     {
         private Configuration ConnectorConfig { get; set; }

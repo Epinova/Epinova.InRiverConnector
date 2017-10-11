@@ -1,22 +1,20 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
+﻿using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using System.Xml.Linq;
+using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
+using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
+using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using inRiver.Integration.Logging;
+using inRiver.Remoting;
+using inRiver.Remoting.Log;
+using inRiver.Remoting.Objects;
+
+namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Globalization;
-    using System.IO;
-    using System.Linq;
-    using System.Xml.Linq;
-
-    using inRiver.EPiServerCommerce.CommerceAdapter;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-    using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
-    using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-    using inRiver.Integration.Logging;
-    using inRiver.Remoting;
-    using inRiver.Remoting.Log;
-    using inRiver.Remoting.Objects;
-
     public class DeleteUtility
     {
         private Configuration DeleteUtilConfig { get; set; }
@@ -584,21 +582,6 @@
 
             if (deleteXml.Root != null && deleteXml.Root.Elements().FirstOrDefault(e => e.Name.LocalName == "entry") != null)
             {
-                string zippedCatName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, deleteXml, folderDateTime, this.DeleteUtilConfig);
-                IntegrationLogger.Write(LogLevel.Debug, "catalog saved");
-                EpiApi.SendHttpPost(this.DeleteUtilConfig, Path.Combine(this.DeleteUtilConfig.PublicationsRootPath, folderDateTime, zippedCatName));
-            }
-        }
-
-        public void DeleteLinkEntity(Entity channelEntity, int linkEntityId)
-        {
-            XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", "deleted")));
-
-            if (deleteXml.Root != null && deleteXml.Root.Elements().FirstOrDefault(e => e.Name.LocalName == "entry") != null)
-            {
-                string channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
-                string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
-
                 string zippedCatName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, deleteXml, folderDateTime, this.DeleteUtilConfig);
                 IntegrationLogger.Write(LogLevel.Debug, "catalog saved");
                 EpiApi.SendHttpPost(this.DeleteUtilConfig, Path.Combine(this.DeleteUtilConfig.PublicationsRootPath, folderDateTime, zippedCatName));

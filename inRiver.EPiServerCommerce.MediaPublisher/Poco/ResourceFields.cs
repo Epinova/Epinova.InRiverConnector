@@ -1,22 +1,12 @@
-using System;
-using System.ComponentModel;
-using System.Xml.Schema;
-using System.Xml.Serialization;
 using System.Collections.Generic;
-using System.Globalization;
+using System.Xml.Serialization;
 
-namespace inRiver.EPiServerCommerce.MediaPublisher
+namespace inRiver.EPiServerCommerce.MediaPublisher.Poco
 {
-	
 	public class ResourceFields
-	{
-		
+	{	
 		// ELEMENTS
 		[XmlElement("MetaField")]
 		public List<MetaField> MetaField { get; set; }
-		
-		// CONSTRUCTOR
-		public ResourceFields()
-		{}
 	}
 }

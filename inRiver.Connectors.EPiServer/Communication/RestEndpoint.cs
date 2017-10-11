@@ -1,14 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading;
+using inRiver.Remoting.Log;
+
 namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Configuration;
-    using System.Net.Http;
-    using System.Net.Http.Headers;
-    using System.Threading;
-
-    using inRiver.Remoting.Log;
-
     public class RestEndpoint<T>
     {
         private readonly string endpointAddress;
@@ -20,13 +19,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
         private readonly Dictionary<string, string> settingsDictionary;
 
         private readonly int timeout;
-
-        public RestEndpoint(string endpointAddress, string action)
-        {
-            this.action = action;
-            this.endpointAddress = this.ValidateEndpointAddress(endpointAddress);
-            this.timeout = 1;
-        }
 
         public RestEndpoint(Dictionary<string, string> settings, string action)
         {
@@ -61,11 +53,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 throw new ConfigurationErrorsException("Missing EPI_RESTTIMEOUT setting on connector. It needs to be defined to else the calls will fail. Please see the documentation.");
             }
-        }
-
-        public string Action
-        {
-            get { return this.action; }
         }
 
         public string GetUrl()

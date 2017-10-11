@@ -1,15 +1,15 @@
-﻿namespace inRiver.EPiServerCommerce.Nine.Importer
-{
-    using System;
-    using System.Configuration;
-    using System.Linq;
-    using System.Net;
-    using System.Net.Http;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using System.Web.Http;
-    using System.Web.Http.Controllers;
+﻿using System;
+using System.Configuration;
+using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web.Http;
+using System.Web.Http.Controllers;
 
+namespace inRiver.EPiServerCommerce.Nine.Importer
+{
     public class SecuredApiController : ApiController
     {
         private const string ApiKeyName = "apikey";
