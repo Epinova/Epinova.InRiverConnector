@@ -78,7 +78,9 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             Log.Debug("DeleteCatalogEntry");
             List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
-            int entryId, metaClassId, catalogId;
+            int entryId;
+            int metaClassId;
+            int catalogId;
 
             try
             {
@@ -93,7 +95,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 metaClassId = entry.MetaClassId;
                 catalogId = entry.CatalogId;
 
-                if (this.RunIDeleteActionsHandlers)
+                if (RunIDeleteActionsHandlers)
                 {
                     foreach (IDeleteActionsHandler handler in importerHandlers)
                     {
@@ -105,11 +107,11 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             catch (Exception ex)
             {
-                Log.Error(string.Format("Could not delete catalog entry with id: {0}", catalogEntryId), ex);
+                Log.Error($"Could not delete catalog entry with id: {catalogEntryId}", ex);
                 return false;
             }
 
-            if (this.RunIDeleteActionsHandlers)
+            if (RunIDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -126,7 +128,7 @@ namespace inRiver.EPiServerCommerce.Importer
             Log.Debug("DeleteCatalog");
             List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
-            if (this.RunIDeleteActionsHandlers)
+            if (RunIDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -140,11 +142,11 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             catch (Exception ex)
             {
-                Log.Error(string.Format("Could not delete catalog with id: {0}", catalogId), ex);
+                Log.Error($"Could not delete catalog with id: {catalogId}", ex);
                 return false;
             }
 
-            if (this.RunIDeleteActionsHandlers)
+            if (RunIDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -167,13 +169,13 @@ namespace inRiver.EPiServerCommerce.Importer
                 CatalogNode cn = CatalogContext.Current.GetCatalogNode(catalogNodeId);
                 if (cn == null || cn.CatalogNodeId == 0)
                 {
-                    Log.Error(string.Format("Could not find catalog node with id: {0}. No node is deleted", catalogNodeId));
+                    Log.Error($"Could not find catalog node with id: {catalogNodeId}. No node is deleted");
                     return false;
                 }
 
                 catalogId = cn.CatalogId;
                 nodeId = cn.CatalogNodeId;
-                if (this.RunIDeleteActionsHandlers)
+                if (RunIDeleteActionsHandlers)
                 {
                     foreach (IDeleteActionsHandler handler in importerHandlers)
                     {
@@ -185,11 +187,11 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             catch (Exception ex)
             {
-                Log.Error(string.Format("Could not delete catalogNode with id: {0}", catalogNodeId), ex);
+                Log.Error($"Could not delete catalogNode with id: {catalogNodeId}", ex);
                 return false;
             }
 
-            if (this.RunIDeleteActionsHandlers)
+            if (RunIDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -212,13 +214,13 @@ namespace inRiver.EPiServerCommerce.Importer
                     // Node exists
                     if (nodeDto.CatalogNode[0].ParentNodeId != 0)
                     {
-                        this.MoveNode(nodeDto.CatalogNode[0].Code, 0);
+                        MoveNode(nodeDto.CatalogNode[0].Code, 0);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Log.Error(string.Format("Could not CheckAndMoveNodeIfNeeded for catalogNode with id: {0}", catalogNodeId), ex);
+                Log.Error($"Could not CheckAndMoveNodeIfNeeded for catalogNode with id: {catalogNodeId}", ex);
                 return false;
             }
 
@@ -262,7 +264,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 int catalogId = FindCatalogByName(updateEntryRelationData.ChannelName);
                 CatalogEntryDto ced = CatalogContext.Current.GetCatalogEntryDto(updateEntryRelationData.CatalogEntryIdString);
                 CatalogEntryDto ced2 = CatalogContext.Current.GetCatalogEntryDto(updateEntryRelationData.ParentEntryId);
-                Log.Debug(string.Format("UpdateEntryRelations called for catalog {0} between {1} and {2}", catalogId, updateEntryRelationData.ParentEntryId, updateEntryRelationData.CatalogEntryIdString));
+                Log.Debug($"UpdateEntryRelations called for catalog {catalogId} between {updateEntryRelationData.ParentEntryId} and {updateEntryRelationData.CatalogEntryIdString}");
 
                 // See if channelnode
                 CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(updateEntryRelationData.CatalogEntryIdString);
@@ -303,7 +305,7 @@ namespace inRiver.EPiServerCommerce.Importer
                     {
                         CatalogNode associationNode = CatalogContext.Current.GetCatalogNode(updateEntryRelationData.InRiverAssociationsEpified);
 
-                        this.MoveNode(nodeDto.CatalogNode[0].Code, associationNode.CatalogNodeId);
+                        MoveNode(nodeDto.CatalogNode[0].Code, associationNode.CatalogNodeId);
                     }
                 }
 
@@ -456,7 +458,7 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             catch (Exception e)
             {
-                Log.Error(string.Format("Could not GetLinkEntityAssociationsForEntity for parentIds: {0}", data.ParentIds), e);
+                Log.Error($"Could not GetLinkEntityAssociationsForEntity for parentIds: {data.ParentIds}", e);
             }
 
             return ids;
@@ -482,13 +484,13 @@ namespace inRiver.EPiServerCommerce.Importer
                            ImportStatusContainer.Instance.IsImporting = true;
 
                            List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
-                           if (catalogImportHandlers.Any() && this.RunICatalogImportHandlers)
+                           if (catalogImportHandlers.Any() && RunICatalogImportHandlers)
                            {
-                               this.ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
+                               ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
                            }
                            else
                            {
-                               this.ImportCatalogXmlFromPath(path);
+                               ImportCatalogXmlFromPath(path);
                            }
                        }
                        catch (Exception ex)
@@ -531,9 +533,9 @@ namespace inRiver.EPiServerCommerce.Importer
                             ImportStatusContainer.Instance.Message = "importing";
                             ImportStatusContainer.Instance.IsImporting = true;
 
-                            List<IResourceImporterHandler> importerHandlers =
-                                ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
-                            if (this.RunIResourceImporterHandlers)
+                            List<IResourceImporterHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
+
+                            if (RunIResourceImporterHandlers)
                             {
                                 foreach (IResourceImporterHandler handler in importerHandlers)
                                 {
@@ -553,7 +555,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
                                         try
                                         {
-                                            MediaData existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(resource.ResourceId));
+                                            MediaData existingMediaData = _contentRepository.Get<MediaData>(EntityIdToGuid(resource.ResourceId));
                                             if (existingMediaData != null)
                                             {
                                                 found = true;
@@ -561,39 +563,29 @@ namespace inRiver.EPiServerCommerce.Importer
                                         }
                                         catch (Exception)
                                         {
-                                            Log.DebugFormat(
-                                                "Waiting ({1}/10) for resource {0} to be ready.",
-                                                resource.ResourceId,
-                                                count);
+                                            Log.DebugFormat("Waiting ({1}/10) for resource {0} to be ready.", resource.ResourceId, count);
                                             Thread.Sleep(500);
                                         }
                                     }
 
-                                    Log.DebugFormat(
-                                        "Working with resource {0} from {1} with action: {2}",
-                                        resource.ResourceId,
-                                        resource.Path,
-                                        resource.Action);
+                                    Log.DebugFormat("Working with resource {0} from {1} with action: {2}", resource.ResourceId, resource.Path, resource.Action);
 
                                     if (resource.Action == "added" || resource.Action == "updated")
                                     {
-                                        this.ImportImageAndAttachToEntry(resource);
+                                        ImportImageAndAttachToEntry(resource);
                                     }
                                     else if (resource.Action == "deleted")
                                     {
                                         Log.DebugFormat("Got delete action for resource id: {0}.", resource.ResourceId);
-                                        this.HandleDelete(resource);
+                                        HandleDelete(resource);
                                     }
                                     else if (resource.Action == "unlinked")
                                     {
-                                        this.HandleUnlink(resource);
+                                        HandleUnlink(resource);
                                     }
                                     else
                                     {
-                                        Log.DebugFormat(
-                                            "Got unknown action for resource id: {0}, {1}",
-                                            resource.ResourceId,
-                                            resource.Action);
+                                        Log.DebugFormat("Got unknown action for resource id: {0}, {1}", resource.ResourceId, resource.Action);
                                     }
                                 }
                             }
@@ -607,7 +599,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
                             Log.DebugFormat("Imported {0} resources", resources.Count());
 
-                            if (this.RunIResourceImporterHandlers)
+                            if (RunIResourceImporterHandlers)
                             {
                                 foreach (IResourceImporterHandler handler in importerHandlers)
                                 {
@@ -634,7 +626,7 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             try
             {
-                if (this.RunIInRiverEventsHandlers)
+                if (RunIInRiverEventsHandlers)
                 {
                     IEnumerable<IInRiverEventsHandler> eventsHandlers = ServiceLocator.Current.GetAllInstances<IInRiverEventsHandler>();
                     foreach (IInRiverEventsHandler handler in eventsHandlers)
@@ -642,11 +634,7 @@ namespace inRiver.EPiServerCommerce.Importer
                         handler.ImportUpdateCompleted(data.CatalogName, data.EventType, data.ResourcesIncluded);
                     }
 
-                    Log.DebugFormat(
-                        "*** ImportUpdateCompleted events with parameters CatalogName={0}, EventType={1}, ResourcesIncluded={2}",
-                        data.CatalogName,
-                        data.EventType,
-                        data.ResourcesIncluded);
+                    Log.DebugFormat("*** ImportUpdateCompleted events with parameters CatalogName={0}, EventType={1}, ResourcesIncluded={2}", data.CatalogName, data.EventType, data.ResourcesIncluded);
                 }
 
                 return true;
@@ -663,7 +651,7 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             try
             {
-                if (this.RunIInRiverEventsHandlers)
+                if (RunIInRiverEventsHandlers)
                 {
                     IEnumerable<IInRiverEventsHandler> eventsHandlers = ServiceLocator.Current.GetAllInstances<IInRiverEventsHandler>();
                     foreach (IInRiverEventsHandler handler in eventsHandlers)
@@ -713,21 +701,17 @@ namespace inRiver.EPiServerCommerce.Importer
         /// </remarks>
         protected ContentReference GetInRiverResourceFolder()
         {
-            ContentReference rootInRiverFolder =
-                ContentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, "inRiver");
-            ContentReference resourceRiverFolder =
-                ContentFolderCreator.CreateOrGetFolder(rootInRiverFolder, "Resources");
+            ContentReference rootInRiverFolder = ContentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, "inRiver");
+            ContentReference resourceRiverFolder = ContentFolderCreator.CreateOrGetFolder(rootInRiverFolder, "Resources");
             return resourceRiverFolder;
         }
 
         private void MoveNode(string nodeCode, int newParent)
         {
-            CatalogNodeDto catalogNodeDto = CatalogContext.Current.GetCatalogNodeDto(
-                nodeCode,
-                new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.CatalogNodeFull));
+            CatalogNodeDto catalogNodeDto = CatalogContext.Current.GetCatalogNodeDto(nodeCode, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.CatalogNodeFull));
 
             // Move node to new parent
-            Log.Debug(string.Format("Move {0} to new parent ({1}).", nodeCode, newParent));
+            Log.Debug($"Move {nodeCode} to new parent ({newParent}).");
             catalogNodeDto.CatalogNode[0].ParentNodeId = newParent;
             CatalogContext.Current.SaveCatalogNode(catalogNodeDto);
         }
@@ -736,22 +720,15 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             Log.Info("Starting importing the xml into EPiServer Commerce.");
             CatalogImportExport cie = new CatalogImportExport();
-            cie.ImportExportProgressMessage += this.ProgressHandler;
+            cie.ImportExportProgressMessage += ProgressHandler;
             cie.Import(path, true);
             Log.Info("Done importing the xml into EPiServer Commerce.");
         }
 
         private void ImportCatalogXmlWithHandlers(string filePath, List<ICatalogImportHandler> catalogImportHandlers)
         {
-            // Read catalog xml to allow handlers to work on it
-            // NOTE! If it is very large, it might consume alot of memory.
-            // The catalog xml import reads in chunks, so we might impose
-            // a memory problem here for the really large catalogs.
-            // The benefit outweighs the problem.
-
             try
             {
-                // The handlers might have changed the xml, so we pass it on
                 string originalFileName = Path.GetFileNameWithoutExtension(filePath);
                 string filenameBeforePreImport = originalFileName + "-beforePreImport.xml";
 
@@ -786,7 +763,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 fs.Dispose();
 
                 CatalogImportExport cie = new CatalogImportExport();
-                cie.ImportExportProgressMessage += this.ProgressHandler;
+                cie.ImportExportProgressMessage += ProgressHandler;
 
                 cie.Import(directoryPath, true);
 
@@ -817,9 +794,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
         private void ProgressHandler(object source, ImportExportEventArgs args)
         {
-            string message = args.Message;
-            double progress = args.CompletedPercentage;
-            Log.Debug(string.Format("{0}", message));
+            Log.Debug($"{args.Message}");
         }
 
         private void HandleUnlink(IInRiverImportResource inriverResource)
@@ -827,7 +802,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception)
             {
@@ -847,7 +822,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception)
             {
@@ -861,7 +836,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
             List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
-            if (this.RunIDeleteActionsHandlers)
+            if (RunIDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -871,7 +846,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
             _contentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
 
-            if (this.RunIDeleteActionsHandlers)
+            if (RunIDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -882,16 +857,14 @@ namespace inRiver.EPiServerCommerce.Importer
 
         private void ImportImageAndAttachToEntry(IInRiverImportResource inriverResource)
         {
-            // Find existing resource
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(this.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception ex)
             {
-                Log.Debug(string.Format("Didn't find resource with Resource ID: {0}", inriverResource.ResourceId));
-                Log.DebugFormat("Didn't find resource with Resource ID: {0}", inriverResource.ResourceId);
+                Log.Debug($"Didn't find resource with Resource ID: {inriverResource.ResourceId}");
             }
 
             try
@@ -900,20 +873,20 @@ namespace inRiver.EPiServerCommerce.Importer
                 {
                     Log.DebugFormat("Found existing resource with Resource ID: {0}", inriverResource.ResourceId);
 
-                    this.UpdateMetaData((IInRiverResource)existingMediaData, inriverResource);
+                    UpdateMetaData((IInRiverResource)existingMediaData, inriverResource);
 
                     if (inriverResource.Action == "added")
                     {
-                        this.AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
+                        AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
                     }
 
                     return;
                 }
 
                 ContentReference contentReference;
-                existingMediaData = this.CreateNewFile(out contentReference, inriverResource);
+                existingMediaData = CreateNewFile(out contentReference, inriverResource);
 
-                this.AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
+                AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
             }
             catch (Exception exception)
             {
@@ -933,17 +906,17 @@ namespace inRiver.EPiServerCommerce.Importer
             {
                 // AddOrUpdateMediaOnEntry(entryCode, linkToContent, media);
 
-                CatalogEntryDto catalogEntry = this.GetCatalogEntryDto(entryCode.Code);
+                CatalogEntryDto catalogEntry = GetCatalogEntryDto(entryCode.Code);
                 if (catalogEntry != null)
                 {
-                    this.AddLinkToCatalogEntry(contentMedia, media, catalogEntry, entryCode);
+                    AddLinkToCatalogEntry(contentMedia, media, catalogEntry, entryCode);
                 }
                 else
                 {
-                    CatalogNodeDto catalogNodeDto = this.GetCatalogNodeDto(entryCode.Code);
+                    CatalogNodeDto catalogNodeDto = GetCatalogNodeDto(entryCode.Code);
                     if (catalogNodeDto != null)
                     {
-                        this.AddLinkToCatalogNode(contentMedia, media, catalogNodeDto, entryCode);
+                        AddLinkToCatalogNode(contentMedia, media, catalogNodeDto, entryCode);
                     }
                     else
                     {
@@ -987,7 +960,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 assetService.CommitAssetsToNode(list, catalogNodeDto);
 
                 // NOTE! Truncates version history
-                this._catalogSystem.SaveCatalogNode(catalogNodeDto);
+                _catalogSystem.SaveCatalogNode(catalogNodeDto);
             }
         }
 
@@ -1026,7 +999,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 assetService.CommitAssetsToEntry(list, catalogEntry);
 
                 // NOTE! Truncates version history
-                this._catalogSystem.SaveCatalogEntry(catalogEntry);
+                _catalogSystem.SaveCatalogEntry(catalogEntry);
             }
             else
             {
@@ -1065,7 +1038,7 @@ namespace inRiver.EPiServerCommerce.Importer
                     if (needsSave == true)
                     {
                         // Since we're not adding or deleting anything from the list, we don't have to "CommitAssetsToEntry", just save
-                        this._catalogSystem.SaveCatalogEntry(catalogEntry);
+                        _catalogSystem.SaveCatalogEntry(catalogEntry);
                     }
                 }
             }
@@ -1073,7 +1046,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
         private CatalogEntryDto GetCatalogEntryDto(string code)
         {
-            CatalogEntryDto catalogEntry = this._catalogSystem.GetCatalogEntryDto(code, new CatalogEntryResponseGroup(CatalogEntryResponseGroup.ResponseGroup.Assets));
+            CatalogEntryDto catalogEntry = _catalogSystem.GetCatalogEntryDto(code, new CatalogEntryResponseGroup(CatalogEntryResponseGroup.ResponseGroup.Assets));
             if (catalogEntry == null || catalogEntry.CatalogEntry.Count <= 0)
             {
                 return null;
@@ -1084,7 +1057,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
         private CatalogNodeDto GetCatalogNodeDto(string code)
         {
-            CatalogNodeDto catalogNodeDto = this._catalogSystem.GetCatalogNodeDto(code, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.Assets));
+            CatalogNodeDto catalogNodeDto = _catalogSystem.GetCatalogNodeDto(code, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.Assets));
             if (catalogNodeDto == null || catalogNodeDto.CatalogNode.Count <= 0)
             {
                 return null;
@@ -1127,7 +1100,6 @@ namespace inRiver.EPiServerCommerce.Importer
             ResourceMetaField resourceFileId = updatedResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
             if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
             {
-                // Update binary information
                 IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
 
                 FileInfo fileInfo = new FileInfo(updatedResource.Path);
@@ -1145,18 +1117,15 @@ namespace inRiver.EPiServerCommerce.Importer
                     fileStream.CopyTo(s);
                 }
 
-                // Assign to file and publish changes
                 editableMediaData.BinaryData = blob;
 
                 string rawFilename = null;
                 if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
                 {
-                    // Change the filename.
                     rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
                 }
                 else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
                 {
-                    // Change the fileId.
                     rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
                 }
 
@@ -1200,7 +1169,7 @@ namespace inRiver.EPiServerCommerce.Importer
             }
 
             ContentType contentType = null;
-            IEnumerable<Type> mediaTypes = mediaDataResolver.ListAllMatching(ext); // .GetFirstMatching(ext);
+            IEnumerable<Type> mediaTypes = mediaDataResolver.ListAllMatching(ext);
 
             foreach (Type type in mediaTypes)
             {
@@ -1216,12 +1185,9 @@ namespace inRiver.EPiServerCommerce.Importer
                 contentType = contentTypeRepository.Load(typeof(InRiverGenericMedia));
             }
 
-            // Get new empty file data instance in the media folder for inRiver Resource
-            // TODO: Place resource inside a sub folder, but we need to organize the folder structure.
-            MediaData newFile = _contentRepository.GetDefault<MediaData>(this.GetInRiverResourceFolder(), contentType.ID);
+            MediaData newFile = _contentRepository.GetDefault<MediaData>(GetInRiverResourceFolder(), contentType.ID);
             if (resourceWithoutFile)
             {
-                // find name
                 ResourceMetaField resourceName = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceName");
                 if (resourceName != null && !string.IsNullOrEmpty(resourceName.Values.First().Data))
                 {
@@ -1237,7 +1203,6 @@ namespace inRiver.EPiServerCommerce.Importer
                 newFile.Name = fileInfo.Name;
             }
 
-            // This cannot fail
             IInRiverResource resource = (IInRiverResource)newFile;
 
             if (resourceFileId != null && fileInfo != null)
@@ -1259,7 +1224,6 @@ namespace inRiver.EPiServerCommerce.Importer
 
             if (!resourceWithoutFile)
             {
-                // Create a blob in the binary container (folder)
                 Blob blob = blobFactory.CreateBlob(newFile.BinaryDataContainer, ext);
                 using (Stream s = blob.OpenWrite())
                 {
@@ -1267,11 +1231,10 @@ namespace inRiver.EPiServerCommerce.Importer
                     fileStream.CopyTo(s);
                 }
 
-                // Assign to file and publish changes
                 newFile.BinaryData = blob;
             }
 
-            newFile.ContentGuid = this.EntityIdToGuid(inriverResource.ResourceId);
+            newFile.ContentGuid = EntityIdToGuid(inriverResource.ResourceId);
             try
             {
                 contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
