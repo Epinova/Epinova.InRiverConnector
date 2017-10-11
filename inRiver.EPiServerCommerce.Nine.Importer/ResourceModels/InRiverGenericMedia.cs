@@ -3,7 +3,7 @@ using EPiServer.Core;
 using EPiServer.DataAnnotations;
 using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Nine.Importer.ResourceModels
+namespace inRiver.EPiServerCommerce.Importer.ResourceModels
 {
     /// <summary>
     /// This media type will be used if there is no more specific type

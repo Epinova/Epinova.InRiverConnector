@@ -1,6 +1,4 @@
-﻿using EPiServer.Web.Internal;
-using inRiver.EPiServerCommerce.Nine.Importer.ResourceModels;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Globalization;
@@ -20,6 +18,8 @@ using EPiServer.Framework.Blobs;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
+using EPiServer.Web.Internal;
+using inRiver.EPiServerCommerce.Importer.ResourceModels;
 using inRiver.EPiServerCommerce.Interfaces;
 using log4net;
 using Mediachase.Commerce.Assets;
@@ -29,7 +29,7 @@ using Mediachase.Commerce.Catalog.ImportExport;
 using Mediachase.Commerce.Catalog.Managers;
 using Mediachase.Commerce.Catalog.Objects;
 
-namespace inRiver.EPiServerCommerce.Nine.Importer
+namespace inRiver.EPiServerCommerce.Importer
 {
     public class InriverDataImportController : SecuredApiController
     {

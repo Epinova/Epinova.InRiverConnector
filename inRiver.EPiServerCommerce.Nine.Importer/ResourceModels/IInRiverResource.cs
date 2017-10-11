@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using EPiServer.Core;
 using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Nine.Importer.ResourceModels
+namespace inRiver.EPiServerCommerce.Importer.ResourceModels
 {
     public interface IInRiverResource : IContentData
     {

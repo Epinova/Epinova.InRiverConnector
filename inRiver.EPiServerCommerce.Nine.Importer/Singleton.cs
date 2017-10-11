@@ -1,4 +1,4 @@
-﻿namespace inRiver.EPiServerCommerce.Nine.Importer
+﻿namespace inRiver.EPiServerCommerce.Importer
 {
     public class Singleton
     {

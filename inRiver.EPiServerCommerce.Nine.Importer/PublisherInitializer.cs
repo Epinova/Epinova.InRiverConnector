@@ -1,10 +1,9 @@
-﻿namespace inRiver.EPiServerCommerce.Nine.Importer
+﻿using System.Web.Http;
+using EPiServer.Framework;
+using EPiServer.Framework.Initialization;
+
+namespace inRiver.EPiServerCommerce.Importer
 {
-    using System.Web.Http;
-
-    using EPiServer.Framework;
-    using EPiServer.Framework.Initialization;
-
     [InitializableModule]
     [ModuleDependency(typeof(EPiServer.Web.InitializationModule))]
     public class PublisherInitializer : IInitializableModule

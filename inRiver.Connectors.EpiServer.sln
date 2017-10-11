@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.I
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.MediaPublisher", "inRiver.EPiServerCommerce.MediaPublisher\inRiver.EPiServerCommerce.MediaPublisher.csproj", "{A7BD66BD-1010-42BA-99FA-D9B1E1ADC583}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.Nine.Importer", "inRiver.EPiServerCommerce.Nine.Importer\inRiver.EPiServerCommerce.Nine.Importer.csproj", "{CF5F6052-CB46-44CE-9272-E7D05720BF3A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.Importer", "inRiver.EPiServerCommerce.Nine.Importer\inRiver.EPiServerCommerce.Importer.csproj", "{CF5F6052-CB46-44CE-9272-E7D05720BF3A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Nine.Importer
+namespace inRiver.EPiServerCommerce.Importer
 {
     /// <summary>
     /// Describes a resource coming from inRiver.
