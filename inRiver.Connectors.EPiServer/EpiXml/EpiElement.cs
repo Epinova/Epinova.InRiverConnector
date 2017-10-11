@@ -202,98 +202,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 
             return seoInfo;
         }
-
-        // <Inventory>
-        //  <AllowBackorder>True</AllowBackorder>
-        //  <AllowPreorder>True</AllowPreorder>
-        //  <BackorderAvailabilityDate>2020-01-04 02:00:00Z</BackorderAvailabilityDate>
-        //  <BackorderQuantity>6</BackorderQuantity>
-        //  <InStockQuantity>10</InStockQuantity>
-        //  <InventoryStatus>1</InventoryStatus>
-        //  <PreorderAvailabilityDate>2010-09-01 16:00:00Z</PreorderAvailabilityDate>
-        //  <PreorderQuantity>4</PreorderQuantity>
-        //  <ReorderMinQuantity>3</ReorderMinQuantity>
-        //  <ReservedQuantity>2</ReservedQuantity>
-        // </Inventory>
-        public static XElement CreateInventoryInfoElement(Entity entity, Configuration config)
-        {
-            if (!config.ExportInventoryData)
-            {
-                return new XElement("Inventory");
-            }
-
-            XElement inventoryInfo = new XElement("Inventory");
-
-            string allowBackorder = ChannelHelper.GetEntityAllowBackorder(entity, config).ToString();
-            string allowPreorder = ChannelHelper.GetEntityAllowPreorder(entity, config).ToString();
-            string backorderAvailabilityDate = ChannelHelper.GetEntityBackorderAvailabilityDate(entity, config).ToString("u");
-            string backorderQuantity = ChannelHelper.GetEntityBackorderQuantity(entity, config).ToString(CultureInfo.InvariantCulture);
-            string instockQuantity = ChannelHelper.GetEntityInStockQuantity(entity, config).ToString(CultureInfo.InvariantCulture);
-            string inventoryStatus = ChannelHelper.GetEntityInventoryStatus(entity, config).ToString(CultureInfo.InvariantCulture);
-            string preorderAvailabilityDate = ChannelHelper.GetEntityPreorderAvailabilityDate(entity, config).ToString("u");
-            string preorderQuantity = ChannelHelper.GetEntityPreorderQuantity(entity, config).ToString(CultureInfo.InvariantCulture);
-            string reorderMinQuantity = ChannelHelper.GetEntityReorderMinQuantity(entity, config).ToString(CultureInfo.InvariantCulture);
-            string reservedQuantity = ChannelHelper.GetEntityReservedQuantity(entity, config).ToString(CultureInfo.InvariantCulture);
-
-            inventoryInfo.Add(
-                new XElement("AllowBackorder", allowBackorder),
-                new XElement("AllowPreorder", allowPreorder),
-                new XElement("BackorderAvailabilityDate", backorderAvailabilityDate),
-                new XElement("BackorderQuantity", backorderQuantity),
-                new XElement("InStockQuantity", instockQuantity),
-                new XElement("InventoryStatus", inventoryStatus),
-                new XElement("PreorderAvailabilityDate", preorderAvailabilityDate),
-                new XElement("PreorderQuantity", preorderQuantity),
-                new XElement("ReorderMinQuantity", reorderMinQuantity),
-                new XElement("ReservedQuantity", reservedQuantity));
-
-            return inventoryInfo;
-        }
-
-        // <Prices>
-        //  <Price>
-        //    <MarketId>DEFAULT</MarketId>
-        //    <CurrencyCode>USD</CurrencyCode>
-        //    <PriceTypeId>0</PriceTypeId>
-        //    <PriceCode/>
-        //    <ValidFrom>1900-01-01 00:00:00Z</ValidFrom>
-        //    <ValidUntil/>
-        //    <MinQuantity>0.000000000</MinQuantity>
-        //    <UnitPrice>1000.0000</UnitPrice>
-        //  </Price>
-        // </Prices>
-        public static XElement CreatePriceInfoElement(Entity entity, Configuration config)
-        {
-            if (!config.ExportPricingData)
-            {
-                return new XElement("Prices");
-            }
-
-            XElement priceInfo = new XElement("Prices");
-
-            string marketId = ChannelHelper.GetEntityMarketId(entity, config);
-            string currencyCode = ChannelHelper.GetEntityCurrencyCode(entity, config);
-            string priceTypeId = ChannelHelper.GetEntityPriceTypeId(entity, config).ToString(CultureInfo.InvariantCulture);
-            string priceCode = ChannelHelper.GetEntityPriceCode(entity, config);
-            string validFrom = ChannelHelper.GetEntityValidFrom(entity, config).ToString("u");
-            string validUntil = ChannelHelper.GetEntityValidUntil(entity, config).ToString("u");
-            string minQuantity = ChannelHelper.GetEntityMinQuantity(entity, config).ToString(CultureInfo.InvariantCulture);
-            string unitPrice = ChannelHelper.GetEntityUnitPrice(entity, config).ToString(CultureInfo.InvariantCulture);
-
-            priceInfo.Add(
-                new XElement(
-                    "Price",
-                    new XElement("MarketId", marketId),
-                    new XElement("CurrencyCode", currencyCode),
-                    new XElement("PriceTypeId", priceTypeId),
-                    new XElement("PriceCode", priceCode),
-                    new XElement("ValidFrom", validFrom),
-                    new XElement("ValidUntil", validUntil),
-                    new XElement("MinQuantity", minQuantity),
-                    new XElement("UnitPrice", unitPrice)));
-            return priceInfo;
-        }
-
+        
         public static XElement InRiverEntityToEpiEntry(Entity entity, Configuration config)
         {
             return new XElement(
@@ -316,9 +225,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                         from f in entity.Fields
                         where UseField(entity, f) && !EpiMappingHelper.SkipField(f.FieldType, config)
                         select InRiverFieldToMetaField(f, config))),
-                        CreateSEOInfoElement(entity, config),
-                        CreateInventoryInfoElement(entity, config),
-                        CreatePriceInfoElement(entity, config));
+                        CreateSEOInfoElement(entity, config)
+                        );
         }
 
         private static Guid GetChannelEntityGuid(int channelId, int entityId)

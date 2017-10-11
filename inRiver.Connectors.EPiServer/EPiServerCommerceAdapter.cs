@@ -57,13 +57,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 return;
             }
 
-            string epiMajorVersionVerification = ConfigurationManager.Instance.GetSetting(this.Id, "EPI_MAJOR_VERSION");
-
-            if (string.IsNullOrEmpty(epiMajorVersionVerification))
-            {
-                ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_MAJOR_VERSION", "9");
-            }
-
             base.Start();
             this.started = true;
             ConnectorEventHelper.UpdateConnectorEvent(connectorEvent, "Connector has started", 100);
@@ -90,8 +83,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "RESOURCE_PROVIDER_TYPE", "inRiver.EPiServerCommerce.MediaPublisher.Importer, inRiver.EPiServerCommerce.MediaPublisher");
 
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "CHANNEL_ID", "123");
-            ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EXPORT_INVENTORY_DATA", "false");
-            ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EXPORT_PRICING_DATA", "false");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_CODE_FIELDS", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EXCLUDE_FIELDS", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_NAME_FIELDS", string.Empty);
@@ -103,7 +94,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_APIKEY", "SomeGreatKey123");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_RESTTIMEOUT", "1");
 
-            ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_MAJOR_VERSION", "9");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "BATCH_SIZE", string.Empty);
         }
 
