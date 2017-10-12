@@ -3,5 +3,7 @@
     public interface ICatalogImporter
     {
         void DeleteCatalogEntry(string code);
+
+        void DeleteCatalog(int catalogId);
     }
 }

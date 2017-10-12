@@ -15,6 +15,7 @@ using EPiServer.Core;
 using EPiServer.DataAbstraction;
 using EPiServer.DataAccess;
 using EPiServer.Framework.Blobs;
+using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
@@ -29,6 +30,7 @@ using Mediachase.Commerce.Catalog.Dto;
 using Mediachase.Commerce.Catalog.ImportExport;
 using Mediachase.Commerce.Catalog.Managers;
 using Mediachase.Commerce.Catalog.Objects;
+using LogManager = log4net.LogManager;
 
 namespace inRiver.EPiServerCommerce.Importer
 {
@@ -38,16 +40,19 @@ namespace inRiver.EPiServerCommerce.Importer
         private readonly IContentRepository _contentRepository;
         private readonly ReferenceConverter _referenceConverter;
         private readonly ICatalogImporter _catalogImporter;
+        private readonly ILogger _logger;
 
         public InriverDataImportController(ICatalogSystem catalogSystem, 
                                            IContentRepository contentRepository, 
                                            ReferenceConverter referenceConverter, 
-                                           ICatalogImporter catalogImporter)
+                                           ICatalogImporter catalogImporter,
+                                           ILogger logger)
         {
             _catalogSystem = catalogSystem;
             _contentRepository = contentRepository;
             _referenceConverter = referenceConverter;
             _catalogImporter = catalogImporter;
+            _logger = logger;
         }
 
         private static readonly ILog Log = LogManager.GetLogger(typeof(InriverDataImportController));
@@ -70,14 +75,15 @@ namespace inRiver.EPiServerCommerce.Importer
         [HttpPost]
         public bool DeleteCatalogEntry([FromBody] string catalogEntryId)
         {
-            Log.Debug("DeleteCatalogEntry");
+            _logger.Debug("DeleteCatalogEntry");
 
             try
             {
                 _catalogImporter.DeleteCatalogEntry(catalogEntryId);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.Error($"Could not delete catalog entry with code {catalogEntryId}", ex);
                 return false;
             }
 
@@ -87,33 +93,16 @@ namespace inRiver.EPiServerCommerce.Importer
         [HttpPost]
         public bool DeleteCatalog([FromBody] int catalogId)
         {
-            Log.Debug("DeleteCatalog");
-            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
-
-            if (RunIDeleteActionsHandlers)
-            {
-                foreach (IDeleteActionsHandler handler in importerHandlers)
-                {
-                    handler.PreDeleteCatalog(catalogId);
-                }
-            }
-
+            _logger.Debug("DeleteCatalog");
+            
             try
             {
-                CatalogContext.Current.DeleteCatalog(catalogId);
+                _catalogImporter.DeleteCatalog(catalogId);
             }
             catch (Exception ex)
             {
                 Log.Error($"Could not delete catalog with id: {catalogId}", ex);
                 return false;
-            }
-
-            if (RunIDeleteActionsHandlers)
-            {
-                foreach (IDeleteActionsHandler handler in importerHandlers)
-                {
-                    handler.PostDeleteCatalog(catalogId);
-                }
             }
 
             return true;

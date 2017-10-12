@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
+using System.Web.Http;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Logging;
@@ -42,38 +43,54 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             List<IDeleteActionsHandler> deleteHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
-            try
+            var contentReference = _referenceConverter.GetContentLink(code);
+            var entry = _contentRepository.Get<EntryContentBase>(contentReference);
+
+            if (entry == null)
             {
-                var contentReference = _referenceConverter.GetContentLink(code);
-                var entry = _contentRepository.Get<EntryContentBase>(contentReference);
-
-                if (entry == null)
+                _logger.Warning($"Could not find catalog entry with id: {code}. No entry is deleted");
+                return;
+            }
+            if (RunIDeleteActionsHandlers)
+            {
+                foreach (IDeleteActionsHandler handler in deleteHandlers)
                 {
-                    _logger.Warning($"Could not find catalog entry with id: {code}. No entry is deleted");
-                    return;
-                }
-                if (RunIDeleteActionsHandlers)
-                {
-                    foreach (IDeleteActionsHandler handler in deleteHandlers)
-                    {
-                        handler.PreDeleteCatalogEntry(entry);
-                    }
-                }
-
-                _contentRepository.Delete(entry.ContentLink, true);
-
-                if (RunIDeleteActionsHandlers)
-                {
-                    foreach (IDeleteActionsHandler handler in deleteHandlers)
-                    {
-                        handler.PostDeleteCatalogEntry(entry);
-                    }
+                    handler.PreDeleteCatalogEntry(entry);
                 }
             }
-            catch (Exception ex)
+
+            _contentRepository.Delete(entry.ContentLink, true);
+
+            if (RunIDeleteActionsHandlers)
             {
-                _logger.Error($"Could not delete catalog entry with code {code}", ex);
-                throw;
+                foreach (IDeleteActionsHandler handler in deleteHandlers)
+                {
+                    handler.PostDeleteCatalogEntry(entry);
+                }
+            }
+        }
+
+        public void DeleteCatalog(int catalogId)
+        {
+            _logger.Debug("DeleteCatalog");
+            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
+
+            if (RunIDeleteActionsHandlers)
+            {
+                foreach (IDeleteActionsHandler handler in importerHandlers)
+                {
+                    handler.PreDeleteCatalog(catalogId);
+                }
+            }
+
+            CatalogContext.Current.DeleteCatalog(catalogId);
+          
+            if (RunIDeleteActionsHandlers)
+            {
+                foreach (IDeleteActionsHandler handler in importerHandlers)
+                {
+                    handler.PostDeleteCatalog(catalogId);
+                }
             }
         }
     }
