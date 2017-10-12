@@ -5,6 +5,7 @@ using System.Net;
 using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
 using inRiver.EPiServerCommerce.Interfaces;
 using inRiver.EPiServerCommerce.Interfaces.Enums;
+using inRiver.EPiServerCommerce.MediaPublisher;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
@@ -232,10 +233,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    Type assetImportProviderType = Type.GetType(config.ResourceProviderType, true);
-                    IResourceImport ri = (IResourceImport)Activator.CreateInstance(assetImportProviderType, true);
-
-                    ri.ImportResources(manifest, baseFilePpath, config.Id);
+                    var importer = new Importer();
+                    importer.ImportResources(manifest, baseFilePpath, config.Id);
                     IntegrationLogger.Write(LogLevel.Information, string.Format("Resource file {0} imported to EPi Server Commerce.", manifest));
                     return true;
                 }

@@ -685,19 +685,6 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             }
         }
 
-        public string ResourceProviderType
-        {
-            get
-            {
-                if (!this.settings.ContainsKey("RESOURCE_PROVIDER_TYPE"))
-                {
-                    return string.Empty;
-                }
-
-                return this.settings["RESOURCE_PROVIDER_TYPE"];
-            }
-        }
-
         public Dictionary<string, string> Settings
         {
             get { return this.settings; }

@@ -1,5 +1,4 @@
-﻿using inRiver.EPiServerCommerce.MediaPublisher.Poco;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Net.Http;
@@ -7,14 +6,15 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
-
 using inRiver.EPiServerCommerce.Interfaces;
+using inRiver.EPiServerCommerce.MediaPublisher;
+using inRiver.EPiServerCommerce.MediaPublisher.Poco;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 
-namespace inRiver.EPiServerCommerce.MediaPublisher
+namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
-    public class Importer : IResourceImport
+    public class Importer
     {
         private Dictionary<string, string> settings = new Dictionary<string, string>(); 
         
@@ -90,7 +90,7 @@ namespace inRiver.EPiServerCommerce.MediaPublisher
                 newRes.Codes = new List<string>();
                 if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
                 {
-                    foreach (Poco.EntryCode entryCode in resource.ParentEntries.EntryCode)
+                    foreach (MediaPublisher.Poco.EntryCode entryCode in resource.ParentEntries.EntryCode)
                     {
                         if (!string.IsNullOrEmpty(entryCode.Value))
                         {

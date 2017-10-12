@@ -25,5 +25,7 @@ namespace inRiver.EPiServerCommerce.Importer
         bool ImportResources(List<InRiverImportResource> resources);
 
         bool ImportUpdateCompleted(ImportUpdateCompletedData data);
+
+        bool DeleteCompleted(DeleteCompletedData data);
     }
 }

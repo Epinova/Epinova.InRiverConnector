@@ -6,14 +6,12 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web.Http;
 using System.Xml.Linq;
-using AuthorizeNet.Util;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
-using EPiServer.Commerce.Cata_logger.ContentTypes;
 using EPiServer.Commerce.SpecializedProperties;
 using EPiServer.Core;
+using EPiServer.DataAbstraction;
 using EPiServer.DataAccess;
 using EPiServer.Framework.Blobs;
 using EPiServer.Logging;
@@ -30,10 +28,6 @@ using Mediachase.Commerce.Catalog.Dto;
 using Mediachase.Commerce.Catalog.ImportExport;
 using Mediachase.Commerce.Catalog.Managers;
 using Mediachase.Commerce.Catalog.Objects;
-using Mediachase.Commerce.Cata_logger.Dto;
-using Mediachase.Commerce.Cata_logger.ImportExport;
-using Mediachase.Commerce.Cata_logger.Managers;
-using Mediachase.Commerce.Cata_logger.Objects;
 
 namespace inRiver.EPiServerCommerce.Importer
 {
@@ -44,18 +38,21 @@ namespace inRiver.EPiServerCommerce.Importer
         private readonly IContentRepository _contentRepository;
         private readonly IAssetService _assetService;
         private readonly ICatalogSystem _catalogSystem;
+        private readonly IContentTypeRepository _contentTypeRepository;
 
         public CatalogImporter(ILogger logger, 
             ReferenceConverter referenceConverter, 
             IContentRepository contentRepository,
             IAssetService assetService,
-            ICatalogSystem catalogSystem)
+            ICatalogSystem catalogSystem,
+            IContentTypeRepository contentTypeRepository)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
             _contentRepository = contentRepository;
             _assetService = assetService;
             _catalogSystem = catalogSystem;
+            _contentTypeRepository = contentTypeRepository;
         }
 
         private bool RunICatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
@@ -414,7 +411,7 @@ namespace inRiver.EPiServerCommerce.Importer
             if (resources == null)
             {
                 _logger.Debug("Received resource list that is NULL");
-                return;
+                return false;
             }
 
             List<IInRiverImportResource> resourcesImport = resources.Cast<IInRiverImportResource>().ToList();
@@ -648,9 +645,9 @@ namespace inRiver.EPiServerCommerce.Importer
                 CatalogDto d = CatalogContext.Current.GetCatalogDto();
                 foreach (CatalogDto.CatalogRow catalog in d.Catalog)
                 {
-                    if (name.Equals(cata_logger.Name))
+                    if (name.Equals(catalog.Name))
                     {
-                        return cata_logger.CatalogId;
+                        return catalog.CatalogId;
                     }
                 }
 
@@ -667,7 +664,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception ex)
             {
@@ -920,8 +917,7 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
             ContentMediaResolver mediaDataResolver = ServiceLocator.Current.GetInstance<ContentMediaResolver>();
-            IContentTypeRepository contentTypeRepository = ServiceLocator.Current.GetInstance<IContentTypeRepository>();
-
+            
             bool resourceWithoutFile = false;
 
             ResourceMetaField resourceFileId = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
@@ -954,14 +950,14 @@ namespace inRiver.EPiServerCommerce.Importer
             {
                 if (type.GetInterfaces().Contains(typeof(IInRiverResource)))
                 {
-                    contentType = contentTypeRepository.Load(type);
+                    contentType = _contentTypeRepository.Load(type);
                     break;
                 }
             }
 
             if (contentType == null)
             {
-                contentType = contentTypeRepository.Load(typeof(InRiverGenericMedia));
+                contentType = _contentTypeRepository.Load(typeof(InRiverGenericMedia));
             }
 
             MediaData newFile = _contentRepository.GetDefault<MediaData>(GetInRiverResourceFolder(), contentType.ID);
