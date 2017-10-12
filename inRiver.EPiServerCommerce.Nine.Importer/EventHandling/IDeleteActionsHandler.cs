@@ -1,4 +1,7 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces
+﻿using EPiServer.Commerce.Catalog.ContentTypes;
+using inRiver.EPiServerCommerce.Interfaces;
+
+namespace inRiver.EPiServerCommerce.Importer.EventHandling
 {
     public interface IDeleteActionsHandler
     {
@@ -10,9 +13,9 @@
 
         void PostDeleteCatalogNode(int catalogNodeId, int catalogId);
 
-        void PreDeleteCatalogEntry(int catalogEntryId, int metaClassId, int catalogId);
+        void PreDeleteCatalogEntry(EntryContentBase entry);
 
-        void PostDeleteCatalogEntry(int catalogEntryId, int metaClassId, int catalogId);
+        void PostDeleteCatalogEntry(EntryContentBase deletedEntry);
 
         void PreDeleteResource(IInRiverImportResource resource);
 

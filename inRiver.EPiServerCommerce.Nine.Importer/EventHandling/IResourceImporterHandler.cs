@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Interfaces
+namespace inRiver.EPiServerCommerce.Importer.EventHandling
 {
     public interface IResourceImporterHandler
     {

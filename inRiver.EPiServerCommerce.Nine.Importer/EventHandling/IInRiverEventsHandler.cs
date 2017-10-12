@@ -1,6 +1,6 @@
 ﻿using inRiver.EPiServerCommerce.Interfaces.Enums;
 
-namespace inRiver.EPiServerCommerce.Interfaces
+namespace inRiver.EPiServerCommerce.Importer.EventHandling
 {
     public interface IInRiverEventsHandler
     {

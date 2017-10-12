@@ -1,6 +1,6 @@
 ﻿using System.Xml.Linq;
 
-namespace inRiver.EPiServerCommerce.Interfaces
+namespace inRiver.EPiServerCommerce.Importer.EventHandling
 {
     public interface ICatalogImportHandler
     {
