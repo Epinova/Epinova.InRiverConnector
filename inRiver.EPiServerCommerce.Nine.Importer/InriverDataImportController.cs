@@ -83,7 +83,7 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             catch (Exception ex)
             {
-                _logger.Error($"Could not delete catalog entry with code {catalogEntryId}", ex);
+                _logger.Error($"Error while deleting catalog entry with code {catalogEntryId}", ex);
                 return false;
             }
 
@@ -101,7 +101,7 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             catch (Exception ex)
             {
-                Log.Error($"Could not delete catalog with id: {catalogId}", ex);
+                Log.Error($"Error while deleting catalog with id: {catalogId}", ex);
                 return false;
             }
 
@@ -112,44 +112,17 @@ namespace inRiver.EPiServerCommerce.Importer
         public bool DeleteCatalogNode([FromBody] string catalogNodeId)
         {
             Log.Debug("DeleteCatalogNode");
-            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
-            int catalogId;
-            int nodeId;
+
             try
             {
-                CatalogNode cn = CatalogContext.Current.GetCatalogNode(catalogNodeId);
-                if (cn == null || cn.CatalogNodeId == 0)
-                {
-                    Log.Error($"Could not find catalog node with id: {catalogNodeId}. No node is deleted");
-                    return false;
-                }
-
-                catalogId = cn.CatalogId;
-                nodeId = cn.CatalogNodeId;
-                if (RunIDeleteActionsHandlers)
-                {
-                    foreach (IDeleteActionsHandler handler in importerHandlers)
-                    {
-                        handler.PreDeleteCatalogNode(nodeId, catalogId);
-                    }
-                }
-
-                CatalogContext.Current.DeleteCatalogNode(cn.CatalogNodeId, cn.CatalogId);
+                _catalogImporter.DeleteCatalogNode(catalogNodeId);
             }
             catch (Exception ex)
             {
-                Log.Error($"Could not delete catalogNode with id: {catalogNodeId}", ex);
+                Log.Error($"Error while deleting catalogNode with id: {catalogNodeId}", ex);
                 return false;
             }
-
-            if (RunIDeleteActionsHandlers)
-            {
-                foreach (IDeleteActionsHandler handler in importerHandlers)
-                {
-                    handler.PostDeleteCatalogNode(nodeId, catalogId);
-                }
-            }
-
+            
             return true;
         }
 
@@ -157,17 +130,10 @@ namespace inRiver.EPiServerCommerce.Importer
         public bool CheckAndMoveNodeIfNeeded([FromBody] string catalogNodeId)
         {
             Log.Debug("CheckAndMoveNodeIfNeeded");
+
             try
             {
-                CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(catalogNodeId);
-                if (nodeDto.CatalogNode.Count > 0)
-                {
-                    // Node exists
-                    if (nodeDto.CatalogNode[0].ParentNodeId != 0)
-                    {
-                        MoveNode(nodeDto.CatalogNode[0].Code, 0);
-                    }
-                }
+                _catalogImporter.CheckAndMoveNodeIfNeeded(catalogNodeId);
             }
             catch (Exception ex)
             {
@@ -182,189 +148,28 @@ namespace inRiver.EPiServerCommerce.Importer
         public bool UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
         {
             Log.Debug("UpdateLinkEntityData");
-            int catalogId = FindCatalogByName(linkEntityUpdateData.ChannelName);
 
             try
             {
-                CatalogAssociationDto associationsDto2 = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, linkEntityUpdateData.ParentEntryId);
-                foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto2.CatalogEntryAssociation)
-                {
-                    if (row.CatalogAssociationRow.AssociationDescription == linkEntityUpdateData.LinkEntityIdString)
-                    {
-                        row.BeginEdit();
-                        row.CatalogAssociationRow.AssociationName = linkEntityUpdateData.LinkEntryDisplayName;
-                        row.AcceptChanges();
-                    }
-                }
-
-                CatalogContext.Current.SaveCatalogAssociation(associationsDto2);
-                return true;
+                _catalogImporter.UpdateLinkEntityData(linkEntityUpdateData);
             }
             catch (Exception ex)
             {
-                Log.Error(string.Format("Could not update LinkEntityData for entity with id:{0}", linkEntityUpdateData.LinkEntityIdString), ex);
+                _logger.Error($"Could not update LinkEntityData for entity with id:{linkEntityUpdateData.LinkEntityIdString}", ex);
                 return false;
             }
+
+            return true;
         }
 
         [HttpPost]
         public bool UpdateEntryRelations(UpdateEntryRelationData updateEntryRelationData)
         {
+            Log.Debug("UpdateEntryRelations");
+
             try
             {
-                int catalogId = FindCatalogByName(updateEntryRelationData.ChannelName);
-                CatalogEntryDto ced = CatalogContext.Current.GetCatalogEntryDto(updateEntryRelationData.CatalogEntryIdString);
-                CatalogEntryDto ced2 = CatalogContext.Current.GetCatalogEntryDto(updateEntryRelationData.ParentEntryId);
-                Log.Debug($"UpdateEntryRelations called for catalog {catalogId} between {updateEntryRelationData.ParentEntryId} and {updateEntryRelationData.CatalogEntryIdString}");
-
-                // See if channelnode
-                CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(updateEntryRelationData.CatalogEntryIdString);
-                if (nodeDto.CatalogNode.Count > 0)
-                {
-                    Log.Debug(string.Format("found {0} as a catalog node", updateEntryRelationData.CatalogEntryIdString));
-                    CatalogRelationDto rels = CatalogContext.Current.GetCatalogRelationDto(
-                        catalogId,
-                        nodeDto.CatalogNode[0].CatalogNodeId,
-                        0,
-                        string.Empty,
-                        new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.CatalogNode));
-
-                    foreach (CatalogRelationDto.CatalogNodeRelationRow row in rels.CatalogNodeRelation)
-                    {
-                        CatalogNode parentCatalogNode = CatalogContext.Current.GetCatalogNode(row.ParentNodeId);
-                        if (updateEntryRelationData.RemoveFromChannelNodes.Contains(parentCatalogNode.ID))
-                        {
-                            row.Delete();
-                            updateEntryRelationData.RemoveFromChannelNodes.Remove(parentCatalogNode.ID);
-                        }
-                    }
-
-                    if (rels.HasChanges())
-                    {
-                        Log.Debug("Relations between nodes has been changed, saving new catalog releations");
-                        CatalogContext.Current.SaveCatalogRelationDto(rels);
-                    }
-
-                    CatalogNode parentNode = null;
-                    if (nodeDto.CatalogNode[0].ParentNodeId != 0)
-                    {
-                        parentNode = CatalogContext.Current.GetCatalogNode(nodeDto.CatalogNode[0].ParentNodeId);
-                    }
-
-                    if ((updateEntryRelationData.RemoveFromChannelNodes.Contains(updateEntryRelationData.ChannelIdEpified) && nodeDto.CatalogNode[0].ParentNodeId == 0)
-                        || (parentNode != null && updateEntryRelationData.RemoveFromChannelNodes.Contains(parentNode.ID)))
-                    {
-                        CatalogNode associationNode = CatalogContext.Current.GetCatalogNode(updateEntryRelationData.InRiverAssociationsEpified);
-
-                        MoveNode(nodeDto.CatalogNode[0].Code, associationNode.CatalogNodeId);
-                    }
-                }
-
-                if (ced.CatalogEntry.Count <= 0)
-                {
-                    Log.Debug(string.Format("No catalog entry with id {0} found, will not continue.", updateEntryRelationData.CatalogEntryIdString));
-                    return true;
-                }
-
-                if (updateEntryRelationData.RemoveFromChannelNodes.Count > 0)
-                {
-                    Log.Debug(string.Format("Look for removal from channel nodes, nr of possible nodes: {0}", updateEntryRelationData.RemoveFromChannelNodes.Count));
-                    CatalogRelationDto rel = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.NodeEntry));
-
-                    foreach (CatalogRelationDto.NodeEntryRelationRow row in rel.NodeEntryRelation)
-                    {
-                        CatalogNode catalogNode = CatalogContext.Current.GetCatalogNode(row.CatalogNodeId);
-                        if (updateEntryRelationData.RemoveFromChannelNodes.Contains(catalogNode.ID))
-                        {
-                            row.Delete();
-                        }
-                    }
-
-                    if (rel.HasChanges())
-                    {
-                        Log.Debug("Relations between entries has been changed, saving new catalog releations");
-                        CatalogContext.Current.SaveCatalogRelationDto(rel);
-                    }
-                }
-                else
-                {
-                    Log.Debug(string.Format("{0} shall not be removed from node {1}", updateEntryRelationData.CatalogEntryIdString, updateEntryRelationData.ParentEntryId));
-                }
-
-                if (ced2.CatalogEntry.Count <= 0)
-                {
-                    return true;
-                }
-
-                if (!updateEntryRelationData.ParentExistsInChannelNodes)
-                {
-                    if (updateEntryRelationData.IsRelation)
-                    {
-                        Log.Debug("Checking other relations");
-                        CatalogRelationDto rel3 = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced2.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.CatalogEntry));
-                        foreach (CatalogRelationDto.CatalogEntryRelationRow row in rel3.CatalogEntryRelation)
-                        {
-                            Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.ChildEntryId);
-                            if (childEntry.ID == updateEntryRelationData.CatalogEntryIdString)
-                            {
-                                Log.Debug(string.Format("Relations between entries {0} and {1} has been removed, saving new catalog releations", row.ParentEntryId, row.ChildEntryId));
-                                row.Delete();
-                                CatalogContext.Current.SaveCatalogRelationDto(rel3);
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        List<int> catalogAssociationIds = new List<int>();
-                        Log.Debug("Checking other associations");
-
-                        CatalogAssociationDto associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateEntryRelationData.ParentEntryId);
-                        foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto.CatalogEntryAssociation)
-                        {
-                            if (row.AssociationTypeId == updateEntryRelationData.LinkTypeId)
-                            {
-                                Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.CatalogEntryId);
-                                if (childEntry.ID == updateEntryRelationData.CatalogEntryIdString)
-                                {
-                                    if (updateEntryRelationData.LinkEntityIdsToRemove.Count == 0 || updateEntryRelationData.LinkEntityIdsToRemove.Contains(row.CatalogAssociationRow.AssociationDescription))
-                                    {
-                                        catalogAssociationIds.Add(row.CatalogAssociationId);
-                                        Log.Debug(string.Format("Removing association for {0}", row.CatalogEntryId));
-                                        row.Delete();
-                                    }
-                                }
-                            }
-                        }
-
-                        if (associationsDto.HasChanges())
-                        {
-                            Log.Debug("Saving updated associations");
-                            CatalogContext.Current.SaveCatalogAssociation(associationsDto);
-                        }
-
-                        if (catalogAssociationIds.Count > 0)
-                        {
-                            foreach (int catalogAssociationId in catalogAssociationIds)
-                            {
-                                associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateEntryRelationData.ParentEntryId);
-                                if (associationsDto.CatalogEntryAssociation.Count(r => r.CatalogAssociationId == catalogAssociationId) == 0)
-                                {
-                                    foreach (CatalogAssociationDto.CatalogAssociationRow assRow in associationsDto.CatalogAssociation)
-                                    {
-                                        if (assRow.CatalogAssociationId == catalogAssociationId)
-                                        {
-                                            assRow.Delete();
-                                            Log.Debug(string.Format("Removing association with id {0} and sending update.", catalogAssociationId));
-                                            CatalogContext.Current.SaveCatalogAssociation(associationsDto);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                _catalogImporter.UpdateEntryRelations(updateEntryRelationData);
             }
             catch (Exception ex)
             {
@@ -380,45 +185,22 @@ namespace inRiver.EPiServerCommerce.Importer
         {
             Log.Debug("GetLinkEntityAssociationsForEntity");
 
-            List<string> ids = new List<string>();
             try
             {
-                int catalogId = FindCatalogByName(data.ChannelName);
-
-                foreach (string parentId in data.ParentIds)
-                {
-                    CatalogAssociationDto associationsDto2 = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, parentId);
-                    foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto2.CatalogEntryAssociation)
-                    {
-                        if (row.AssociationTypeId == data.LinkTypeId)
-                        {
-                            Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.CatalogEntryId);
-
-                            if (data.TargetIds.Contains(childEntry.ID))
-                            {
-                                if (!ids.Contains(row.CatalogAssociationRow.AssociationDescription))
-                                {
-                                    ids.Add(row.CatalogAssociationRow.AssociationDescription);
-                                }
-                            }
-                        }
-                    }
-
-                    CatalogContext.Current.SaveCatalogAssociation(associationsDto2);
-                }
+                return _catalogImporter.GetLinkEntityAssociationsForEntity(data);
             }
             catch (Exception e)
             {
                 Log.Error($"Could not GetLinkEntityAssociationsForEntity for parentIds: {data.ParentIds}", e);
             }
 
-            return ids;
+            return new List<string>();
         }
 
         public string Get()
         {
-            Log.Debug("Hello from inRiver!");
-            return "Hello from inRiver!";
+            Log.Debug("Hello from Episerver import controller!");
+            return "Hello from Episerver import controller!";
         }
 
         [HttpPost]
@@ -622,27 +404,6 @@ namespace inRiver.EPiServerCommerce.Importer
             }
         }
 
-        internal static int FindCatalogByName(string name)
-        {
-            try
-            {
-                CatalogDto d = CatalogContext.Current.GetCatalogDto();
-                foreach (CatalogDto.CatalogRow catalog in d.Catalog)
-                {
-                    if (name.Equals(catalog.Name))
-                    {
-                        return catalog.CatalogId;
-                    }
-                }
-
-                return -1;
-            }
-            catch (Exception)
-            {
-                return -1;
-            }
-        }
-
         /// <summary>
         /// Returns a reference to the inRiver Resource folder. It will be created if it
         /// does not already exist.
@@ -655,16 +416,6 @@ namespace inRiver.EPiServerCommerce.Importer
             ContentReference rootInRiverFolder = ContentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, "inRiver");
             ContentReference resourceRiverFolder = ContentFolderCreator.CreateOrGetFolder(rootInRiverFolder, "Resources");
             return resourceRiverFolder;
-        }
-
-        private void MoveNode(string nodeCode, int newParent)
-        {
-            CatalogNodeDto catalogNodeDto = CatalogContext.Current.GetCatalogNodeDto(nodeCode, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.CatalogNodeFull));
-
-            // Move node to new parent
-            Log.Debug($"Move {nodeCode} to new parent ({newParent}).");
-            catalogNodeDto.CatalogNode[0].ParentNodeId = newParent;
-            CatalogContext.Current.SaveCatalogNode(catalogNodeDto);
         }
 
         private void ImportCatalogXmlFromPath(string path)
