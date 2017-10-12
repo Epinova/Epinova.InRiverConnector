@@ -19,6 +19,7 @@ using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
 using EPiServer.Web.Internal;
+using inRiver.EPiServerCommerce.Importer.EventHandling;
 using inRiver.EPiServerCommerce.Importer.ResourceModels;
 using inRiver.EPiServerCommerce.Interfaces;
 using log4net;
@@ -36,30 +37,21 @@ namespace inRiver.EPiServerCommerce.Importer
         private readonly ICatalogSystem _catalogSystem;
         private readonly IContentRepository _contentRepository;
         private readonly ReferenceConverter _referenceConverter;
+        private readonly ICatalogImporter _catalogImporter;
 
-        public InriverDataImportController(ICatalogSystem catalogSystem, IContentRepository contentRepository, ReferenceConverter referenceConverter)
+        public InriverDataImportController(ICatalogSystem catalogSystem, 
+                                           IContentRepository contentRepository, 
+                                           ReferenceConverter referenceConverter, 
+                                           ICatalogImporter catalogImporter)
         {
             _catalogSystem = catalogSystem;
             _contentRepository = contentRepository;
             _referenceConverter = referenceConverter;
+            _catalogImporter = catalogImporter;
         }
 
         private static readonly ILog Log = LogManager.GetLogger(typeof(InriverDataImportController));
         
-        private bool RunICatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
-
-        private bool RunIResourceImporterHandlers => GetBoolSetting("inRiver.RunIResourceImporterHandlers");
-
-        private bool RunIDeleteActionsHandlers => GetBoolSetting("inRiver.RunIDeleteActionsHandlers");
-
-        private bool RunIInRiverEventsHandlers => GetBoolSetting("inRiver.RunIInRiverEventsHandlers");
-
-        private bool GetBoolSetting(string key)
-        {
-            var setting = ConfigurationManager.AppSettings[key];
-            return setting != null && setting.Equals(key, StringComparison.CurrentCultureIgnoreCase);
-        }
-
         [HttpGet]
         public string IsImporting()
         {
@@ -73,50 +65,20 @@ namespace inRiver.EPiServerCommerce.Importer
             return ImportStatusContainer.Instance.Message;
         }
 
+        // TODO: Global exception logging, ref PIM-78
+
         [HttpPost]
         public bool DeleteCatalogEntry([FromBody] string catalogEntryId)
         {
             Log.Debug("DeleteCatalogEntry");
-            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
-            int entryId;
-            int metaClassId;
-            int catalogId;
 
             try
             {
-                Entry entry = CatalogContext.Current.GetCatalogEntry(catalogEntryId);
-                if (entry == null)
-                {
-                    Log.Error(string.Format("Could not find catalog entry with id: {0}. No entry is deleted", catalogEntryId));
-                    return false;
-                }
-
-                entryId = entry.CatalogEntryId;
-                metaClassId = entry.MetaClassId;
-                catalogId = entry.CatalogId;
-
-                if (RunIDeleteActionsHandlers)
-                {
-                    foreach (IDeleteActionsHandler handler in importerHandlers)
-                    {
-                        handler.PreDeleteCatalogEntry(entryId, metaClassId, catalogId);
-                    }
-                }
-
-                CatalogContext.Current.DeleteCatalogEntry(entry.CatalogEntryId, false);
+                _catalogImporter.DeleteCatalogEntry(catalogEntryId);
             }
-            catch (Exception ex)
+            catch
             {
-                Log.Error($"Could not delete catalog entry with id: {catalogEntryId}", ex);
                 return false;
-            }
-
-            if (RunIDeleteActionsHandlers)
-            {
-                foreach (IDeleteActionsHandler handler in importerHandlers)
-                {
-                    handler.PostDeleteCatalogEntry(entryId, metaClassId, catalogId);
-                }
             }
 
             return true;
