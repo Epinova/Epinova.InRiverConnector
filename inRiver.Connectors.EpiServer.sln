@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.15
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.CommerceAdapter", "src\inRiver.Connectors.EPiServer\inRiver.EPiServerCommerce.CommerceAdapter.csproj", "{F6FC6A0D-D026-4FC3-873C-19AF480821D5}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiserverAdapter", "src\EpiserverAdapter\EpiserverAdapter.csproj", "{F6FC6A0D-D026-4FC3-873C-19AF480821D5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.Interfaces", "src\inRiver.EPiServerCommerce.Interfaces\inRiver.EPiServerCommerce.Interfaces.csproj", "{0C76565D-930B-4478-9101-AAD7BCED1D6F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interfaces", "src\Interfaces\Interfaces.csproj", "{0C76565D-930B-4478-9101-AAD7BCED1D6F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "inRiver.EPiServerCommerce.Importer", "src\inRiver.EPiServerCommerce.Nine.Importer\inRiver.EPiServerCommerce.Importer.csproj", "{CF5F6052-CB46-44CE-9272-E7D05720BF3A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiserverImporter", "src\EpiserverImporter\EpiserverImporter.csproj", "{CF5F6052-CB46-44CE-9272-E7D05720BF3A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -80,20 +80,15 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "BUNDLE_ENTITYTYPES", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "PACKAGE_ENTITYTYPES", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "DYNAMIC_PACKAGE_ENTITYTYPES", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(this.Id, "RESOURCE_PROVIDER_TYPE", "inRiver.EPiServerCommerce.MediaPublisher.Importer, inRiver.EPiServerCommerce.MediaPublisher");
-
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "CHANNEL_ID", "123");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_CODE_FIELDS", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EXCLUDE_FIELDS", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_NAME_FIELDS", string.Empty);
-
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "USE_THREE_LEVELS_IN_COMMERCE", "false");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "HTTP_POST_URL", string.Empty);
-
-            ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_ENDPOINT_URL", string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_ENDPOINT_URL", "https://www.example.com/inriverapi/InriverDataImport/");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_APIKEY", "SomeGreatKey123");
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "EPI_RESTTIMEOUT", "1");
-
             ConfigurationManager.Instance.SetConnectorSetting(this.Id, "BATCH_SIZE", string.Empty);
         }
 

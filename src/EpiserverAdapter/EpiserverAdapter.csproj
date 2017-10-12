@@ -93,9 +93,9 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\inRiver.EPiServerCommerce.Interfaces\inRiver.EPiServerCommerce.Interfaces.csproj">
+    <ProjectReference Include="..\Interfaces\Interfaces.csproj">
       <Project>{0c76565d-930b-4478-9101-aad7bced1d6f}</Project>
-      <Name>inRiver.EPiServerCommerce.Interfaces</Name>
+      <Name>Interfaces</Name>
       <EmbedInteropTypes>False</EmbedInteropTypes>
     </ProjectReference>
   </ItemGroup>
