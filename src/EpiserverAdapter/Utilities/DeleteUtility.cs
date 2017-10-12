@@ -142,7 +142,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
 
                 linkEntityIds = EpiApi.GetLinkEntityAssociationsForEntity(linkTypeId, channelEntity.Id, channelEntity, this.DeleteUtilConfig, pars, targets);
 
-                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(n.ParentId, this.DeleteUtilConfig)));
+                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == ChannelPrefixHelper.GetEpiserverCode(n.ParentId, this.DeleteUtilConfig)));
             }
 
             // Add the removed entity element together with all the underlying entity elements
@@ -253,7 +253,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
                     EpiApi.UpdateEntryRelations(entityIdToUpdate.Key, channelEntity.Id, channelEntity, this.DeleteUtilConfig, parentId, entityIdToUpdate.Value, linkTypeId, linkEntityIds);
                 }
 
-                updateXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entityIdToUpdate.Key, this.DeleteUtilConfig)));
+                updateXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(entityIdToUpdate.Key, this.DeleteUtilConfig)));
             }
 
             string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, updateXml, folderDateTime, this.DeleteUtilConfig);
@@ -331,7 +331,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
                     case "ChannelNode":
                         EpiApi.DeleteCatalogNode(deletedElementEntityId, channelEntity.Id, this.DeleteUtilConfig);
 
-                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(deletedElementEntityId, this.DeleteUtilConfig)));
+                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, this.DeleteUtilConfig)));
 
                         Entity channelNode = targetEntity.Id == deletedElementEntityId
                                                  ? targetEntity
@@ -375,7 +375,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
                         {
                             EpiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), this.DeleteUtilConfig);
 
-                            deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(deletedElementEntityId, this.DeleteUtilConfig)));
+                            deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, this.DeleteUtilConfig)));
                         }
 
                         if (this.DeleteUtilConfig.ItemsToSkus)
@@ -414,20 +414,20 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
                             {
                                 EpiApi.DeleteCatalogEntry(entityIdToDelete, this.DeleteUtilConfig);
 
-                                deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entityIdToDelete, this.DeleteUtilConfig)));
+                                deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(entityIdToDelete, this.DeleteUtilConfig)));
                             }
                         }
 
                         break;
                     case "Resource":
-                        deletedResources = new List<string> { ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(deletedElementEntityId, this.DeleteUtilConfig) };
+                        deletedResources = new List<string> { ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, this.DeleteUtilConfig) };
                         break;
 
                     case "Product":
                         EpiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), this.DeleteUtilConfig);
                         deletedResources = ChannelHelper.GetResourceIds(deletedElement, this.DeleteUtilConfig);
 
-                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(deletedElementEntityId, this.DeleteUtilConfig)));
+                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, this.DeleteUtilConfig)));
 
                         Entity delEntity = RemoteManager.DataService.GetEntity(
                             deletedElementEntityId,
@@ -467,7 +467,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
                         EpiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), this.DeleteUtilConfig);
                         deletedResources = ChannelHelper.GetResourceIds(deletedElement, this.DeleteUtilConfig);
 
-                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(deletedElementEntityId, this.DeleteUtilConfig)));
+                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, this.DeleteUtilConfig)));
 
                         Entity prodEntity;
                         if (targetEntity.Id == deletedElementEntityId)

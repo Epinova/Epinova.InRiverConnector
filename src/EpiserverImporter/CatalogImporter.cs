@@ -188,18 +188,19 @@ namespace inRiver.EPiServerCommerce.Importer
             CatalogContext.Current.SaveCatalogAssociation(associationsDto2);
         }
 
-        public void UpdateEntryRelations(UpdateEntryRelationData updateEntryRelationData)
+        public void UpdateEntryRelations(UpdateRelationData updateRelationData)
         {
-            int catalogId = FindCatalogByName(updateEntryRelationData.ChannelName);
-            CatalogEntryDto ced = CatalogContext.Current.GetCatalogEntryDto(updateEntryRelationData.CatalogEntryIdString);
-            CatalogEntryDto ced2 = CatalogContext.Current.GetCatalogEntryDto(updateEntryRelationData.ParentEntryId);
-            _logger.Debug($"UpdateEntryRelations called for catalog {catalogId} between {updateEntryRelationData.ParentEntryId} and {updateEntryRelationData.CatalogEntryIdString}");
+            int catalogId = FindCatalogByName(updateRelationData.ChannelName);
+            CatalogEntryDto ced = CatalogContext.Current.GetCatalogEntryDto(updateRelationData.CatalogEntryIdString);
+            CatalogEntryDto ced2 = CatalogContext.Current.GetCatalogEntryDto(updateRelationData.ParentEntryId);
+            _logger.Debug($"UpdateEntryRelations called for catalog {catalogId} between {updateRelationData.ParentEntryId} and {updateRelationData.CatalogEntryIdString}");
 
-            // See if channelnode
-            CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(updateEntryRelationData.CatalogEntryIdString);
+
+            CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(updateRelationData.CatalogEntryIdString);
+
             if (nodeDto.CatalogNode.Count > 0)
             {
-                _logger.Debug(string.Format("found {0} as a catalog node", updateEntryRelationData.CatalogEntryIdString));
+                _logger.Debug($"found {updateRelationData.CatalogEntryIdString} as a catalog node");
                 CatalogRelationDto rels = CatalogContext.Current.GetCatalogRelationDto(
                     catalogId,
                     nodeDto.CatalogNode[0].CatalogNodeId,
@@ -210,10 +211,10 @@ namespace inRiver.EPiServerCommerce.Importer
                 foreach (CatalogRelationDto.CatalogNodeRelationRow row in rels.CatalogNodeRelation)
                 {
                     CatalogNode parentCatalogNode = CatalogContext.Current.GetCatalogNode(row.ParentNodeId);
-                    if (updateEntryRelationData.RemoveFromChannelNodes.Contains(parentCatalogNode.ID))
+                    if (updateRelationData.RemoveFromChannelNodes.Contains(parentCatalogNode.ID))
                     {
                         row.Delete();
-                        updateEntryRelationData.RemoveFromChannelNodes.Remove(parentCatalogNode.ID);
+                        updateRelationData.RemoveFromChannelNodes.Remove(parentCatalogNode.ID);
                     }
                 }
 
@@ -229,10 +230,10 @@ namespace inRiver.EPiServerCommerce.Importer
                     parentNode = CatalogContext.Current.GetCatalogNode(nodeDto.CatalogNode[0].ParentNodeId);
                 }
 
-                if ((updateEntryRelationData.RemoveFromChannelNodes.Contains(updateEntryRelationData.ChannelIdEpified) && nodeDto.CatalogNode[0].ParentNodeId == 0)
-                    || (parentNode != null && updateEntryRelationData.RemoveFromChannelNodes.Contains(parentNode.ID)))
+                if ((updateRelationData.RemoveFromChannelNodes.Contains(updateRelationData.ChannelIdEpified) && nodeDto.CatalogNode[0].ParentNodeId == 0)
+                    || (parentNode != null && updateRelationData.RemoveFromChannelNodes.Contains(parentNode.ID)))
                 {
-                    CatalogNode associationNode = CatalogContext.Current.GetCatalogNode(updateEntryRelationData.InRiverAssociationsEpified);
+                    CatalogNode associationNode = CatalogContext.Current.GetCatalogNode(updateRelationData.InRiverAssociationsEpified);
 
                     MoveNode(nodeDto.CatalogNode[0].Code, associationNode.CatalogNodeId);
                 }
@@ -240,19 +241,19 @@ namespace inRiver.EPiServerCommerce.Importer
 
             if (ced.CatalogEntry.Count <= 0)
             {
-                _logger.Debug($"No catalog entry with id {updateEntryRelationData.CatalogEntryIdString} found, will not continue.");
+                _logger.Debug($"No catalog entry with id {updateRelationData.CatalogEntryIdString} found, will not continue.");
                 return;
             }
 
-            if (updateEntryRelationData.RemoveFromChannelNodes.Count > 0)
+            if (updateRelationData.RemoveFromChannelNodes.Count > 0)
             {
-                _logger.Debug(string.Format("Look for removal from channel nodes, nr of possible nodes: {0}", updateEntryRelationData.RemoveFromChannelNodes.Count));
-                CatalogRelationDto rel = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.NodeEntry));
+                _logger.Debug($"Look for removal from channel nodes, nr of possible nodes: {updateRelationData.RemoveFromChannelNodes.Count}");
+                var rel = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.NodeEntry));
 
                 foreach (CatalogRelationDto.NodeEntryRelationRow row in rel.NodeEntryRelation)
                 {
                     CatalogNode catalogNode = CatalogContext.Current.GetCatalogNode(row.CatalogNodeId);
-                    if (updateEntryRelationData.RemoveFromChannelNodes.Contains(catalogNode.ID))
+                    if (updateRelationData.RemoveFromChannelNodes.Contains(catalogNode.ID))
                     {
                         row.Delete();
                     }
@@ -266,7 +267,7 @@ namespace inRiver.EPiServerCommerce.Importer
             }
             else
             {
-                _logger.Debug($"{updateEntryRelationData.CatalogEntryIdString} shall not be removed from node {updateEntryRelationData.ParentEntryId}");
+                _logger.Debug($"{updateRelationData.CatalogEntryIdString} shall not be removed from node {updateRelationData.ParentEntryId}");
             }
 
             if (ced2.CatalogEntry.Count <= 0)
@@ -274,16 +275,16 @@ namespace inRiver.EPiServerCommerce.Importer
                 return;
             }
 
-            if (!updateEntryRelationData.ParentExistsInChannelNodes)
+            if (!updateRelationData.ParentExistsInChannelNodes)
             {
-                if (updateEntryRelationData.IsRelation)
+                if (updateRelationData.IsRelation)
                 {
                     _logger.Debug("Checking other relations");
                     CatalogRelationDto rel3 = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced2.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.CatalogEntry));
                     foreach (CatalogRelationDto.CatalogEntryRelationRow row in rel3.CatalogEntryRelation)
                     {
                         Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.ChildEntryId);
-                        if (childEntry.ID == updateEntryRelationData.CatalogEntryIdString)
+                        if (childEntry.ID == updateRelationData.CatalogEntryIdString)
                         {
                             _logger.Debug(string.Format("Relations between entries {0} and {1} has been removed, saving new catalog releations", row.ParentEntryId, row.ChildEntryId));
                             row.Delete();
@@ -297,15 +298,15 @@ namespace inRiver.EPiServerCommerce.Importer
                     List<int> catalogAssociationIds = new List<int>();
                     _logger.Debug("Checking other associations");
 
-                    CatalogAssociationDto associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateEntryRelationData.ParentEntryId);
+                    CatalogAssociationDto associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateRelationData.ParentEntryId);
                     foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto.CatalogEntryAssociation)
                     {
-                        if (row.AssociationTypeId == updateEntryRelationData.LinkTypeId)
+                        if (row.AssociationTypeId == updateRelationData.LinkTypeId)
                         {
                             Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.CatalogEntryId);
-                            if (childEntry.ID == updateEntryRelationData.CatalogEntryIdString)
+                            if (childEntry.ID == updateRelationData.CatalogEntryIdString)
                             {
-                                if (updateEntryRelationData.LinkEntityIdsToRemove.Count == 0 || updateEntryRelationData.LinkEntityIdsToRemove.Contains(row.CatalogAssociationRow.AssociationDescription))
+                                if (updateRelationData.LinkEntityIdsToRemove.Count == 0 || updateRelationData.LinkEntityIdsToRemove.Contains(row.CatalogAssociationRow.AssociationDescription))
                                 {
                                     catalogAssociationIds.Add(row.CatalogAssociationId);
                                     _logger.Debug(string.Format("Removing association for {0}", row.CatalogEntryId));
@@ -325,7 +326,7 @@ namespace inRiver.EPiServerCommerce.Importer
                     {
                         foreach (int catalogAssociationId in catalogAssociationIds)
                         {
-                            associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateEntryRelationData.ParentEntryId);
+                            associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateRelationData.ParentEntryId);
                             if (associationsDto.CatalogEntryAssociation.Count(r => r.CatalogAssociationId == catalogAssociationId) == 0)
                             {
                                 foreach (CatalogAssociationDto.CatalogAssociationRow assRow in associationsDto.CatalogAssociation)
@@ -448,7 +449,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
                                     try
                                     {
-                                        MediaData existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(resource.ResourceId));
+                                        MediaData existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(resource.ResourceId));
                                         if (existingMediaData != null)
                                         {
                                             found = true;
@@ -664,7 +665,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception ex)
             {
@@ -1009,7 +1010,7 @@ namespace inRiver.EPiServerCommerce.Importer
                 newFile.BinaryData = blob;
             }
 
-            newFile.ContentGuid = CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
+            newFile.ContentGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
             try
             {
                 contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
@@ -1042,7 +1043,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception)
             {
@@ -1062,7 +1063,7 @@ namespace inRiver.EPiServerCommerce.Importer
             MediaData existingMediaData = null;
             try
             {
-                existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
+                existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
             }
             catch (Exception)
             {

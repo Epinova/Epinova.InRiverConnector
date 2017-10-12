@@ -128,17 +128,17 @@ namespace inRiver.EPiServerCommerce.Importer
         }
 
         [HttpPost]
-        public bool UpdateEntryRelations(UpdateEntryRelationData updateEntryRelationData)
+        public bool UpdateEntryRelations(UpdateRelationData updateRelationData)
         {
             Log.Debug("UpdateEntryRelations");
 
             try
             {
-                _catalogImporter.UpdateEntryRelations(updateEntryRelationData);
+                _catalogImporter.UpdateEntryRelations(updateRelationData);
             }
             catch (Exception ex)
             {
-                Log.Warn(string.Format("Could not update entry relations catalog with id:{0}", updateEntryRelationData.CatalogEntryIdString), ex);
+                Log.Warn(string.Format("Could not update entry relations catalog with id:{0}", updateRelationData.CatalogEntryIdString), ex);
                 return false;
             }
 

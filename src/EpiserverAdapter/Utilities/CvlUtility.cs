@@ -89,7 +89,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
             {
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-                if (EpiApi.StartImportIntoEpiServerCommerce(Path.Combine(this.CvlUtilConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName), ChannelHelper.GetChannelGuid(channelEntity, this.CvlUtilConfig), this.CvlUtilConfig))
+                if (EpiApi.Import(Path.Combine(this.CvlUtilConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName), ChannelHelper.GetChannelGuid(channelEntity, this.CvlUtilConfig), this.CvlUtilConfig))
                 {
                     EpiApi.SendHttpPost(this.CvlUtilConfig, Path.Combine(this.CvlUtilConfig.PublicationsRootPath, folderDateTime, zippedfileName));
                 }

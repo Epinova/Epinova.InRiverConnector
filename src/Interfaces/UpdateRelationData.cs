@@ -2,7 +2,7 @@
 
 namespace inRiver.EPiServerCommerce.Interfaces
 {
-    public class UpdateEntryRelationData
+    public class UpdateRelationData
     {
         public string ChannelName { get; set; }
 

@@ -16,7 +16,7 @@ namespace inRiver.EPiServerCommerce.Importer
 
         void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData);
 
-        void UpdateEntryRelations(UpdateEntryRelationData updateEntryRelationData);
+        void UpdateEntryRelations(UpdateRelationData updateRelationData);
 
         List<string> GetLinkEntityAssociationsForEntity(GetLinkEntityAssociationsForEntityData data);
 

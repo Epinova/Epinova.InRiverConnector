@@ -9,7 +9,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
     public class ConnectorEventHelper
     {
-        internal static ConnectorEvent InitiateConnectorEvent(Configuration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
+        internal static ConnectorEvent InitiateEvent(Configuration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
         {
             ConnectorEvent connectorEvent = new ConnectorEvent
             {
@@ -27,7 +27,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
             return connectorEvent;
         }
 
-        internal static ConnectorEvent UpdateConnectorEvent(ConnectorEvent connectorEvent, string message, int percentage, bool error = false)
+        internal static ConnectorEvent UpdateEvent(ConnectorEvent connectorEvent, string message, int percentage, bool error = false)
         {
             if (percentage >= 0)
             {
@@ -41,7 +41,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
             return connectorEvent;
         }
 
-        internal static void CleanupOngoingConnectorEvents(Configuration configuration)
+        internal static void CleanupOngoingEvents(Configuration configuration)
         {
             List<ConnectorEventSession> sessions = RemoteManager.ChannelService.GetOngoingConnectorEventSessions(null, configuration.Id);
             foreach (ConnectorEventSession connectorEventSession in sessions)

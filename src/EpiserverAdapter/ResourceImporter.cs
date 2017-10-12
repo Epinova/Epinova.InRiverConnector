@@ -7,40 +7,39 @@ using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 using inRiver.EPiServerCommerce.Interfaces;
-using inRiver.EPiServerCommerce.MediaPublisher;
 using inRiver.EPiServerCommerce.MediaPublisher.Poco;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 
 namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
-    public class Importer
+    public class ResourceImporter
     {
-        private Dictionary<string, string> settings = new Dictionary<string, string>(); 
-        
-        public bool ImportResources(string manifest, string baseResourcePath, string id)
+        public ResourceImporter(Dictionary<string, string> connectorSettings)
         {
-            Integration.Logging.IntegrationLogger.Write(
-                LogLevel.Information,
-                string.Format("Starting Resource Import. Manifest: {0} BaseResourcePath: {1}", manifest, baseResourcePath));
+            _settings = connectorSettings;
+        }
 
-            // Get custom setting
-            this.settings = RemoteManager.UtilityService.GetConnector(id).Settings;
+        private readonly Dictionary<string, string> _settings; 
+        
+        public bool ImportResources(string manifest, string baseResourcePath)
+        {
+            Integration.Logging.IntegrationLogger.Write(LogLevel.Information,$"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
 
             string apikey;
-            if (this.settings.ContainsKey("EPI_APIKEY"))
+            if (_settings.ContainsKey("EPI_APIKEY"))
             {
-                apikey = this.settings["EPI_APIKEY"];
+                apikey = _settings["EPI_APIKEY"];
             }
             else
             {
-                throw new ConfigurationErrorsException("Missing EPI_APIKEY setting on connector. It needs to be defined to else the calls will fail. Please see the documentation.");
+                throw new ConfigurationErrorsException("Missing required config EPI_APIKEY setting on connector.");
             }
 
             int timeout;
-            if (this.settings.ContainsKey("EPI_RESTTIMEOUT"))
+            if (_settings.ContainsKey("EPI_RESTTIMEOUT"))
             {
-                string timeoutString = this.settings["EPI_RESTTIMEOUT"];
+                string timeoutString = _settings["EPI_RESTTIMEOUT"];
                 if (!int.TryParse(timeoutString, out timeout))
                 {
                     throw new ConfigurationErrorsException("Can't parse EPI_RESTTIMEOUT : " + timeoutString);
@@ -48,18 +47,18 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             }
             else
             {
-                throw new ConfigurationErrorsException("Missing EPI_RESTTIMEOUT setting on connector. It needs to be defined to else the calls will fail. Please see the documentation.");
+                throw new ConfigurationErrorsException("Missing required config EPI_RESTTIMEOUT setting on connector.");
             }
 
-            if (this.settings.ContainsKey("EPI_ENDPOINT_URL") == false)
+            if (_settings.ContainsKey("EPI_ENDPOINT_URL") == false)
             {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site. Please see the documentation.");
+                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site.");
             }
 
-            string endpointAddress = this.settings["EPI_ENDPOINT_URL"];
+            string endpointAddress = _settings["EPI_ENDPOINT_URL"];
             if (string.IsNullOrEmpty(endpointAddress))
             {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site. Please see the documentation.");
+                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site.");
             }
 
             if (endpointAddress.EndsWith("/") == false)
@@ -70,7 +69,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             // Name of resource import controller method
             endpointAddress = endpointAddress + "ImportResources";
 
-            return this.ImportResourcesToEPiServerCommerce(manifest, baseResourcePath, endpointAddress, apikey, timeout);
+            return ImportResourcesToEPiServerCommerce(manifest, baseResourcePath, endpointAddress, apikey, timeout);
         }
 
         public bool ImportResourcesToEPiServerCommerce(string manifest, string baseResourcePath, string endpointAddress, string apikey, int timeout)
@@ -108,7 +107,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 
                 if (resource.action != "deleted")
                 {
-                    newRes.MetaFields = this.GenerateMetaFields(resource);
+                    newRes.MetaFields = GenerateMetaFields(resource);
 
                     // path is ".\some file.ext"
                     if (resource.Paths != null && resource.Paths.Path != null)
@@ -212,7 +211,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                     var result = response.Content.ReadAsAsync<bool>().Result;
                     if (result)
                     {
-                        string resp = this.Get(apikey, timeout);
+                        string resp = Get(apikey, timeout);
 
                         int tries = 0;
                         while (resp == "importing")
@@ -231,7 +230,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                                 Thread.Sleep(600000);
                             }
 
-                            resp = this.Get(apikey, timeout);
+                            resp = Get(apikey, timeout);
                         }
 
                         if (resp.StartsWith("ERROR"))
@@ -255,10 +254,10 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 
         private string Get(string apikey, int timeout)
         {
-            string endpointAddress = this.settings["EPI_ENDPOINT_URL"];
+            string endpointAddress = _settings["EPI_ENDPOINT_URL"];
             if (string.IsNullOrEmpty(endpointAddress))
             {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site. Please see the documentation.");
+                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site. ");
             }
 
             if (endpointAddress.EndsWith("/") == false)

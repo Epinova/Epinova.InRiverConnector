@@ -53,11 +53,12 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigValidator.cs" />
     <Compile Include="Helpers\BusinessHelper.cs" />
     <Compile Include="Helpers\ChannelHelper.cs" />
     <Compile Include="Helpers\ChannelPrefixHelper.cs" />
     <Compile Include="Helpers\ConnectorEventHelper.cs" />
-    <Compile Include="Importer.cs" />
+    <Compile Include="ResourceImporter.cs" />
     <Compile Include="InRiverImportResource.cs" />
     <Compile Include="Poco\Data.cs" />
     <Compile Include="Poco\EntryCode.cs" />

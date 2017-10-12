@@ -2,7 +2,7 @@
 
 namespace inRiver.EPiServerCommerce.Importer
 {
-    public class CatalogEntryIdentifier
+    public class EpiserverEntryIdentifier
     {
         public static Guid EntityIdToGuid(int entityId)
         {

@@ -135,7 +135,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                 new XElement("SortOrder", sortOrder),
                 new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
                 new XElement("Guid", GetChannelEntityGuid(config.ChannelId, entity.Id)),
-                new XElement("Code", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entity.Id, config)),
+                new XElement("Code", ChannelPrefixHelper.GetEpiserverCode(entity.Id, config)),
                 new XElement(
                     "MetaData",
                     new XElement("MetaClass", new XElement("Name", GetMetaClassForEntity(entity))),
@@ -148,7 +148,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                         select InRiverFieldToMetaField(f, config))),
                 new XElement(
                     "ParentNode",
-                    string.IsNullOrEmpty(parentId) ? null : ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config)),
+                    string.IsNullOrEmpty(parentId) ? null : ChannelPrefixHelper.GetEpiserverCode(parentId, config)),
                 CreateSEOInfoElement(entity, config));
         }
 
@@ -212,7 +212,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                 new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", "True"),
                 new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
-                new XElement("Code", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entity.Id, config)),
+                new XElement("Code", ChannelPrefixHelper.GetEpiserverCode(entity.Id, config)),
                 new XElement("EntryType", EpiMappingHelper.GetEntryType(entity.EntityType.Id, config)),
                 new XElement("Guid", GetChannelEntityGuid(config.ChannelId, entity.Id)),
                 new XElement(
@@ -333,8 +333,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
         {
             return new XElement(
                 "NodeEntryRelation",
-                new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(targetId, config)),
-                new XElement("NodeCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(sourceId, config)),
+                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
+                new XElement("NodeCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
                 new XElement("SortOrder", sortOrder));
         }
 
@@ -342,8 +342,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
         {
             return new XElement(
                 "NodeRelation",
-                new XElement("ChildNodeCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(targetId, config)),
-                new XElement("ParentNodeCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(sourceId, config)),
+                new XElement("ChildNodeCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
+                new XElement("ParentNodeCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
                 new XElement("SortOrder", sortOrder));
         }
 
@@ -370,8 +370,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 
             return new XElement(
                 "EntryRelation",
-                new XElement("ParentEntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(sourceId, config)),
-                new XElement("ChildEntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(targetId, config)),
+                new XElement("ParentEntryCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
+                new XElement("ChildEntryCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
                 new XElement("RelationType", relationType),
                 new XElement("Quantity", 0),
                 new XElement("GroupName", "default"),
@@ -382,7 +382,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
         {
             // Unique Name with no spaces required for EPiServer Commerce
             string name = EpiMappingHelper.GetAssociationName(structureEntity, linkEntity, config);
-            string description = structureEntity.LinkEntityId == null ? structureEntity.LinkTypeIdFromParent : ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(structureEntity.LinkEntityId.Value, config);
+            string description = structureEntity.LinkEntityId == null ? structureEntity.LinkTypeIdFromParent : ChannelPrefixHelper.GetEpiserverCode(structureEntity.LinkEntityId.Value, config);
             description = description ?? string.Empty;
 
             return new XElement(
@@ -390,7 +390,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                 new XElement("Name", name),
                 new XElement("Description", description),
                 new XElement("SortOrder", structureEntity.SortOrder),
-                new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(structureEntity.ParentId, config)),
+                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, config)),
                 CreateAssociationElement(structureEntity, config));
         }
 
@@ -398,7 +398,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
         {
             return new XElement(
                 "Association",
-                new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(structureEntity.EntityId, config)),
+                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, config)),
                 new XElement("SortOrder", structureEntity.SortOrder),
                     new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
@@ -414,7 +414,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
 
-            string resourceId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(resource.Id, config);
+            string resourceId = ChannelPrefixHelper.GetEpiserverCode(resource.Id, config);
             resourceId = resourceId.Replace("_", string.Empty);
 
             if (action == "unlinked")
@@ -522,7 +522,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                     "ParentEntries",
                     parents.Select(
                         parent =>
-                        new XElement("EntryCode", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parent.Key, config), new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
+                        new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(parent.Key, config), new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
         }
 
         public static XElement CreateResourceMetaFieldsElement(EntityType resourceType, Configuration config)
@@ -715,7 +715,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                     XElement codeElement = itemElement.Element("Code");
                     if (codeElement != null)
                     {
-                        codeElement.Value = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(id, configuration);
+                        codeElement.Value = ChannelPrefixHelper.GetEpiserverCode(id, configuration);
                     }
 
                     XElement entryTypeElement = itemElement.Element("EntryType");

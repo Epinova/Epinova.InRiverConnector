@@ -209,7 +209,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CatalogEntryIdentifier.cs" />
     <Compile Include="CatalogImporter.cs" />
     <Compile Include="ContentFolderCreator.cs" />
     <Compile Include="EventHandling\ICatalogImporterHandler.cs" />

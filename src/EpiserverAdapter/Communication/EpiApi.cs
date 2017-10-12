@@ -5,7 +5,6 @@ using System.Net;
 using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
 using inRiver.EPiServerCommerce.Interfaces;
 using inRiver.EPiServerCommerce.Interfaces.Enums;
-using inRiver.EPiServerCommerce.MediaPublisher;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
@@ -36,7 +35,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    string catalogNode = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(catalogNodeId, config);
+                    string catalogNode = ChannelPrefixHelper.GetEpiserverCode(catalogNodeId, config);
                     RestEndpoint<string> endpoint = new RestEndpoint<string>(config.Settings, "DeleteCatalogNode");
                     endpoint.Post(catalogNode);
                 }
@@ -53,13 +52,13 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    string catalogEntryId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entityId, config);
-                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config.Settings, "DeleteCatalogEntry");
+                    string catalogEntryId = ChannelPrefixHelper.GetEpiserverCode(entityId, config);
+                    var endpoint = new RestEndpoint<string>(config.Settings, "DeleteCatalogEntry");
                     endpoint.Post(catalogEntryId);
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to delete catalog entry based on entity id: {0}", entityId), exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on entity id: {entityId}", exception);
                 }
             }
         }
@@ -72,8 +71,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                 {
                     string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
 
-                    string parentEntryId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config);
-                    string linkEntityIdString = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(linkEntity.Id, config);
+                    string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
+                    string linkEntityIdString = ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config);
 
                     string dispName = linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, config, -1).Replace(' ', '_');
 
@@ -90,7 +89,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to update data for link entity with id:{0}", linkEntity.Id), exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to update data for link entity with id:{linkEntity.Id}", exception);
                 }
             }
         }
@@ -106,12 +105,12 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
                     for (int i = 0; i < targetIds.Count; i++)
                     {
-                        targetIds[i] = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(targetIds[i], config);
+                        targetIds[i] = ChannelPrefixHelper.GetEpiserverCode(targetIds[i], config);
                     }
 
                     for (int i = 0; i < parentIds.Count; i++)
                     {
-                        parentIds[i] = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentIds[i], config);
+                        parentIds[i] = ChannelPrefixHelper.GetEpiserverCode(parentIds[i], config);
                     }
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
@@ -122,7 +121,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                                                                                 TargetIds = targetIds
                                                                             };
 
-                    RestEndpoint<GetLinkEntityAssociationsForEntityData> endpoint = new RestEndpoint<GetLinkEntityAssociationsForEntityData>(config.Settings, "GetLinkEntityAssociationsForEntity");
+                    var endpoint = new RestEndpoint<GetLinkEntityAssociationsForEntityData>(config.Settings, "GetLinkEntityAssociationsForEntity");
                     ids = endpoint.PostWithStringListAsReturn(dataToSend);
                 }
                 catch (Exception exception)
@@ -140,19 +139,26 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    string entryNodeId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(nodeId, config);
+                    string entryNodeId = ChannelPrefixHelper.GetEpiserverCode(nodeId, config);
 
                     RestEndpoint<string> endpoint = new RestEndpoint<string>(config.Settings, "CheckAndMoveNodeIfNeeded");
                     endpoint.Post(entryNodeId);
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Warning, string.Format("Failed when calling the interface function: CheckAndMoveNodeIfNeeded"), exception);
+                    IntegrationLogger.Write(LogLevel.Warning, "Failed when calling the interface function: CheckAndMoveNodeIfNeeded", exception);
                 }
             }
         }
 
-        internal static void UpdateEntryRelations(string catalogEntryId, int channelId, Entity channelEntity, Configuration config, string parentId, Dictionary<string, bool> shouldExistInChannelNodes, string linkTypeId, List<string> linkEntityIdsToRemove)
+        internal static void UpdateEntryRelations(string catalogEntryId, 
+                                                  int channelId,
+                                                  Entity channelEntity,
+                                                  Configuration config, 
+                                                  string parentId,
+                                                  Dictionary<string, bool> shouldExistInChannelNodes,
+                                                  string linkTypeId, 
+                                                  List<string> linkEntityIdsToRemove)
         {
             lock (EpiLockObject.Instance)
             {
@@ -164,62 +170,60 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                     {
                         if (!shouldExistInChannelNode.Value)
                         {
-                            removeFromChannelNodes.Add(
-                                ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(shouldExistInChannelNode.Key, config));
+                            removeFromChannelNodes.Add(ChannelPrefixHelper.GetEpiserverCode(shouldExistInChannelNode.Key, config));
                         }
                     }
 
-                    string parentEntryId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config);
-                    string catalogEntryIdString = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(catalogEntryId, config);
-                    string channelIdEpified = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(channelId, config);
-                    string inriverAssociationsEpified = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix("_inRiverAssociations", config);
+                    string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
+                    string catalogEntryIdString = ChannelPrefixHelper.GetEpiserverCode(catalogEntryId, config);
+                    string channelIdEpified = ChannelPrefixHelper.GetEpiserverCode(channelId, config);
+                    string inriverAssociationsEpified = ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config);
                     bool relation = EpiMappingHelper.IsRelation(linkTypeId, config);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
-                    UpdateEntryRelationData updateEntryRelationData = new UpdateEntryRelationData
-                                                                          {
-                                                                              ParentEntryId = parentEntryId,
-                                                                              CatalogEntryIdString = catalogEntryIdString,
-                                                                              ChannelIdEpified = channelIdEpified,
-                                                                              ChannelName = channelName,
-                                                                              RemoveFromChannelNodes = removeFromChannelNodes,
-                                                                              LinkEntityIdsToRemove = linkEntityIdsToRemove,
-                                                                              InRiverAssociationsEpified = inriverAssociationsEpified,
-                                                                              LinkTypeId = linkTypeId,
-                                                                              IsRelation = relation,
-                                                                              ParentExistsInChannelNodes = parentExistsInChannelNodes
-                                                                          };
+                    var updateEntryRelationData = new UpdateRelationData
+                                                {
+                                                    ParentEntryId = parentEntryId,
+                                                    CatalogEntryIdString = catalogEntryIdString,
+                                                    ChannelIdEpified = channelIdEpified,
+                                                    ChannelName = channelName,
+                                                    RemoveFromChannelNodes = removeFromChannelNodes,
+                                                    LinkEntityIdsToRemove = linkEntityIdsToRemove,
+                                                    InRiverAssociationsEpified = inriverAssociationsEpified,
+                                                    LinkTypeId = linkTypeId,
+                                                    IsRelation = relation,
+                                                    ParentExistsInChannelNodes = parentExistsInChannelNodes
+                                                };
 
-                    RestEndpoint<UpdateEntryRelationData> endpoint =
-                        new RestEndpoint<UpdateEntryRelationData>(config.Settings, "UpdateEntryRelations");
+                    var endpoint = new RestEndpoint<UpdateRelationData>(config.Settings, "UpdateEntryRelations");
                     endpoint.Post(updateEntryRelationData);
                 }
                 catch (Exception exception)
                 {
-                    string parentEntryId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config);
-                    string childEntryId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(catalogEntryId, config);
+                    string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
+                    string childEntryId = ChannelPrefixHelper.GetEpiserverCode(catalogEntryId, config);
                     IntegrationLogger.Write(
                         LogLevel.Error,
-                        string.Format("Failed to update entry relations between parent entry id {0} and child entry id {1} in catalog with id {2}", parentEntryId, childEntryId, catalogEntryId),
+                        $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {childEntryId} in catalog with id {catalogEntryId}",
                         exception);
                 }
             }
         }
 
-        internal static bool StartImportIntoEpiServerCommerce(string filePath, Guid guid, Configuration config)
+        internal static bool Import(string filePath, Guid guid, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config.Settings, "ImportCatalogXml");
+                    var endpoint = new RestEndpoint<string>(config.Settings, "ImportCatalogXml");
                     string result = endpoint.Post(filePath);
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("Import catalog returned: {0}", result));
+                    IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
                     return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to import catalog xml file {0}.", filePath), exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import catalog xml file {filePath}.", exception);
                     IntegrationLogger.Write(LogLevel.Error, exception.ToString());
 
                     return false;
@@ -233,14 +237,15 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    var importer = new Importer();
-                    importer.ImportResources(manifest, baseFilePpath, config.Id);
-                    IntegrationLogger.Write(LogLevel.Information, string.Format("Resource file {0} imported to EPi Server Commerce.", manifest));
+                    var importer = new ResourceImporter(config.Settings);
+                    importer.ImportResources(manifest, baseFilePpath);
+
+                    IntegrationLogger.Write(LogLevel.Information, $"Resource file {manifest} imported to EPi Server Commerce.");
                     return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to import resource file {0}.", manifest), exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import resource file {manifest}.", exception);
                     return false;
                 }
             }
@@ -252,13 +257,13 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    RestEndpoint<ImportUpdateCompletedData> endpoint = new RestEndpoint<ImportUpdateCompletedData>(config.Settings, "ImportUpdateCompleted");
-                    ImportUpdateCompletedData data = new ImportUpdateCompletedData
-                                                         {
-                                                             CatalogName = catalogName,
-                                                             EventType = eventType,
-                                                             ResourcesIncluded = resourceIncluded
-                                                         };
+                    var endpoint = new RestEndpoint<ImportUpdateCompletedData>(config.Settings, "ImportUpdateCompleted");
+                    var data = new ImportUpdateCompletedData
+                                {
+                                    CatalogName = catalogName,
+                                    EventType = eventType,
+                                    ResourcesIncluded = resourceIncluded
+                                };
                     string result = endpoint.Post(data);
                     IntegrationLogger.Write(LogLevel.Debug, string.Format("ImportUpdateCompleted returned: {0}", result));
                     return true;
@@ -277,12 +282,12 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    RestEndpoint<DeleteCompletedData> endpoint = new RestEndpoint<DeleteCompletedData>(config.Settings, "DeleteCompleted");
-                    DeleteCompletedData data = new DeleteCompletedData
-                                                   {
-                                                       CatalogName = catalogName,
-                                                       EventType = eventType
-                                                   };
+                    var endpoint = new RestEndpoint<DeleteCompletedData>(config.Settings, "DeleteCompleted");
+                    var data = new DeleteCompletedData
+                                {
+                                   CatalogName = catalogName,
+                                   EventType = eventType
+                               };
                     string result = endpoint.Post(data);
                     IntegrationLogger.Write(LogLevel.Debug, string.Format("DeleteCompleted returned: {0}", result));
                     return true;

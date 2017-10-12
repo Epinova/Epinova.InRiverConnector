@@ -333,7 +333,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 
             foreach (var parent in parents)
             {
-                XElement parentElement = new XElement("parent", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parent, configuration));
+                XElement parentElement = new XElement("parent", ChannelPrefixHelper.GetEpiserverCode(parent, configuration));
                 elements.Add(parentElement);
             }
 
@@ -446,8 +446,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
                             continue;
                         }
 
-                        string channelPrefixAndSkuId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(structureEntity.EntityId, config);
-                        string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentNodeId, config);
+                        string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, config);
+                        string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, config);
 
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
@@ -459,7 +459,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
                                     config));
                         }
 
-                        string channelPrefixAndParent = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(structureEntity.ParentId, config);
+                        string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, config);
 
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParent))
                         {

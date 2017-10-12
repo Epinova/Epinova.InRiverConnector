@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.MediaPublisher
+namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
     /// <summary>
     /// Describes a resource coming from inRiver.

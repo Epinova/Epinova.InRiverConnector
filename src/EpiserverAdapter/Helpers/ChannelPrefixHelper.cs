@@ -7,7 +7,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
 {
     public class ChannelPrefixHelper
     {
-        internal static string GetEPiCodeWithChannelPrefix(object code, Configuration configuration)
+        internal static string GetEpiserverCode(object code, Configuration configuration)
         {
             int entityId;
             string codeValue = code.ToString();

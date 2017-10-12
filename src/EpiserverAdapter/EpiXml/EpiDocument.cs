@@ -14,7 +14,11 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
 {
     public static class EpiDocument
     {
-        public static XDocument CreateImportDocument(Entity channelEntity, XElement metaClasses, XElement associationTypes, Dictionary<string, List<XElement>> epiElementsFromStructure, Configuration config)
+        public static XDocument CreateImportDocument(Entity channelEntity, 
+                                                     XElement metaClasses, 
+                                                     XElement associationTypes, 
+                                                     Dictionary<string, List<XElement>> epiElementsFromStructure, 
+                                                     Configuration config)
         {
             XElement catalogElement = EpiElement.CreateCatalogElement(channelEntity, config);
             if (catalogElement == null)
@@ -236,7 +240,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                             IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Entity {0} to Entries", linkEntity.DisplayName));
                         }
     
-                        if (!addedRelations.Contains(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(linkEntity.Id, config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix("_inRiverAssociations", config)))
+                        if (!addedRelations.Contains(ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config) + "_" + ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config)))
                         {
                             epiElements["Relations"].Add(
                                 EpiElement.CreateNodeEntryRelationElement(
@@ -245,11 +249,11 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                     0,
                                     config));
                             addedRelations.Add(
-                                ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(linkEntity.Id, config) + "_"
-                                + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix("_inRiverAssociations", config));
+                                ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config) + "_"
+                                + ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config));
     
     
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for EntryCode {0}", ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(linkEntity.Id, config)));
+                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for EntryCode {0}", ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config)));
                         }
                     }
     
@@ -293,7 +297,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                         XElement nodeElement = epiElements["Nodes"].Find(e =>
                         {
                             XElement xElement = e.Element("Code");
-                            return xElement != null && xElement.Value.Equals(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entity.Id, config));
+                            return xElement != null && xElement.Value.Equals(ChannelPrefixHelper.GetEpiserverCode(entity.Id, config));
                         });
     
                         int linkIndex = structureEntity.SortOrder;
@@ -301,7 +305,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                         if (nodeElement == null)
                         {
                             epiElements["Nodes"].Add(EpiElement.CreateNodeElement(entity, parentId, linkIndex, config));
-                            addedNodes.Add(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(entity.Id, config));
+                            addedNodes.Add(ChannelPrefixHelper.GetEpiserverCode(entity.Id, config));
     
                             IntegrationLogger.Write(LogLevel.Debug, string.Format("Added channelNode {0} to Nodes", id));
                         }
@@ -323,9 +327,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                 }
                             }
     
-                            if (!addedRelations.Contains(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
+                            if (!addedRelations.Contains(ChannelPrefixHelper.GetEpiserverCode(
                                         id.ToString(CultureInfo.InvariantCulture),
-                                        config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config)))
+                                        config) + "_" + ChannelPrefixHelper.GetEpiserverCode(parentId, config)))
                             {
                                 // add relation
                                 epiElements["Relations"].Add(
@@ -336,9 +340,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                         config));
     
                                 addedRelations.Add(
-                                    ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
+                                    ChannelPrefixHelper.GetEpiserverCode(
                                         id.ToString(CultureInfo.InvariantCulture),
-                                        config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentId, config));
+                                        config) + "_" + ChannelPrefixHelper.GetEpiserverCode(parentId, config));
     
                                 IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", id));
                             }
@@ -450,11 +454,11 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
     
                         if (linkType.SourceEntityTypeId == "ChannelNode")
                         {
-                            if (!addedRelations.Contains(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(id.ToString(CultureInfo.InvariantCulture), config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), config)))
+                            if (!addedRelations.Contains(ChannelPrefixHelper.GetEpiserverCode(id.ToString(CultureInfo.InvariantCulture), config) + "_" + ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), config)))
                             {
                                 epiElements["Relations"].Add(EpiElement.CreateNodeEntryRelationElement(existingStructureEntity.ParentId.ToString(), existingStructureEntity.EntityId.ToString(), existingStructureEntity.SortOrder, config));
     
-                                addedRelations.Add(ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(id, config) + "_" + ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(existingStructureEntity.ParentId, config));
+                                addedRelations.Add(ChannelPrefixHelper.GetEpiserverCode(id, config) + "_" + ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId, config));
     
                                 IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for Source {0} and Target {1} for LinkTypeId {2}", existingStructureEntity.ParentId, existingStructureEntity.EntityId, linkType.Id));
                             }
@@ -470,7 +474,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                             skus = EpiElement.SkuItemIds(entity, config);
                             for (int i = 0; i < skus.Count; i++)
                             {
-                                skus[i] = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(skus[i], config);
+                                skus[i] = ChannelPrefixHelper.GetEpiserverCode(skus[i], config);
                             }
     
                             if (config.UseThreeLevelsInCommerce)
@@ -500,7 +504,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
     
                         foreach (string skuId in skus)
                         {
-                            string channelPrefixAndSkuId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(skuId, config);
+                            string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(skuId, config);
     
                             // prod -> item link, bundle, package or dynamic package => Relation
                             if (EpiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index, config))
@@ -511,7 +515,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                     continue;
                                 }
     
-                                string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parentNodeId, config);
+                                string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, config);
     
                                 if (!addedRelations.Contains(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                                 {
@@ -529,13 +533,13 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                 }
     
                                 string channelPrefixAndParentStructureEntityId =
-                                    ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
+                                    ChannelPrefixHelper.GetEpiserverCode(
                                         existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
                                         config);
     
                                 if (parent != null && skuId != parent)
                                 {
-                                    string channelPrefixAndParent = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(parent, config);
+                                    string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(parent, config);
     
                                     if (!addedRelations.Contains(channelPrefixAndSkuId + "_" + channelPrefixAndParent))
                                     {
@@ -559,17 +563,17 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                             }
                             else
                             {
-                                if (!addedRelations.Contains(string.Format("{0}_{1}", channelPrefixAndSkuId, ChannelPrefixHelper.GetEPiCodeWithChannelPrefix("_inRiverAssociations", config))))
+                                if (!addedRelations.Contains(string.Format("{0}_{1}", channelPrefixAndSkuId, ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config))))
                                 {
                                     epiElements["Relations"].Add(EpiElement.CreateNodeEntryRelationElement("_inRiverAssociations", skuId, existingStructureEntity.SortOrder, config));
-                                    addedRelations.Add(string.Format("{0}_{1}", channelPrefixAndSkuId, ChannelPrefixHelper.GetEPiCodeWithChannelPrefix("_inRiverAssociations", config)));
+                                    addedRelations.Add(string.Format("{0}_{1}", channelPrefixAndSkuId, ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config)));
     
                                     IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for EntryCode {0}", channelPrefixAndSkuId));
                                 }
     
                                 if (!config.UseThreeLevelsInCommerce && config.ItemsToSkus && structureEntity.Type == "Item")
                                 {
-                                    string channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(existingStructureEntity.LinkEntityId, config);
+                                    string channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, config);
                                     string associationName = EpiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity, config);
     
                                     Entity source;
@@ -589,7 +593,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                     List<string> sourceSkuIds = EpiElement.SkuItemIds(source, config);
                                     for (int i = 0; i < sourceSkuIds.Count; i++)
                                     {
-                                        sourceSkuIds[i] = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(
+                                        sourceSkuIds[i] = ChannelPrefixHelper.GetEpiserverCode(
                                             sourceSkuIds[i],
                                             config);
                                     }
@@ -699,14 +703,14 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
                                 }
                                 else
                                 {
-                                    string channelPrefixAndEntityId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(existingStructureEntity.EntityId.ToString(CultureInfo.InvariantCulture), config);
-                                    string channelPrefixAndParentEntityId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), config);
+                                    string channelPrefixAndEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.EntityId.ToString(CultureInfo.InvariantCulture), config);
+                                    string channelPrefixAndParentEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), config);
     
                                     string channelPrefixAndLinkEntityId = string.Empty;
     
                                     if (existingStructureEntity.LinkEntityId != null)
                                     {
-                                        channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEPiCodeWithChannelPrefix(existingStructureEntity.LinkEntityId, config);
+                                        channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, config);
                                     }
     
                                     string associationName = EpiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity, config);
