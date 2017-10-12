@@ -82,7 +82,7 @@
     <Compile Include="Helpers\EpiMappingHelper.cs" />
     <Compile Include="Helpers\StopwatchExtentions.cs" />
     <Compile Include="Properties\AssemblyInfoEpiServer.cs" />
-    <Compile Include="EPiServerCommerceAdapter.cs" />
+    <Compile Include="EpiserverAdapter.cs" />
     <Compile Include="Communication\EpiApi.cs" />
     <Compile Include="Communication\RestEndpoint.cs" />
     <Compile Include="Communication\EpiLockObject.cs" />

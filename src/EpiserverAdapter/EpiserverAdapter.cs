@@ -23,7 +23,7 @@ using System.Linq;
 
 namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
-    public class XmlExporter : ServerListener, IOutboundConnector, IChannelListener, ICVLListener
+    public class EpiserverAdapter : ServerListener, IOutboundConnector, IChannelListener, ICVLListener
     {
         private bool _started;
         private Configuration _config;
@@ -104,15 +104,16 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 return;
             }
 
-            ConnectorEvent publishConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish,
-                $"Publish started for channel: {channelId}", 0);
-            Stopwatch publishStopWatch = new Stopwatch();
-            bool resourceIncluded = false;
+            ConnectorEvent publishConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, 
+                                                                                      ConnectorEventType.Publish,
+                                                                                      $"Publish started for channel: {channelId}",
+                                                                                      0);
+            var publishStopWatch = Stopwatch.StartNew();
+            var resourceIncluded = false;
 
             try
             {
-                publishStopWatch.Start();
-                Entity channelEntity = InitiateChannelConfiguration(channelId);
+                var channelEntity = InitiateChannelConfiguration(channelId);
                 if (channelEntity == null)
                 {
                     ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Failed to initial publish. Could not find the channel.", -1, true);
@@ -120,7 +121,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 }
 
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Fetching all channel entities...", 1);
-                List<StructureEntity> channelEntities = ChannelHelper.GetAllEntitiesInChannel(_config.ChannelId, Configuration.ExportEnabledEntityTypes);
+                var channelEntities = ChannelHelper.GetAllEntitiesInChannel(_config.ChannelId, Configuration.ExportEnabledEntityTypes);
 
                 _config.ChannelStructureEntities = channelEntities;
                 ChannelHelper.BuildEntityIdAndTypeDict(_config);
@@ -128,21 +129,27 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done fetching all channel entities", 10);
 
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Generating catalog.xml...", 11);
-                Dictionary<string, List<XElement>> epiElements = EpiDocument.GetEPiElements(_config);
+                var epiElements = EpiDocument.GetEPiElements(_config);
 
-                XDocument doc = EpiDocument.CreateImportDocument(channelEntity, EpiElement.GetMetaClassesFromFieldSets(_config), EpiDocument.GetAssociationTypes(_config), epiElements, _config);
-                string channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
+                var doc = EpiDocument.CreateImportDocument(channelEntity, 
+                                                           EpiElement.GetMetaClassesFromFieldSets(_config), 
+                                                           EpiDocument.GetAssociationTypes(_config), 
+                                                           epiElements, 
+                                                           _config);
 
-                string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
+                var channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
 
-                string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, _config);
-                IntegrationLogger.Write(LogLevel.Information, "Catalog saved with the following:");
-                IntegrationLogger.Write(LogLevel.Information, string.Format("Nodes: {0}", epiElements["Nodes"].Count));
-                IntegrationLogger.Write(LogLevel.Information, string.Format("Entries: {0}", epiElements["Entries"].Count));
-                IntegrationLogger.Write(LogLevel.Information, string.Format("Relations: {0}", epiElements["Relations"].Count));
-                IntegrationLogger.Write(LogLevel.Information, string.Format("Associations: {0}", epiElements["Associations"].Count));
+                var folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
+
+                var zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, _config);
+
+                IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
+                                                              $"Nodes: {epiElements["Nodes"].Count}" +
+                                                              $"Entries: {epiElements["Entries"].Count}" +
+                                                              $"Relations: {epiElements["Relations"].Count}" +
+                                                              $"Associations: {epiElements["Associations"].Count}");
+
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done generating catalog.xml", 25);
-
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Generating Resource.xml and saving files to disk...", 26);
 
                 List<StructureEntity> resources = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channelEntity.Id.ToString(), "Resource");
@@ -152,7 +159,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 var resourceDocument = Resources.GetDocumentAndSaveFilesToDisk(resources, _config, folderDateTime);
                 DocumentFileHelper.SaveDocument(channelIdentifier, resourceDocument, _config, folderDateTime);
 
-                string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);
+                string resourceZipFile = $"resource_{folderDateTime}.zip";
+
                 DocumentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done generating/saving Resource.xml", 50);
                 publishStopWatch.Stop();

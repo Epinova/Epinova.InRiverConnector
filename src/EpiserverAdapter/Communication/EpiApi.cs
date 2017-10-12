@@ -237,7 +237,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             {
                 try
                 {
-                    var importer = new ResourceImporter(config.Settings);
+                    var importer = new ResourceImporter(config);
                     importer.ImportResources(manifest, baseFilePpath);
 
                     IntegrationLogger.Write(LogLevel.Information, $"Resource file {manifest} imported to EPi Server Commerce.");

@@ -46,10 +46,10 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 resources = (Resources)serializer.Deserialize(reader);
             }
 
-            List<InRiverImportResource> resourcesForImport = new List<InRiverImportResource>();
+            var resourcesForImport = new List<InRiverImportResource>();
             foreach (var resource in resources.ResourceFiles.Resource)
             {
-                InRiverImportResource newRes = new InRiverImportResource();
+                var newRes = new InRiverImportResource();
                 newRes.Action = resource.action;
                 newRes.Codes = new List<string>();
                 if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
