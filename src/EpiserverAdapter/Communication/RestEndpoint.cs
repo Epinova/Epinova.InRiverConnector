@@ -10,59 +10,34 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 {
     public class RestEndpoint<T>
     {
-        private readonly string endpointAddress;
+        private readonly string _endpointAddress;
         
-        private readonly string action;
+        private readonly string _action;
         
-        private readonly string apikey;
+        private readonly string _apikey;
 
-        private readonly Dictionary<string, string> settingsDictionary;
+        private readonly Dictionary<string, string> _settingsDictionary;
 
-        private readonly int timeout;
+        private readonly int _timeout;
 
         public RestEndpoint(Dictionary<string, string> settings, string action)
         {
-            this.action = action;
-            this.settingsDictionary = settings;
+            _action = action;
+            _settingsDictionary = settings;
 
-            if (settings.ContainsKey("EPI_APIKEY"))
-            {
-                this.apikey = settings["EPI_APIKEY"];
-            }
-            else
-            {
-                throw new ConfigurationErrorsException("Missing EPI_APIKEY setting on connector. It needs to be defined to else the calls will fail. Please see the documentation."); 
-            }
-
-            if (settings.ContainsKey("EPI_ENDPOINT_URL") == false)
-            {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site. Please see the documentation.");
-            }
-            
-            this.endpointAddress = this.ValidateEndpointAddress(settings["EPI_ENDPOINT_URL"]);
-
-            if (settings.ContainsKey("EPI_RESTTIMEOUT"))
-            {
-                string timeoutString = settings["EPI_RESTTIMEOUT"];
-                if (!int.TryParse(timeoutString, out this.timeout))
-                {
-                    throw new ConfigurationErrorsException("Can't parse EPI_RESTTIMEOUT : " + timeoutString);
-                }
-            }
-            else
-            {
-                throw new ConfigurationErrorsException("Missing EPI_RESTTIMEOUT setting on connector. It needs to be defined to else the calls will fail. Please see the documentation.");
-            }
+            _apikey = settings["EPI_APIKEY"];
+            _endpointAddress = settings["EPI_ENDPOINT_URL"];
+            _timeout = int.Parse(settings["EPI_RESTTIMEOUT"]);
         }
 
         public string GetUrl()
         {
-            return this.GetUrl(this.action);
+            return GetUrl(_action);
         }
 
         public string GetUrl(string action)
         {
-            string endpointAddress = this.endpointAddress;
+            string endpointAddress = _endpointAddress;
 
             if (string.IsNullOrEmpty(action) == false)
             {
@@ -74,7 +49,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         public string Post(T message)
         {
-            Uri uri = new Uri(this.GetUrl());
+            Uri uri = new Uri(GetUrl());
             HttpClient client = new HttpClient();
             string baseUrl = uri.Scheme + "://" + uri.Authority;
 
@@ -84,10 +59,10 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
             // Add an Accept header for JSON format.
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("apikey", this.apikey);
+            client.DefaultRequestHeaders.Add("apikey", _apikey);
 
             // HttpResponseMessage response = client.GetAsync("").Result;  // Blocking call!
-            client.Timeout = new TimeSpan(this.timeout, 0, 0);
+            client.Timeout = new TimeSpan(_timeout, 0, 0);
             HttpResponseMessage response = client.PostAsJsonAsync(uri.PathAndQuery, message).Result;
             if (response.IsSuccessStatusCode)
             {
@@ -95,7 +70,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                 string resp = response.Content.ReadAsAsync<string>().Result;
 
                 int tries = 0;
-                RestEndpoint<string> endpoint = new RestEndpoint<string>(this.settingsDictionary, "IsImporting");
+                RestEndpoint<string> endpoint = new RestEndpoint<string>(_settingsDictionary, "IsImporting");
 
                 while (resp == "importing")
                 {
@@ -131,7 +106,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         public string Get()
         {
-            Uri uri = new Uri(this.GetUrl());
+            Uri uri = new Uri(GetUrl());
             HttpClient client = new HttpClient();
             string baseUrl = uri.Scheme + "://" + uri.Authority;
 
@@ -139,10 +114,10 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
             // Add an Accept header for JSON format.
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("apikey", this.apikey);
+            client.DefaultRequestHeaders.Add("apikey", _apikey);
 
             // HttpResponseMessage response = client.GetAsync("").Result;  // Blocking call!
-            client.Timeout = new TimeSpan(this.timeout, 0, 0);
+            client.Timeout = new TimeSpan(_timeout, 0, 0);
             HttpResponseMessage response = client.GetAsync(uri.PathAndQuery).Result;
 
             if (response.IsSuccessStatusCode)
@@ -165,7 +140,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
         public List<string> PostWithStringListAsReturn(T message)
         {
-            Uri uri = new Uri(this.GetUrl());
+            Uri uri = new Uri(GetUrl());
             HttpClient client = new HttpClient();
             string baseUrl = uri.Scheme + "://" + uri.Authority;
 
@@ -176,10 +151,10 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
             // Add an Accept header for JSON format.
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("apikey", this.apikey);
+            client.DefaultRequestHeaders.Add("apikey", _apikey);
 
             // HttpResponseMessage response = client.GetAsync("").Result;  // Blocking call!
-            client.Timeout = new TimeSpan(this.timeout, 0, 0);
+            client.Timeout = new TimeSpan(_timeout, 0, 0);
             HttpResponseMessage response = client.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
             if (response.IsSuccessStatusCode)
             {
@@ -196,19 +171,5 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
             }
         }
 
-        private string ValidateEndpointAddress(string address)
-        {
-            if (string.IsNullOrEmpty(address))
-            {
-                throw new ConfigurationErrorsException("Missing ImportEndPointAddress setting on connector. It should point to the import end point on the EPiServer Commerce web site. Please see the documentation.");
-            }
-
-            if (address.EndsWith("/") == false)
-            {
-                return address + "/";
-            }
-
-            return address;
-        }
     }
 }

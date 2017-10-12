@@ -53,7 +53,8 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ConfigValidator.cs" />
+    <Compile Include="ConfigKeys.cs" />
+    <Compile Include="SettingsValidator.cs" />
     <Compile Include="Helpers\BusinessHelper.cs" />
     <Compile Include="Helpers\ChannelHelper.cs" />
     <Compile Include="Helpers\ChannelPrefixHelper.cs" />

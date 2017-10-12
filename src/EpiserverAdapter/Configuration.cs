@@ -16,126 +16,78 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
     {
         private static readonly string[] ExportDisabledEntityTypes = { "Channel", "Assortment", "Resource", "Task", "Section", "Publication" };
 
-        private static List<EntityType> exportEnabledEntityTypes;
+        private static List<EntityType> _exportEnabledEntityTypes;
 
-        private readonly Dictionary<string, string> settings;
+        private readonly Dictionary<string, string> _settings;
 
-        private readonly List<string> epiFieldsIninRiver;
+        private readonly List<string> _epiFieldsIninRiver;
 
-        private bool? modifyFilterBehavior;
+        private Dictionary<CultureInfo, CultureInfo> _languageMapping;
 
-        private Dictionary<CultureInfo, CultureInfo> languageMapping;
+        private Dictionary<string, string> _epiNameMapping;
 
-        private Dictionary<string, string> epiNameMapping;
+        private bool? _useThreeLevelsInCommerce;
 
-        private bool? useThreeLevelsInCommerce;
+        private CultureInfo _channelDefaultLanguage;
 
-        private CultureInfo channelDefaultLanguage;
+        private string _channelDefaultCurrency;
 
-        private string channelDefaultCurrency;
+       private Dictionary<string, string> _epiCodeMapping;
 
-       
-        private Dictionary<string, string> epiCodeMapping;
+        private string _channelWeightBase;
 
-        private string channelWeightBase;
+        private Dictionary<string, string> _resourceConfiugurationExtensions;
 
-        private string channelIdPrefix = string.Empty;
+        private List<LinkType> _exportEnabledLinkTypes;
 
-        private Dictionary<string, string> channelMimeTypeMappings = new Dictionary<string, string>();
+        private bool _itemsToSkus;
 
-        private Dictionary<string, string> resourceConfiugurationExtensions;
+        private HashSet<string> _excludedFields;
 
-        private List<LinkType> exportEnabledLinkTypes;
-
-        private bool itemsToSkus;
-
-        private HashSet<string> excludedFields;
-
-        private int batchsize;
+        private int _batchsize;
 
         public Configuration(string id)
         {
-            this.settings = RemoteManager.UtilityService.GetConnector(id).Settings;
-            this.Id = id;
-            this.LinkTypes = new List<LinkType>(RemoteManager.ModelService.GetAllLinkTypes());
-            this.epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
-            this.ChannelStructureEntities = new List<StructureEntity>();
-            this.ChannelEntities = new Dictionary<int, Entity>();
+            _settings = RemoteManager.UtilityService.GetConnector(id).Settings;
+            var settingsValidator = new SettingsValidator(_settings);
+            settingsValidator.ValidateSettings();
+
+            Id = id;
+            LinkTypes = new List<LinkType>(RemoteManager.ModelService.GetAllLinkTypes());
+            _epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
+            ChannelStructureEntities = new List<StructureEntity>();
+            ChannelEntities = new Dictionary<int, Entity>();
         }
 
         public static List<EntityType> ExportEnabledEntityTypes
         {
             get
             {
-                return exportEnabledEntityTypes ?? (exportEnabledEntityTypes = (from entityType in RemoteManager.ModelService.GetAllEntityTypes()
+                return _exportEnabledEntityTypes ?? (_exportEnabledEntityTypes = (from entityType in RemoteManager.ModelService.GetAllEntityTypes()
                                                        where !ExportDisabledEntityTypes.Contains(entityType.Id)
                                                        select entityType).ToList());
             }
         }
 
-        public static string DateTimeFormatString
-        {
-            get
-            {
-                return "yyyy-MM-dd HH:mm:ss";
-            }
-        }
+        public int EpiRestTimeout => int.Parse(_settings[ConfigKeys.EpiTimeout]);
+        public string EpiApiKey => _settings[ConfigKeys.EpiApiKey];
+        public string EpiEndpoint => _settings[ConfigKeys.EpiEndpoint];
 
-        public static string ExportFileName
-        {
-            get
-            {
-                return "Catalog.xml";
-            }
-        }
+        public static string DateTimeFormatString => "yyyy-MM-dd HH:mm:ss";
 
-        public static string MimeType
-        {
-            get
-            {
-                return "ResourceMimeType";
-            }
-        }
+        public static string ExportFileName => "Catalog.xml";
 
-        public static string OriginalDisplayConfiguration
-        {
-            get
-            {
-                return "Original";
-            }
-        }
+        public static string MimeType => "ResourceMimeType";
 
-        public static string CVLKeyDelimiter
-        {
-            get
-            {
-                return "||";
-            }
-        }
+        public static string OriginalDisplayConfiguration => "Original";
 
-        public static string EPiCommonField
-        {
-            get
-            {
-                return "EPiMetaFieldName";
-            }
-        }
-        
-        public static string SKUFieldName
-        {
-            get
-            {
-                return "SKUs";
-            }
-        }
+        public static string CVLKeyDelimiter => "||";
 
-        public static string SKUData
-        {
-            get
-            {
-                return "Data";
-            }
-        }
+        public static string EPiCommonField => "EPiMetaFieldName";
+
+        public static string SKUFieldName => "SKUs";
+
+        public static string SKUData => "Data";
 
         public XDocument MappingDocument { get; set; }
 
@@ -147,52 +99,25 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (!this.settings.ContainsKey("CHANNEL_ID"))
+                if (!_settings.ContainsKey("CHANNEL_ID"))
                 {
                     return 0;
                 }
 
-                return int.Parse(this.settings["CHANNEL_ID"]);
+                return int.Parse(_settings["CHANNEL_ID"]);
             }
         }
-
-        public bool ModifyFilterBehavior
-        {
-            get
-            {
-                if (this.modifyFilterBehavior == null)
-                {
-                    if (!this.settings.ContainsKey("MODIFY_FILTER_BEHAVIOR"))
-                    {
-                        this.modifyFilterBehavior = false;
-                        return false;
-                    }
-
-                    string value = this.settings["MODIFY_FILTER_BEHAVIOR"];
-                    if (!string.IsNullOrEmpty(value))
-                    {
-                        this.modifyFilterBehavior = bool.Parse(value);
-                    }
-                    else
-                    {
-                        this.modifyFilterBehavior = false;
-                    }
-                }
-
-                return (bool)this.modifyFilterBehavior;
-            }
-        }
-
+        
         public string PublicationsRootPath
         {
             get
             {
-                if (!this.settings.ContainsKey("PUBLISH_FOLDER"))
+                if (!_settings.ContainsKey("PUBLISH_FOLDER"))
                 {
                     return @"C:\temp\Publish\Epi";
                 }
 
-                return this.settings["PUBLISH_FOLDER"];
+                return _settings["PUBLISH_FOLDER"];
             }
         }
 
@@ -200,12 +125,12 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (!this.settings.ContainsKey("HTTP_POST_URL"))
+                if (!_settings.ContainsKey("HTTP_POST_URL"))
                 {
-                    return string.Empty;
+                    return null;
                 }
 
-                return this.settings["HTTP_POST_URL"];
+                return _settings["HTTP_POST_URL"];
             }
         }
 
@@ -213,14 +138,14 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (this.languageMapping == null)
+                if (_languageMapping == null)
                 {
-                    if (!this.settings.ContainsKey("LANGUAGE_MAPPING"))
+                    if (!_settings.ContainsKey("LANGUAGE_MAPPING"))
                     {
                         return new Dictionary<CultureInfo, CultureInfo>();
                     }
 
-                    string mappingXml = this.settings["LANGUAGE_MAPPING"];
+                    string mappingXml = _settings["LANGUAGE_MAPPING"];
 
                     Dictionary<CultureInfo, CultureInfo> languageMapping2 = new Dictionary<CultureInfo, CultureInfo>();
 
@@ -257,15 +182,15 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                         }
                     }
 
-                    this.languageMapping = languageMapping2;
+                    _languageMapping = languageMapping2;
                 }
 
-                return this.languageMapping;
+                return _languageMapping;
             }
 
             set
             {
-                this.languageMapping = value;
+                _languageMapping = value;
             }
         }
 
@@ -273,18 +198,18 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (this.epiNameMapping == null)
+                if (_epiNameMapping == null)
                 {
-                    if (!this.settings.ContainsKey("EPI_NAME_FIELDS"))
+                    if (!_settings.ContainsKey("EPI_NAME_FIELDS"))
                     {
-                        this.epiNameMapping = new Dictionary<string, string>();
+                        _epiNameMapping = new Dictionary<string, string>();
 
-                        return this.epiNameMapping;
+                        return _epiNameMapping;
                     }
 
-                    string value = this.settings["EPI_NAME_FIELDS"];
+                    string value = _settings["EPI_NAME_FIELDS"];
 
-                    this.epiNameMapping = new Dictionary<string, string>();
+                    _epiNameMapping = new Dictionary<string, string>();
                     if (!string.IsNullOrEmpty(value))
                     {
                         List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
@@ -298,15 +223,15 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                             }
 
                             FieldType fieldType = fieldTypes.FirstOrDefault(fT => fT.Id.ToLower() == val.ToLower());
-                            if (fieldType != null && !this.epiNameMapping.ContainsKey(fieldType.EntityTypeId))
+                            if (fieldType != null && !_epiNameMapping.ContainsKey(fieldType.EntityTypeId))
                             {
-                                this.epiNameMapping.Add(fieldType.EntityTypeId, fieldType.Id);
+                                _epiNameMapping.Add(fieldType.EntityTypeId, fieldType.Id);
                             }
                         }
                     }
                 }
 
-                return this.epiNameMapping;
+                return _epiNameMapping;
             }
         }
 
@@ -314,12 +239,12 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (!this.settings.ContainsKey("PUBLISH_FOLDER_RESOURCES"))
+                if (!_settings.ContainsKey("PUBLISH_FOLDER_RESOURCES"))
                 {
                     return @"C:\temp\Publish\Epi\Resources";
                 }
 
-                return this.settings["PUBLISH_FOLDER_RESOURCES"];
+                return _settings["PUBLISH_FOLDER_RESOURCES"];
             }
         }
 
@@ -327,77 +252,67 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (this.useThreeLevelsInCommerce == null)
+                if (_useThreeLevelsInCommerce == null)
                 {
-                    if (!this.settings.ContainsKey("USE_THREE_LEVELS_IN_COMMERCE"))
+                    if (!_settings.ContainsKey("USE_THREE_LEVELS_IN_COMMERCE"))
                     {
-                        this.useThreeLevelsInCommerce = false;
+                        _useThreeLevelsInCommerce = false;
                         return false;
                     }
 
-                    string value = this.settings["USE_THREE_LEVELS_IN_COMMERCE"];
+                    string value = _settings["USE_THREE_LEVELS_IN_COMMERCE"];
 
                     if (!string.IsNullOrEmpty(value))
                     {
-                        this.useThreeLevelsInCommerce = bool.Parse(value);
+                        _useThreeLevelsInCommerce = bool.Parse(value);
                     }
                     else
                     {
-                        this.useThreeLevelsInCommerce = false;
+                        _useThreeLevelsInCommerce = false;
                     }
                 }
 
-                return (bool)this.useThreeLevelsInCommerce;
+                return (bool)_useThreeLevelsInCommerce;
             }
         }
 
         public CultureInfo ChannelDefaultLanguage
         {
-            get
-            {
-                return this.channelDefaultLanguage ?? (this.channelDefaultLanguage = new CultureInfo("en-us"));
-            }
-
-            set
-            {
-                this.channelDefaultLanguage = value;
-            }
+            get => _channelDefaultLanguage ?? (_channelDefaultLanguage = new CultureInfo("en-us"));
+            set => _channelDefaultLanguage = value;
         }
 
         public string ChannelDefaultCurrency
         {
             get
             {
-                if (string.IsNullOrEmpty(this.channelDefaultCurrency))
+                if (string.IsNullOrEmpty(_channelDefaultCurrency))
                 {
-                    this.channelDefaultCurrency = "usd";
+                    _channelDefaultCurrency = "usd";
                 }
                 
-                return this.channelDefaultCurrency;
+                return _channelDefaultCurrency;
             }
 
-            set
-            {
-                this.channelDefaultCurrency = value;
-            }
+            set => _channelDefaultCurrency = value;
         }
 
         public Dictionary<string, string> EpiCodeMapping
         {
             get
             {
-                if (this.epiCodeMapping == null)
+                if (_epiCodeMapping == null)
                 {
-                    if (!this.settings.ContainsKey("EPI_CODE_FIELDS"))
+                    if (!_settings.ContainsKey("EPI_CODE_FIELDS"))
                     {
-                        this.epiCodeMapping = new Dictionary<string, string>();
+                        _epiCodeMapping = new Dictionary<string, string>();
 
-                        return this.epiCodeMapping;
+                        return _epiCodeMapping;
                     }
 
-                    string value = this.settings["EPI_CODE_FIELDS"];
+                    string value = _settings["EPI_CODE_FIELDS"];
 
-                    this.epiCodeMapping = new Dictionary<string, string>();
+                    _epiCodeMapping = new Dictionary<string, string>();
                     if (!string.IsNullOrEmpty(value))
                     {
                         List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
@@ -411,15 +326,15 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                             }
 
                             FieldType fieldType = fieldTypes.FirstOrDefault(fT => fT.Id.ToLower() == val.ToLower());
-                            if (fieldType != null && !this.epiCodeMapping.ContainsKey(fieldType.EntityTypeId))
+                            if (fieldType != null && !_epiCodeMapping.ContainsKey(fieldType.EntityTypeId))
                             {
-                                this.epiCodeMapping.Add(fieldType.EntityTypeId, fieldType.Id);
+                                _epiCodeMapping.Add(fieldType.EntityTypeId, fieldType.Id);
                             }
                         }
                     }
                 }
 
-                return this.epiCodeMapping;
+                return _epiCodeMapping;
             }
         }
 
@@ -431,58 +346,31 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (string.IsNullOrEmpty(this.channelWeightBase))
+                if (string.IsNullOrEmpty(_channelWeightBase))
                 {
-                    this.channelWeightBase = "lbs";
+                    _channelWeightBase = "kg";
                 }
 
-                return this.channelWeightBase;
+                return _channelWeightBase;
             }
-
-            set
-            {
-                this.channelWeightBase = value;
-            }
+            set => _channelWeightBase = value;
         }
 
-        public string ChannelIdPrefix
-        {
-            get
-            {
-                return this.channelIdPrefix;
-            }
+        public string ChannelIdPrefix { get; set; } = string.Empty;
 
-            set
-            {
-                this.channelIdPrefix = value;
-            }
-        }
+        public Dictionary<string, string> ChannelMimeTypeMappings { get; set; } = new Dictionary<string, string>();
 
-        public Dictionary<string, string> ChannelMimeTypeMappings
-        {
-            get
-            {
-                return this.channelMimeTypeMappings;
-            }
 
-            set
-            {
-                this.channelMimeTypeMappings = value;
-            }
-        }
-       
-       
-        
         public string[] ResourceConfigurations
         {
             get
             {
-                if (!this.settings.ContainsKey("RESOURCE_CONFIGURATION"))
+                if (!_settings.ContainsKey("RESOURCE_CONFIGURATION"))
                 {
                     return new string[0];
                 }
 
-                Dictionary<string, string> resourceConfWithExt = this.ParseResourceConfig(this.settings["RESOURCE_CONFIGURATION"]);
+                Dictionary<string, string> resourceConfWithExt = ParseResourceConfig(_settings["RESOURCE_CONFIGURATION"]);
                 return resourceConfWithExt.Keys.ToArray();
             }
         }
@@ -491,9 +379,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                return this.resourceConfiugurationExtensions
-                       ?? (this.resourceConfiugurationExtensions =
-                           this.ParseResourceConfig(this.settings["RESOURCE_CONFIGURATION"]));
+                return _resourceConfiugurationExtensions
+                       ?? (_resourceConfiugurationExtensions =
+                           ParseResourceConfig(_settings["RESOURCE_CONFIGURATION"]));
             }
         }
 
@@ -501,9 +389,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (this.exportEnabledLinkTypes == null)
+                if (_exportEnabledLinkTypes == null)
                 {
-                    this.exportEnabledLinkTypes = new List<LinkType>();
+                    _exportEnabledLinkTypes = new List<LinkType>();
                     List<LinkType> allLinkTypes = RemoteManager.ModelService.GetAllLinkTypes();
 
                     LinkType firstProdItemLink = allLinkTypes.Where(
@@ -516,9 +404,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                         // ChannelNode links and  Product to item links are not associations
                         if (linkType.LinkEntityTypeId == null &&
                             (linkType.SourceEntityTypeId.Equals("ChannelNode")
-                            || (this.BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !this.BundleEntityTypes.Contains(linkType.TargetEntityTypeId))
-                            || (this.PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !this.PackageEntityTypes.Contains(linkType.TargetEntityTypeId))
-                            || (this.DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !this.DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId))
+                            || (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !BundleEntityTypes.Contains(linkType.TargetEntityTypeId))
+                            || (PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !PackageEntityTypes.Contains(linkType.TargetEntityTypeId))
+                            || (DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId))
                             || (linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && firstProdItemLink != null && linkType.Id == firstProdItemLink.Id)))
                         {
                             continue;
@@ -527,12 +415,12 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                         if (ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.SourceEntityTypeId))
                             && ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.TargetEntityTypeId)))
                         {
-                            this.exportEnabledLinkTypes.Add(linkType);
+                            _exportEnabledLinkTypes.Add(linkType);
                         }
                     }
                 }
 
-                return this.exportEnabledLinkTypes.ToArray();
+                return _exportEnabledLinkTypes.ToArray();
             }
         }
 
@@ -540,13 +428,13 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                string value = this.settings["ITEM_TO_SKUs"];
-                if (!bool.TryParse(value, out this.itemsToSkus))
+                string value = _settings["ITEM_TO_SKUs"];
+                if (!bool.TryParse(value, out _itemsToSkus))
                 {
-                    this.itemsToSkus = false;
+                    _itemsToSkus = false;
                 }
 
-                return this.itemsToSkus;
+                return _itemsToSkus;
             }
         }
 
@@ -554,16 +442,16 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (this.settings.ContainsKey("BATCH_SIZE"))
+                if (_settings.ContainsKey("BATCH_SIZE"))
                 {
-                    string value = this.settings["BATCH_SIZE"];
+                    string value = _settings["BATCH_SIZE"];
 
-                    if (!int.TryParse(value, out this.batchsize) || value == "0")
+                    if (!int.TryParse(value, out _batchsize) || value == "0")
                     {
-                        this.batchsize = int.MaxValue;
+                        _batchsize = int.MaxValue;
                     }
 
-                    return this.batchsize;
+                    return _batchsize;
                 }
 
                 return int.MaxValue;
@@ -572,58 +460,25 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 
         public Dictionary<int, string> EntityIdAndType { get; set; }
 
-        public string[] BundleEntityTypes
-        {
-            get
-            {
-                if (!this.settings.ContainsKey("BUNDLE_ENTITYTYPES"))
-                {
-                    return new string[0];
-                }
+        public string[] BundleEntityTypes => StringToStringArray("BUNDLE_ENTITYTYPES");
 
-                return StringToStringArray(this.settings["BUNDLE_ENTITYTYPES"]);
-            }
-        }
+        public string[] PackageEntityTypes => StringToStringArray("PACKAGE_ENTITYTYPES");
 
-        public string[] PackageEntityTypes
-        {
-            get
-            {
-                if (!this.settings.ContainsKey("PACKAGE_ENTITYTYPES"))
-                {
-                    return new string[0];
-                }
-
-                return StringToStringArray(this.settings["PACKAGE_ENTITYTYPES"]);
-            }
-        }
-
-        public string[] DynamicPackageEntityTypes
-        {
-            get
-            {
-                if (!this.settings.ContainsKey("DYNAMIC_PACKAGE_ENTITYTYPES"))
-                {
-                    return new string[0];
-                }
-
-                return StringToStringArray(this.settings["DYNAMIC_PACKAGE_ENTITYTYPES"]);
-            }
-        }
+        public string[] DynamicPackageEntityTypes => StringToStringArray("DYNAMIC_PACKAGE_ENTITYTYPES");
 
         public HashSet<string> EPiFieldsIninRiver
         {
             get
             {
-                if (this.excludedFields != null)
+                if (_excludedFields != null)
                 {
-                    return this.excludedFields;
+                    return _excludedFields;
                 }
 
-                if (!this.settings.ContainsKey("EXCLUDE_FIELDS") || string.IsNullOrEmpty(this.settings["EXCLUDE_FIELDS"]))
+                if (!_settings.ContainsKey("EXCLUDE_FIELDS") || string.IsNullOrEmpty(_settings["EXCLUDE_FIELDS"]))
                 {
                     HashSet<string> excludedFieldTypes = new HashSet<string>();
-                    foreach (string baseField in this.epiFieldsIninRiver)
+                    foreach (string baseField in _epiFieldsIninRiver)
                     {
                         foreach (var entityType in ExportEnabledEntityTypes)
                         {
@@ -633,13 +488,13 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                     
                     excludedFieldTypes.Add("skus");
 
-                    this.excludedFields = excludedFieldTypes;
-                    return this.excludedFields;
+                    _excludedFields = excludedFieldTypes;
+                    return _excludedFields;
                 }
                 else
                 {
                     HashSet<string> excludedFieldTypes = new HashSet<string>();
-                    foreach (string baseField in this.epiFieldsIninRiver)
+                    foreach (string baseField in _epiFieldsIninRiver)
                     {
                         foreach (var entityType in ExportEnabledEntityTypes)
                         {
@@ -649,7 +504,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                     
                     excludedFieldTypes.Add("skus");
                     
-                    string[] fields = this.settings["EXCLUDE_FIELDS"].Split(',');
+                    string[] fields = _settings["EXCLUDE_FIELDS"].Split(',');
                     foreach (string field in fields)
                     {
                         if (!excludedFieldTypes.Contains(field.ToLower()))
@@ -658,8 +513,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                         }
                     }
 
-                    this.excludedFields = excludedFieldTypes;
-                    return this.excludedFields;
+                    _excludedFields = excludedFieldTypes;
+                    return _excludedFields;
                 }
             }
         }
@@ -676,34 +531,24 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         {
             get
             {
-                if (!this.settings.ContainsKey("CVL_DATA"))
-                {
-                    return CVLDataMode.Undefined;
-                }
-
-                return StringToCVLDataMode(this.settings["CVL_DATA"]);
+                return !_settings.ContainsKey("CVL_DATA") ?
+                    CVLDataMode.Undefined : 
+                    StringToCVLDataMode(_settings["CVL_DATA"]);
             }
         }
 
-        public Dictionary<string, string> Settings
+        private string[] StringToStringArray(string settingKey)
         {
-            get { return this.settings; }
-        }
-
-        private static string[] StringToStringArray(string setting)
-        {
-            if (string.IsNullOrEmpty(setting))
-            {
+            if(!_settings.ContainsKey(settingKey))
                 return new string[0];
-            }
+
+            var setting = _settings[settingKey];
+
+            if (string.IsNullOrEmpty(setting))
+                return new string[0];
 
             setting = setting.Replace(" ", string.Empty);
-            if (setting.Contains(','))
-            {
-                return setting.Split(',');
-            }
-
-            return new[] { setting };
+            return setting.Split(',');
         }
 
         private static CVLDataMode StringToCVLDataMode(string str)
@@ -712,7 +557,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 
             if (!Enum.TryParse(str, out mode))
             {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not parse CVLDataMode for string {0}", str));
+                IntegrationLogger.Write(LogLevel.Error, $"Could not parse CVLDataMode for string {str}");
             }
 
             return mode;

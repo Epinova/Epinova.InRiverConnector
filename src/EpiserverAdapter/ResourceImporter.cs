@@ -15,57 +15,22 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 {
     public class ResourceImporter
     {
-        public ResourceImporter(Dictionary<string, string> connectorSettings)
+        private readonly Configuration _config;
+
+        public ResourceImporter(Configuration config)
         {
-            _settings = connectorSettings;
+            _config = config;
         }
 
-        private readonly Dictionary<string, string> _settings; 
         
         public bool ImportResources(string manifest, string baseResourcePath)
         {
             Integration.Logging.IntegrationLogger.Write(LogLevel.Information,$"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
 
-            string apikey;
-            if (_settings.ContainsKey("EPI_APIKEY"))
-            {
-                apikey = _settings["EPI_APIKEY"];
-            }
-            else
-            {
-                throw new ConfigurationErrorsException("Missing required config EPI_APIKEY setting on connector.");
-            }
-
-            int timeout;
-            if (_settings.ContainsKey("EPI_RESTTIMEOUT"))
-            {
-                string timeoutString = _settings["EPI_RESTTIMEOUT"];
-                if (!int.TryParse(timeoutString, out timeout))
-                {
-                    throw new ConfigurationErrorsException("Can't parse EPI_RESTTIMEOUT : " + timeoutString);
-                }
-            }
-            else
-            {
-                throw new ConfigurationErrorsException("Missing required config EPI_RESTTIMEOUT setting on connector.");
-            }
-
-            if (_settings.ContainsKey("EPI_ENDPOINT_URL") == false)
-            {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site.");
-            }
-
-            string endpointAddress = _settings["EPI_ENDPOINT_URL"];
-            if (string.IsNullOrEmpty(endpointAddress))
-            {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site.");
-            }
-
-            if (endpointAddress.EndsWith("/") == false)
-            {
-                endpointAddress = endpointAddress + "/";
-            }
-
+            var timeout = _config.EpiRestTimeout;
+            var apikey = _config.EpiApiKey;
+            var endpointAddress = _config.EpiEndpoint;
+            
             // Name of resource import controller method
             endpointAddress = endpointAddress + "ImportResources";
 

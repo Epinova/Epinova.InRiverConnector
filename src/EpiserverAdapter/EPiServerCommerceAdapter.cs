@@ -31,6 +31,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         public new void Start()
         {
             _config = new Configuration(Id);
+
             ConnectorEventHelper.CleanupOngoingEvents(_config);
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
 
@@ -85,9 +86,9 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             ConfigurationManager.Instance.SetConnectorSetting(Id, "EPI_NAME_FIELDS", string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(Id, "USE_THREE_LEVELS_IN_COMMERCE", "false");
             ConfigurationManager.Instance.SetConnectorSetting(Id, "HTTP_POST_URL", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "EPI_ENDPOINT_URL", "https://www.example.com/inriverapi/InriverDataImport/");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "EPI_APIKEY", "SomeGreatKey123");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "EPI_RESTTIMEOUT", "1");
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiEndpoint, "https://www.example.com/inriverapi/InriverDataImport/");
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiApiKey, "SomeGreatKey123");
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiTimeout, "1");
             ConfigurationManager.Instance.SetConnectorSetting(Id, "BATCH_SIZE", string.Empty);
         }
 
@@ -540,17 +541,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             {
                 return;
             }
-
-            if (_config.ModifyFilterBehavior)
-            {
-                Entity exists = RemoteManager.DataService.GetEntity(deletedEntity.Id, LoadLevel.Shallow);
-                if (exists != null)
-                {
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("Ignored deleted for entity {0} in channel {1} becuase of ModifiedFilterBehavior", entityId, channelId));
-                    return;
-                }
-            }
-
+            
             Stopwatch deleteStopWatch = new Stopwatch();
             IntegrationLogger.Write(LogLevel.Debug, string.Format("Received entity deleted for entity {0} in channel {1}", entityId, channelId));
             ConnectorEvent entityDeletedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityDeleted, string.Format("Received entity deleted for entity {0} in channel {1}", entityId, channelId), 0);
