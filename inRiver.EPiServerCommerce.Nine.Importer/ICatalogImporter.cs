@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Web.Http;
 using inRiver.EPiServerCommerce.Interfaces;
 
 namespace inRiver.EPiServerCommerce.Importer
@@ -18,5 +19,11 @@ namespace inRiver.EPiServerCommerce.Importer
         void UpdateEntryRelations(UpdateEntryRelationData updateEntryRelationData);
 
         List<string> GetLinkEntityAssociationsForEntity(GetLinkEntityAssociationsForEntityData data);
+
+        void ImportCatalogXml([FromBody] string path);
+
+        bool ImportResources(List<InRiverImportResource> resources);
+
+        bool ImportUpdateCompleted(ImportUpdateCompletedData data);
     }
 }

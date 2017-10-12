@@ -1,18 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
+using System.Xml.Linq;
+using AuthorizeNet.Util;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
+using EPiServer.Commerce.Cata_logger.ContentTypes;
+using EPiServer.Commerce.SpecializedProperties;
+using EPiServer.Core;
+using EPiServer.DataAccess;
+using EPiServer.Framework.Blobs;
 using EPiServer.Logging;
+using EPiServer.Security;
 using EPiServer.ServiceLocation;
+using EPiServer.Web;
+using EPiServer.Web.Internal;
 using inRiver.EPiServerCommerce.Importer.EventHandling;
+using inRiver.EPiServerCommerce.Importer.ResourceModels;
 using inRiver.EPiServerCommerce.Interfaces;
+using Mediachase.Commerce.Assets;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Catalog.Dto;
+using Mediachase.Commerce.Catalog.ImportExport;
 using Mediachase.Commerce.Catalog.Managers;
 using Mediachase.Commerce.Catalog.Objects;
+using Mediachase.Commerce.Cata_logger.Dto;
+using Mediachase.Commerce.Cata_logger.ImportExport;
+using Mediachase.Commerce.Cata_logger.Managers;
+using Mediachase.Commerce.Cata_logger.Objects;
 
 namespace inRiver.EPiServerCommerce.Importer
 {
@@ -21,12 +42,20 @@ namespace inRiver.EPiServerCommerce.Importer
         private readonly ILogger _logger;
         private readonly ReferenceConverter _referenceConverter;
         private readonly IContentRepository _contentRepository;
+        private readonly IAssetService _assetService;
+        private readonly ICatalogSystem _catalogSystem;
 
-        public CatalogImporter(ILogger logger, ReferenceConverter referenceConverter, IContentRepository contentRepository)
+        public CatalogImporter(ILogger logger, 
+            ReferenceConverter referenceConverter, 
+            IContentRepository contentRepository,
+            IAssetService assetService,
+            ICatalogSystem catalogSystem)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
             _contentRepository = contentRepository;
+            _assetService = assetService;
+            _catalogSystem = catalogSystem;
         }
 
         private bool RunICatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
@@ -345,7 +374,262 @@ namespace inRiver.EPiServerCommerce.Importer
 
                 CatalogContext.Current.SaveCatalogAssociation(associationsDto2);
             }
+            return ids;
         }
+
+        public void ImportCatalogXml(string path)
+        {
+            Task.Run(
+                () =>
+                {
+                    try
+                    {
+                        ImportStatusContainer.Instance.Message = "importing";
+                        ImportStatusContainer.Instance.IsImporting = true;
+
+                        List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
+                        if (catalogImportHandlers.Any() && RunICatalogImportHandlers)
+                        {
+                            ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
+                        }
+                        else
+                        {
+                            ImportCatalogXmlFromPath(path);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ImportStatusContainer.Instance.IsImporting = false;
+                        _logger.Error("Catalog Import Failed", ex);
+                        ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
+                    }
+
+                    ImportStatusContainer.Instance.IsImporting = false;
+                    ImportStatusContainer.Instance.Message = "Import Sucessful";
+                });
+        }
+
+        public bool ImportResources(List<InRiverImportResource> resources)
+        {
+            if (resources == null)
+            {
+                _logger.Debug("Received resource list that is NULL");
+                return;
+            }
+
+            List<IInRiverImportResource> resourcesImport = resources.Cast<IInRiverImportResource>().ToList();
+
+            _logger.Debug("Received list of {resourcesImport.Count} resources to import");
+
+            Task importTask = Task.Run(
+                () =>
+                {
+                    try
+                    {
+                        ImportStatusContainer.Instance.Message = "importing";
+                        ImportStatusContainer.Instance.IsImporting = true;
+
+                        List<IResourceImporterHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
+
+                        if (RunIResourceImporterHandlers)
+                        {
+                            foreach (IResourceImporterHandler handler in importerHandlers)
+                            {
+                                handler.PreImport(resourcesImport);
+                            }
+                        }
+
+                        try
+                        {
+                            foreach (IInRiverImportResource resource in resources)
+                            {
+                                bool found = false;
+                                int count = 0;
+                                while (!found && count < 10 && resource.Action != "added")
+                                {
+                                    count++;
+
+                                    try
+                                    {
+                                        MediaData existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(resource.ResourceId));
+                                        if (existingMediaData != null)
+                                        {
+                                            found = true;
+                                        }
+                                    }
+                                    catch (Exception)
+                                    {
+                                        _logger.Debug($"Waiting ({count}/10) for resource {resource.ResourceId} to be ready.");
+                                        Thread.Sleep(500);
+                                    }
+                                }
+
+                                _logger.Debug($"Working with resource {resource.ResourceId} from {resource.Path} with action: {resource.Action}");
+
+                                if (resource.Action == "added" || resource.Action == "updated")
+                                {
+                                    ImportImageAndAttachToEntry(resource);
+                                }
+                                else if (resource.Action == "deleted")
+                                {
+                                    _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
+                                    HandleDelete(resource);
+                                }
+                                else if (resource.Action == "unlinked")
+                                {
+                                    HandleUnlink(resource);
+                                }
+                                else
+                                {
+                                    _logger.Debug($"Got unknown action for resource id: {resource.ResourceId}, {resource.Action}");
+                                }
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            ImportStatusContainer.Instance.IsImporting = false;
+                            _logger.Error("Resource Import Failed", exception);
+                            ImportStatusContainer.Instance.Message = "ERROR: " + exception.Message;
+                            return;
+                        }
+
+                        _logger.Debug($"Imported {resources.Count} resources");
+
+                        if (RunIResourceImporterHandlers)
+                        {
+                            foreach (IResourceImporterHandler handler in importerHandlers)
+                            {
+                                handler.PostImport(resourcesImport);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ImportStatusContainer.Instance.IsImporting = false;
+                        _logger.Error("Resource Import Failed", ex);
+                        ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
+                    }
+
+                    ImportStatusContainer.Instance.Message = "Resource Import successful";
+                    ImportStatusContainer.Instance.IsImporting = false;
+                });
+
+            return importTask.Status != TaskStatus.RanToCompletion;
+        }
+
+        public bool ImportUpdateCompleted(ImportUpdateCompletedData data)
+        {
+            if (RunIInRiverEventsHandlers)
+            {
+                IEnumerable<IInRiverEventsHandler> eventsHandlers = ServiceLocator.Current.GetAllInstances<IInRiverEventsHandler>();
+                foreach (IInRiverEventsHandler handler in eventsHandlers)
+                {
+                    handler.ImportUpdateCompleted(data.CatalogName, data.EventType, data.ResourcesIncluded);
+                }
+
+                _logger.Debug($"*** ImportUpdateCompleted events with parameters CatalogName={data.CatalogName}, EventType={data.EventType}, ResourcesIncluded={data.ResourcesIncluded}");
+            }
+
+            return true;
+        }
+
+        public bool DeleteCompleted(DeleteCompletedData data)
+        {
+            if (RunIInRiverEventsHandlers)
+            {
+                IEnumerable<IInRiverEventsHandler> eventsHandlers = ServiceLocator.Current.GetAllInstances<IInRiverEventsHandler>();
+                foreach (IInRiverEventsHandler handler in eventsHandlers)
+                {
+                    handler.DeleteCompleted(data.CatalogName, data.EventType);
+                }
+
+                _logger.Debug("*** DeleteCompleted events with parameters CatalogName={data.CatalogName}, EventType={data.EventType}");
+            }
+
+            return true;
+        }
+
+        private void ImportCatalogXmlFromPath(string path)
+        {
+            _logger.Information("Starting importing the xml into EPiServer Commerce.");
+            CatalogImportExport cie = new CatalogImportExport();
+            cie.ImportExportProgressMessage += ProgressHandler;
+            cie.Import(path, true);
+            _logger.Information("Done importing the xml into EPiServer Commerce.");
+        }
+
+        private void ImportCatalogXmlWithHandlers(string filePath, List<ICatalogImportHandler> catalogImportHandlers)
+        {
+            try
+            {
+                string originalFileName = Path.GetFileNameWithoutExtension(filePath);
+                string filenameBeforePreImport = originalFileName + "-beforePreImport.xml";
+
+                XDocument catalogDoc = XDocument.Load(filePath);
+                catalogDoc.Save(filenameBeforePreImport);
+
+                if (catalogImportHandlers.Any())
+                {
+                    foreach (ICatalogImportHandler handler in catalogImportHandlers)
+                    {
+                        try
+                        {
+                            _logger.Debug($"Preimport handler: {handler.GetType().FullName}");
+                            handler.PreImport(catalogDoc);
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.Error("Failed to run PreImport on " + handler.GetType().FullName, e);
+                        }
+                    }
+                }
+
+                if (!File.Exists(filePath))
+                {
+                    _logger.Error("Cata_logger.xml for path " + filePath + " does not exist. Importer is not able to continue with this process.");
+                    return;
+                }
+                var directoryPath = Path.GetDirectoryName(filePath);
+
+                FileStream fs = new FileStream(filePath, FileMode.Create);
+                catalogDoc.Save(fs);
+                fs.Dispose();
+
+                CatalogImportExport cie = new CatalogImportExport();
+                cie.ImportExportProgressMessage += ProgressHandler;
+
+                cie.Import(directoryPath, true);
+
+                catalogDoc = XDocument.Load(filePath);
+
+                if (catalogImportHandlers.Any())
+                {
+                    foreach (ICatalogImportHandler handler in catalogImportHandlers)
+                    {
+                        try
+                        {
+                            _logger.Debug($"Postimport handler: {handler.GetType().FullName}");
+                            handler.PostImport(catalogDoc);
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.Error("Failed to run PostImport on " + handler.GetType().FullName, e);
+                        }
+                    }
+                }
+            }
+            catch (Exception exception)
+            {
+                _logger.Error("Error in ImportCatalogXmlWithHandlers", exception);
+                throw;
+            }
+        }
+
+        private void ProgressHandler(object source, ImportExportEventArgs args)
+        {
+            _logger.Debug($"{args.Message}");
+        }
+
 
         private void MoveNode(string nodeCode, int newParent)
         {
@@ -364,9 +648,9 @@ namespace inRiver.EPiServerCommerce.Importer
                 CatalogDto d = CatalogContext.Current.GetCatalogDto();
                 foreach (CatalogDto.CatalogRow catalog in d.Catalog)
                 {
-                    if (name.Equals(catalog.Name))
+                    if (name.Equals(cata_logger.Name))
                     {
-                        return catalog.CatalogId;
+                        return cata_logger.CatalogId;
                     }
                 }
 
@@ -375,6 +659,470 @@ namespace inRiver.EPiServerCommerce.Importer
             catch (Exception)
             {
                 return -1;
+            }
+        }
+
+        private void ImportImageAndAttachToEntry(IInRiverImportResource inriverResource)
+        {
+            MediaData existingMediaData = null;
+            try
+            {
+                existingMediaData = _contentRepository.Get<MediaData>(EntityIdToGuid(inriverResource.ResourceId));
+            }
+            catch (Exception ex)
+            {
+                _logger.Debug($"Didn't find resource with Resource ID: {inriverResource.ResourceId}");
+            }
+
+            try
+            {
+                if (existingMediaData != null)
+                {
+                    _logger.Debug("Found existing resource with Resource ID: {0}", inriverResource.ResourceId);
+
+                    UpdateMetaData((IInRiverResource)existingMediaData, inriverResource);
+
+                    if (inriverResource.Action == "added")
+                    {
+                        AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
+                    }
+
+                    return;
+                }
+
+                ContentReference contentReference;
+                existingMediaData = CreateNewFile(out contentReference, inriverResource);
+
+                AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
+            }
+            catch (Exception exception)
+            {
+                _logger.Error("Unable to create/update metadata for Resource ID: {0}.\n{1}", inriverResource.ResourceId, exception.Message);
+            }
+        }
+
+        private void AddLinksFromMediaToCodes(MediaData contentMedia, List<EntryCode> codes)
+        {
+            // TODO: This way of adding media will add and save media individually. We 
+            //       should add all images, and save once instead. Will improve import speed
+
+            int sortOrder = 1;
+            CommerceMedia media = new CommerceMedia(contentMedia.ContentLink, "episerver.core.icontentmedia", "default", sortOrder);
+
+            foreach (EntryCode entryCode in codes)
+            {
+                // AddOrUpdateMediaOnEntry(entryCode, linkToContent, media);
+
+                CatalogEntryDto catalogEntry = GetCatalogEntryDto(entryCode.Code);
+                if (catalogEntry != null)
+                {
+                    AddLinkToCatalogEntry(contentMedia, media, catalogEntry, entryCode);
+                }
+                else
+                {
+                    CatalogNodeDto catalogNodeDto = GetCatalogNodeDto(entryCode.Code);
+                    if (catalogNodeDto != null)
+                    {
+                        AddLinkToCatalogNode(contentMedia, media, catalogNodeDto, entryCode);
+                    }
+                    else
+                    {
+                        _logger.Debug($"Could not find entry with code: {entryCode.Code}, can't create link");
+                    }
+                }
+            }
+        }
+
+        private void AddLinkToCatalogEntry(MediaData contentMedia, CommerceMedia media, CatalogEntryDto catalogEntry, EntryCode entryCode)
+        {
+            var newAssetRow = media.ToItemAssetRow(catalogEntry);
+
+            var catalogItemAssetRow = catalogEntry.CatalogItemAsset.FirstOrDefault(row => row.AssetKey == newAssetRow.AssetKey);
+            if (catalogItemAssetRow == null)
+            {
+                IAssetService assetService = ServiceLocator.Current.GetInstance<IAssetService>();
+
+                List<CatalogEntryDto.CatalogItemAssetRow> list = new List<CatalogEntryDto.CatalogItemAssetRow>();
+
+                if (entryCode.IsMainPicture)
+                {
+                    _logger.Debug($"Adding '{contentMedia.Name}' as main picture on {entryCode.Code}");
+                    // First
+                    list.Add(newAssetRow);
+                    list.AddRange(catalogEntry.CatalogItemAsset.ToList());
+                }
+                else
+                {
+                    _logger.Debug("Adding '{contentMedia.Name}' at end of list on  {entryCode.Code}");
+                    // Last
+                    list.AddRange(catalogEntry.CatalogItemAsset.ToList());
+                    list.Add(newAssetRow);
+                }
+
+                // Set sort order correctly (instead of having them all to 0)
+                for (int i = 0; i < list.Count; i++)
+                {
+                    list[i].SortOrder = i;
+                }
+
+                assetService.CommitAssetsToEntry(list, catalogEntry);
+
+                // NOTE! Truncates version history
+                _catalogSystem.SaveCatalogEntry(catalogEntry);
+            }
+            else
+            {
+                // Already in the list, check and fix sort order
+                if (entryCode.IsMainPicture)
+                {
+                    bool needsSave = false;
+                    // If more than one entry have sort order 0, we need to clean it up
+                    int count = catalogEntry.CatalogItemAsset.Count(row => row.SortOrder.Equals(0));
+                    if (count > 1)
+                    {
+                        _logger.Debug("Sorting and setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
+
+                        // Clean up
+                        List<CatalogEntryDto.CatalogItemAssetRow> assetRows = catalogEntry.CatalogItemAsset.ToList();
+                        // Keep existing sort order, but start at pos 1 since we will set the main picture to 0
+                        for (int i = 0; i < assetRows.Count; i++)
+                        {
+                            assetRows[i].SortOrder = i + 1;
+                        }
+                        // Set the one we found to 0, which will make it main.
+                        catalogItemAssetRow.SortOrder = 0;
+                        needsSave = true;
+                    }
+                    else if (catalogItemAssetRow.SortOrder != 0)
+                    {
+                        // Switch order if it isn't already first
+                        _logger.Debug($"Setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
+
+                        int oldOrder = catalogItemAssetRow.SortOrder;
+                        catalogItemAssetRow.SortOrder = 0;
+                        catalogEntry.CatalogItemAsset[0].SortOrder = oldOrder;
+                        needsSave = true;
+                    }
+                    // else - we have it already, it isn't main picture, and sort seems ok, we won't save anything
+
+                    if (needsSave == true)
+                    {
+                        // Since we're not adding or deleting anything from the list, we don't have to "CommitAssetsToEntry", just save
+                        _catalogSystem.SaveCatalogEntry(catalogEntry);
+                    }
+                }
+            }
+        }
+
+
+        private void AddLinkToCatalogNode(MediaData contentMedia, CommerceMedia media, CatalogNodeDto catalogNodeDto, EntryCode entryCode)
+        {
+            var newAssetRow = media.ToItemAssetRow(catalogNodeDto);
+
+            if (catalogNodeDto.CatalogItemAsset.FirstOrDefault(row => row.AssetKey == newAssetRow.AssetKey) == null)
+            {
+                // This asset have not been added previously
+                List<CatalogNodeDto.CatalogItemAssetRow> list = new List<CatalogNodeDto.CatalogItemAssetRow>();
+
+                if (entryCode.IsMainPicture)
+                {
+                    // First
+                    list.Add(newAssetRow);
+                    list.AddRange(catalogNodeDto.CatalogItemAsset.ToList());
+                }
+                else
+                {
+                    // Last
+                    list.AddRange(catalogNodeDto.CatalogItemAsset.ToList());
+                    list.Add(newAssetRow);
+                }
+
+                // Set sort order correctly (instead of having them all to 0)
+                for (int i = 0; i < list.Count; i++)
+                {
+                    list[i].SortOrder = i;
+                }
+
+                _assetService.CommitAssetsToNode(list, catalogNodeDto);
+
+                // NOTE! Truncates version history
+                _catalogSystem.SaveCatalogNode(catalogNodeDto);
+            }
+        }
+
+        private CatalogNodeDto GetCatalogNodeDto(string code)
+        {
+            CatalogNodeDto catalogNodeDto = _catalogSystem.GetCatalogNodeDto(code, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.Assets));
+            if (catalogNodeDto == null || catalogNodeDto.CatalogNode.Count <= 0)
+            {
+                return null;
+            }
+
+            return catalogNodeDto;
+        }
+
+        private CatalogEntryDto GetCatalogEntryDto(string code)
+        {
+            CatalogEntryDto catalogEntry = _catalogSystem.GetCatalogEntryDto(code, new CatalogEntryResponseGroup(CatalogEntryResponseGroup.ResponseGroup.Assets));
+            if (catalogEntry == null || catalogEntry.CatalogEntry.Count <= 0)
+            {
+                return null;
+            }
+
+            return catalogEntry;
+        }
+
+        private void UpdateMetaData(IInRiverResource resource, IInRiverImportResource updatedResource)
+        {
+            MediaData editableMediaData = (MediaData)((MediaData)resource).CreateWritableClone();
+
+            ResourceMetaField resourceFileId = updatedResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
+            if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
+            {
+                IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
+
+                FileInfo fileInfo = new FileInfo(updatedResource.Path);
+                if (fileInfo.Exists == false)
+                {
+                    throw new FileNotFoundException("File could not be imported", updatedResource.Path);
+                }
+
+                string ext = fileInfo.Extension;
+
+                Blob blob = blobFactory.CreateBlob(editableMediaData.BinaryDataContainer, ext);
+                using (Stream s = blob.OpenWrite())
+                {
+                    FileStream fileStream = File.OpenRead(fileInfo.FullName);
+                    fileStream.CopyTo(s);
+                }
+
+                editableMediaData.BinaryData = blob;
+
+                string rawFilename = null;
+                if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
+                {
+                    rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
+                }
+                else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
+                {
+                    rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
+                }
+
+                editableMediaData.RouteSegment = UrlSegment.GetUrlFriendlySegment(rawFilename);
+            }
+
+            ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
+
+            _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
+        }
+
+        private MediaData CreateNewFile(out ContentReference contentReference, IInRiverImportResource inriverResource)
+        {
+            IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
+            ContentMediaResolver mediaDataResolver = ServiceLocator.Current.GetInstance<ContentMediaResolver>();
+            IContentTypeRepository contentTypeRepository = ServiceLocator.Current.GetInstance<IContentTypeRepository>();
+
+            bool resourceWithoutFile = false;
+
+            ResourceMetaField resourceFileId = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
+            if (resourceFileId == null || string.IsNullOrEmpty(resourceFileId.Values.First().Data))
+            {
+                resourceWithoutFile = true;
+            }
+
+            string ext;
+            FileInfo fileInfo = null;
+            if (resourceWithoutFile)
+            {
+                ext = "url";
+            }
+            else
+            {
+                fileInfo = new FileInfo(inriverResource.Path);
+                if (fileInfo.Exists == false)
+                {
+                    throw new FileNotFoundException("File could not be imported", inriverResource.Path);
+                }
+
+                ext = fileInfo.Extension;
+            }
+
+            ContentType contentType = null;
+            IEnumerable<Type> mediaTypes = mediaDataResolver.ListAllMatching(ext);
+
+            foreach (Type type in mediaTypes)
+            {
+                if (type.GetInterfaces().Contains(typeof(IInRiverResource)))
+                {
+                    contentType = contentTypeRepository.Load(type);
+                    break;
+                }
+            }
+
+            if (contentType == null)
+            {
+                contentType = contentTypeRepository.Load(typeof(InRiverGenericMedia));
+            }
+
+            MediaData newFile = _contentRepository.GetDefault<MediaData>(GetInRiverResourceFolder(), contentType.ID);
+            if (resourceWithoutFile)
+            {
+                ResourceMetaField resourceName = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceName");
+                if (resourceName != null && !string.IsNullOrEmpty(resourceName.Values.First().Data))
+                {
+                    newFile.Name = resourceName.Values.First().Data;
+                }
+                else
+                {
+                    newFile.Name = inriverResource.ResourceId.ToString(CultureInfo.InvariantCulture);
+                }
+            }
+            else
+            {
+                newFile.Name = fileInfo.Name;
+            }
+
+            IInRiverResource resource = (IInRiverResource)newFile;
+
+            if (resourceFileId != null && fileInfo != null)
+            {
+                resource.ResourceFileId = int.Parse(resourceFileId.Values.First().Data);
+            }
+
+            resource.EntityId = inriverResource.ResourceId;
+
+            try
+            {
+                resource.HandleMetaData(inriverResource.MetaFields);
+            }
+            catch (Exception exception)
+            {
+
+                _logger.Error($"Error when running HandleMetaData for resource {inriverResource.ResourceId} with contentType {contentType.Name}: {exception.Message}");
+            }
+
+            if (!resourceWithoutFile)
+            {
+                Blob blob = blobFactory.CreateBlob(newFile.BinaryDataContainer, ext);
+                using (Stream s = blob.OpenWrite())
+                {
+                    FileStream fileStream = File.OpenRead(fileInfo.FullName);
+                    fileStream.CopyTo(s);
+                }
+
+                newFile.BinaryData = blob;
+            }
+
+            newFile.ContentGuid = CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
+            try
+            {
+                contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
+                return newFile;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error when calling Save", ex);
+                contentReference = null;
+                return newFile;
+            }
+        }
+
+        /// <summary>
+        /// Returns a reference to the inRiver Resource folder. It will be created if it
+        /// does not already exist.
+        /// </summary>
+        /// <remarks>
+        /// The folder structure will be: /globalassets/inRiver/Resources/...
+        /// </remarks>
+        protected ContentReference GetInRiverResourceFolder()
+        {
+            ContentReference rootInRiverFolder = ContentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, "inRiver");
+            ContentReference resourceRiverFolder = ContentFolderCreator.CreateOrGetFolder(rootInRiverFolder, "Resources");
+            return resourceRiverFolder;
+        }
+
+        private void HandleUnlink(IInRiverImportResource inriverResource)
+        {
+            MediaData existingMediaData = null;
+            try
+            {
+                existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
+            }
+            catch (Exception)
+            {
+                _logger.Debug("Didn't find resource with Resource ID: {inriverResource.ResourceId}, can't unlink");
+            }
+
+            if (existingMediaData == null)
+            {
+                return;
+            }
+
+            DeleteLinksBetweenMediaAndCodes(existingMediaData, inriverResource.Codes);
+        }
+
+        private void HandleDelete(IInRiverImportResource inriverResource)
+        {
+            MediaData existingMediaData = null;
+            try
+            {
+                existingMediaData = _contentRepository.Get<MediaData>(CatalogEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
+            }
+            catch (Exception)
+            {
+                _logger.Debug($"Didn't find resource with Resource ID: {inriverResource.ResourceId}, can't Delete");
+            }
+
+            if (existingMediaData == null)
+            {
+                return;
+            }
+
+            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
+
+            if (RunIDeleteActionsHandlers)
+            {
+                foreach (IDeleteActionsHandler handler in importerHandlers)
+                {
+                    handler.PreDeleteResource(inriverResource);
+                }
+            }
+
+            _contentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
+
+            if (RunIDeleteActionsHandlers)
+            {
+                foreach (IDeleteActionsHandler handler in importerHandlers)
+                {
+                    handler.PostDeleteResource(inriverResource);
+                }
+            }
+        }
+
+        private void DeleteLinksBetweenMediaAndCodes(MediaData media, IEnumerable<string> codes)
+        {
+            foreach (string code in codes)
+            {
+                var contentReference = _referenceConverter.GetContentLink(code);
+                if (ContentReference.IsNullOrEmpty(contentReference))
+                    continue;
+
+                EntryContentBase catalogEntry;
+                NodeContent nodeContent;
+                if (_contentRepository.TryGet(contentReference, out nodeContent))
+                {
+                    var writableClone = nodeContent.CreateWritableClone<NodeContent>();
+                    var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+                    writableClone.CommerceMediaCollection.Remove(mediaToRemove);
+                    _contentRepository.Save(writableClone, AccessLevel.NoAccess);
+                }
+                else if (_contentRepository.TryGet(contentReference, out catalogEntry))
+                {
+                    var writableClone = nodeContent.CreateWritableClone<EntryContentBase>();
+                    var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+                    writableClone.CommerceMediaCollection.Remove(mediaToRemove);
+                    _contentRepository.Save(writableClone, AccessLevel.NoAccess);
+                }
             }
         }
 
