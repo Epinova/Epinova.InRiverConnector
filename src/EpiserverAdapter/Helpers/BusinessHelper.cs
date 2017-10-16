@@ -20,28 +20,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public static List<CVLValue> CVLValues
         {
-            get
-            {
-                return cvlValues ?? (cvlValues = RemoteManager.ModelService.GetAllCVLValues());
-            }
-
-            set
-            {
-                cvlValues = value;
-            }
+            get => cvlValues ?? (cvlValues = RemoteManager.ModelService.GetAllCVLValues());
+            set => cvlValues = value;
         }
 
         public static List<CVL> CvLs
         {
-            get
-            {
-                return cvls ?? (cvls = RemoteManager.ModelService.GetAllCVLs());
-            }
-
-            set
-            {
-                cvls = value;
-            }
+            get => cvls ?? (cvls = RemoteManager.ModelService.GetAllCVLs());
+            set => cvls = value;
         }
 
         public static bool FieldTypeIsMultiLanguage(FieldType fieldType)

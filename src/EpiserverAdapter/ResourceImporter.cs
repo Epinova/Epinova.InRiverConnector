@@ -16,7 +16,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
     {
         private readonly Configuration _config;
 
-        private static HttpClient _httpClient;
+        private static readonly HttpClient _httpClient;
         
         static ResourceImporter()
         {

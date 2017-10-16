@@ -10,7 +10,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
     {
         public InRiverImportResource()
         {
-            this.EntryCodes = new List<EntryCode>();
+            EntryCodes = new List<EntryCode>();
         }
 
         /// <summary>

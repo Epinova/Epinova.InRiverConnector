@@ -439,7 +439,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 {
                     foreach (StructureEntity structureEntity in structureEntityList)
                     {
-                        int parentNodeId = ChannelHelper.GetParentChannelNode(structureEntity, channelId);
+                        int parentNodeId = GetParentChannelNode(structureEntity, channelId);
 
                         if (parentNodeId == 0)
                         {

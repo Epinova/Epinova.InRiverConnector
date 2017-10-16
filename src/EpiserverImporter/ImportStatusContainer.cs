@@ -2,19 +2,13 @@
 {
     public class ImportStatusContainer
     {
-        private static ImportStatusContainer instance = new ImportStatusContainer();
+        private static ImportStatusContainer _instance = new ImportStatusContainer();
 
         private ImportStatusContainer()
         {
         }
 
-        public static ImportStatusContainer Instance
-        {
-            get
-            {
-                return instance ?? (instance = new ImportStatusContainer());
-            }
-        }
+        public static ImportStatusContainer Instance => _instance ?? (_instance = new ImportStatusContainer());
 
         public string Message { get; set; }
 

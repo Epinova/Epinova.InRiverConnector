@@ -11,10 +11,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
     {
         private readonly string _endpointAddress;       
         private readonly string _action;       
-        private readonly int _timeout;
 
         // ReSharper disable once StaticMemberInGenericType
-        private static HttpClient _httpClient;
+        private static readonly HttpClient _httpClient;
 
         static RestEndpoint()
         {
@@ -25,9 +24,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         {
             _action = action;
             _endpointAddress = config.EpiEndpoint;
-            _timeout = config.EpiRestTimeout;
-
             Uri uri = new Uri(GetUrl());
+
             _httpClient.BaseAddress = new Uri(uri.Scheme + "://" + uri.Authority);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);

@@ -19,7 +19,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
         public CvlUtility(Configuration cvlUtilConfig)
         {
-            this.CvlUtilConfig = cvlUtilConfig;
+            CvlUtilConfig = cvlUtilConfig;
         }
 
         public void AddCvl(string cvlId, string folderDateTime)
@@ -29,23 +29,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             foreach (FieldType fieldType in affectedFieldTypes)
             {
-                if (EpiMappingHelper.SkipField(fieldType, this.CvlUtilConfig))
+                if (EpiMappingHelper.SkipField(fieldType, CvlUtilConfig))
                 {
                     continue;
                 }
 
-                XElement metaField = EpiElement.InRiverFieldTypeToMetaField(fieldType, this.CvlUtilConfig);
+                XElement metaField = EpiElement.InRiverFieldTypeToMetaField(fieldType, CvlUtilConfig);
 
                 if (fieldType.DataType.Equals(DataType.CVL))
                 {
-                    metaField.Add(EpiMappingHelper.GetDictionaryValues(fieldType, this.CvlUtilConfig));
+                    metaField.Add(EpiMappingHelper.GetDictionaryValues(fieldType, CvlUtilConfig));
                 }
 
                 if (metafields.Any(
                     mf =>
                     {
                         XElement nameElement = mf.Element("Name");
-                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, this.CvlUtilConfig));
+                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, CvlUtilConfig));
                     }))
                 {
                     XElement existingMetaField =
@@ -53,7 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                             mf =>
                             {
                                 XElement nameElement = mf.Element("Name");
-                                return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, this.CvlUtilConfig));
+                                return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, CvlUtilConfig));
                             });
 
                     if (existingMetaField == null)
@@ -71,27 +71,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
 
             XElement metaData = new XElement("MetaDataPlusBackup", new XAttribute("version", "1.0"), metafields.ToArray());
-            XDocument doc = EpiDocument.CreateDocument(null, metaData, null, this.CvlUtilConfig);
+            XDocument doc = EpiDocument.CreateDocument(null, metaData, null, CvlUtilConfig);
 
-            Entity channelEntity = RemoteManager.DataService.GetEntity(this.CvlUtilConfig.ChannelId, LoadLevel.DataOnly);
+            Entity channelEntity = RemoteManager.DataService.GetEntity(CvlUtilConfig.ChannelId, LoadLevel.DataOnly);
             if (channelEntity == null)
             {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not find channel {0} for cvl add", this.CvlUtilConfig.ChannelId));
+                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not find channel {0} for cvl add", CvlUtilConfig.ChannelId));
                 return;
             }
 
             string channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
 
-            string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, this.CvlUtilConfig);
+            string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, CvlUtilConfig);
             IntegrationLogger.Write(LogLevel.Debug, string.Format("catalog {0} saved", channelIdentifier));
 
-            if (this.CvlUtilConfig.ActivePublicationMode.Equals(PublicationMode.Automatic))
+            if (CvlUtilConfig.ActivePublicationMode.Equals(PublicationMode.Automatic))
             {
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-                if (EpiApi.Import(Path.Combine(this.CvlUtilConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName), ChannelHelper.GetChannelGuid(channelEntity, this.CvlUtilConfig), this.CvlUtilConfig))
+                if (EpiApi.Import(Path.Combine(CvlUtilConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName), ChannelHelper.GetChannelGuid(channelEntity, CvlUtilConfig), CvlUtilConfig))
                 {
-                    EpiApi.SendHttpPost(this.CvlUtilConfig, Path.Combine(this.CvlUtilConfig.PublicationsRootPath, folderDateTime, zippedfileName));
+                    EpiApi.SendHttpPost(CvlUtilConfig, Path.Combine(CvlUtilConfig.PublicationsRootPath, folderDateTime, zippedfileName));
                 }
             }
         }

@@ -721,7 +721,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     CatalogNodeDto catalogNodeDto = GetCatalogNodeDto(entryCode.Code);
                     if (catalogNodeDto != null)
                     {
-                        AddLinkToCatalogNode(contentMedia, media, catalogNodeDto, entryCode);
+                        AddLinkToCatalogNode(media, catalogNodeDto, entryCode);
                     }
                     else
                     {
@@ -803,7 +803,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     }
                     // else - we have it already, it isn't main picture, and sort seems ok, we won't save anything
 
-                    if (needsSave == true)
+                    if (needsSave)
                     {
                         // Since we're not adding or deleting anything from the list, we don't have to "CommitAssetsToEntry", just save
                         _catalogSystem.SaveCatalogEntry(catalogEntry);
@@ -813,7 +813,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
 
-        private void AddLinkToCatalogNode(MediaData contentMedia, CommerceMedia media, CatalogNodeDto catalogNodeDto, EntryCode entryCode)
+        private void AddLinkToCatalogNode(CommerceMedia media, CatalogNodeDto catalogNodeDto, EntryCode entryCode)
         {
             var newAssetRow = media.ToItemAssetRow(catalogNodeDto);
 
@@ -835,15 +835,12 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     list.Add(newAssetRow);
                 }
 
-                // Set sort order correctly (instead of having them all to 0)
                 for (int i = 0; i < list.Count; i++)
                 {
                     list[i].SortOrder = i;
                 }
 
                 _assetService.CommitAssetsToNode(list, catalogNodeDto);
-
-                // NOTE! Truncates version history
                 _catalogSystem.SaveCatalogNode(catalogNodeDto);
             }
         }

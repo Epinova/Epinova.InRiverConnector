@@ -14,28 +14,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
     {
         private const string ApiKeyName = "apikey";
 
-        private static string ApiKeyValue
-        {
-            get
-            {
-                if (ConfigurationManager.AppSettings.Count > 0)
-                {
-                    var apikey = ConfigurationManager.AppSettings["inRiver.apikey"];
-                    if (apikey != null)
-                    {
-                        return apikey;
-                    }
-                    
-                    return null;
-                }
-                
-                return null;
-            }
-        }
+        private static string ApiKeyValue => ConfigurationManager.AppSettings["inRiver.apikey"];
 
         public override Task<HttpResponseMessage> ExecuteAsync(HttpControllerContext controllerContext, CancellationToken cancellationToken)
         {
-            if (this.ValidateApiKey(controllerContext.Request) == false)
+            if (ValidateApiKey(controllerContext.Request) == false)
             {
                 HttpResponseMessage resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
                 TaskCompletionSource<HttpResponseMessage> tsc = new TaskCompletionSource<HttpResponseMessage>();
