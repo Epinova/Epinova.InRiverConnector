@@ -177,7 +177,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
                     string catalogEntryIdString = ChannelPrefixHelper.GetEpiserverCode(catalogEntryId, config);
                     string channelIdEpified = ChannelPrefixHelper.GetEpiserverCode(channelId, config);
-                    string inriverAssociationsEpified = ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config);
                     bool relation = EpiMappingHelper.IsRelation(linkTypeId, config);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
@@ -189,7 +188,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                     ChannelName = channelName,
                                                     RemoveFromChannelNodes = removeFromChannelNodes,
                                                     LinkEntityIdsToRemove = linkEntityIdsToRemove,
-                                                    InRiverAssociationsEpified = inriverAssociationsEpified,
                                                     LinkTypeId = linkTypeId,
                                                     IsRelation = relation,
                                                     ParentExistsInChannelNodes = parentExistsInChannelNodes

@@ -223,20 +223,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     _logger.Debug("Relations between nodes has been changed, saving new catalog releations");
                     CatalogContext.Current.SaveCatalogRelationDto(rels);
                 }
-
-                CatalogNode parentNode = null;
-                if (nodeDto.CatalogNode[0].ParentNodeId != 0)
-                {
-                    parentNode = CatalogContext.Current.GetCatalogNode(nodeDto.CatalogNode[0].ParentNodeId);
-                }
-
-                if ((updateRelationData.RemoveFromChannelNodes.Contains(updateRelationData.ChannelIdEpified) && nodeDto.CatalogNode[0].ParentNodeId == 0)
-                    || (parentNode != null && updateRelationData.RemoveFromChannelNodes.Contains(parentNode.ID)))
-                {
-                    CatalogNode associationNode = CatalogContext.Current.GetCatalogNode(updateRelationData.InRiverAssociationsEpified);
-
-                    MoveNode(nodeDto.CatalogNode[0].Code, associationNode.CatalogNodeId);
-                }
             }
 
             if (ced.CatalogEntry.Count <= 0)

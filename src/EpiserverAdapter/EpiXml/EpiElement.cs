@@ -151,26 +151,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 CreateSEOInfoElement(entity, config));
         }
 
-        public static XElement CreateAssociationNodeElement(string name, Configuration config)
-        {
-            return new XElement(
-                "Node",
-                new XElement("Name", name),
-                new XElement("StartDate", DateTime.UtcNow.ToString("u")),
-                new XElement("EndDate", DateTime.UtcNow.AddYears(100).ToString("u")),
-                new XElement("IsActive", "True"),
-                new XElement("SortOrder", 999),
-                new XElement("DisplayTemplate", string.Empty),
-                new XElement("Code", config.ChannelIdPrefix + "_inRiverAssociations"),
-                new XElement("Guid", new Guid(config.ChannelId, 0, 0, new byte[8])),
-                new XElement(
-                    "MetaData",
-                    new XElement("MetaClass", new XElement("Name", "ChannelNode")),
-                    new XElement("MetaFields")),
-                new XElement("ParentNode", null),
-                new XElement("SeoInfo"));
-        }
-
         public static XElement CreateSEOInfoElement(Entity entity, Configuration config)
         {
             XElement seoInfo = new XElement("SeoInfo");

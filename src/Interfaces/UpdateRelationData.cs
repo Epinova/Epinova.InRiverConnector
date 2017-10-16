@@ -16,8 +16,6 @@ namespace Epinova.InRiverConnector.Interfaces
 
         public List<string> LinkEntityIdsToRemove { get; set; }
 
-        public string InRiverAssociationsEpified { get; set; }
-
         public string LinkTypeId { get; set; }
 
         public bool IsRelation { get; set; }

@@ -111,7 +111,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public static Dictionary<string, List<XElement>> GetEPiElements(Configuration config)
         {
-            Dictionary<string, List<XElement>> epiElements = InitiateEpiElements();
+            Dictionary<string, List<XElement>> epiElements = CreateRootNodes();
             FillElementList(epiElements, config);
             return epiElements;
         }
@@ -121,7 +121,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new XElement("AssociationTypes", from lt in config.ExportEnabledLinkTypes select EpiElement.CreateAssociationTypeElement(lt));
         }
 
-        private static Dictionary<string, List<XElement>> InitiateEpiElements()
+        private static Dictionary<string, List<XElement>> CreateRootNodes()
         {
             var result = new Dictionary<string, List<XElement>>
                              {
@@ -137,16 +137,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             try
             {
-                if (!epiElements["Nodes"].Any(e =>
-                {
-                    XElement element = e.Element("Code");
-                    return element != null && element.Value.Equals(config.ChannelIdPrefix + "_inRiverAssociations");
-                }))
-                {
-                    epiElements["Nodes"].Add(EpiElement.CreateAssociationNodeElement("inRiverAssociations", config));
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("Added channelNode {0} to Nodes", "inRiverAssociations"));
-                }
-
                 List<string> addedEntities = new List<string>();
                 List<string> addedNodes = new List<string>();
                 List<string> addedRelations = new List<string>();
@@ -174,7 +164,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
         }
 
-        private static void FillElements(List<StructureEntity> structureEntitiesBatch, Configuration config, List<string> addedEntities, List<string> addedNodes, List<string> addedRelations, Dictionary<string, List<XElement>> epiElements)
+        private static void FillElements(List<StructureEntity> structureEntitiesBatch, 
+                                         Configuration config, 
+                                         List<string> addedEntities, 
+                                         List<string> addedNodes,
+                                         List<string> addedRelations,
+                                         Dictionary<string, 
+                                         List<XElement>> epiElements)
         {
             int logCounter = 0;
 
@@ -238,22 +234,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             addedEntities.Add(codeElement.Value);
     
                             IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Entity {0} to Entries", linkEntity.DisplayName));
-                        }
-    
-                        if (!addedRelations.Contains(ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config) + "_" + ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config)))
-                        {
-                            epiElements["Relations"].Add(
-                                EpiElement.CreateNodeEntryRelationElement(
-                                    "_inRiverAssociations",
-                                    linkEntity.Id.ToString(CultureInfo.InvariantCulture),
-                                    0,
-                                    config));
-                            addedRelations.Add(
-                                ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config) + "_"
-                                + ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config));
-    
-    
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for EntryCode {0}", ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config)));
                         }
                     }
     
@@ -563,14 +543,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             }
                             else
                             {
-                                if (!addedRelations.Contains(string.Format("{0}_{1}", channelPrefixAndSkuId, ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config))))
-                                {
-                                    epiElements["Relations"].Add(EpiElement.CreateNodeEntryRelationElement("_inRiverAssociations", skuId, existingStructureEntity.SortOrder, config));
-                                    addedRelations.Add(string.Format("{0}_{1}", channelPrefixAndSkuId, ChannelPrefixHelper.GetEpiserverCode("_inRiverAssociations", config)));
-    
-                                    IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for EntryCode {0}", channelPrefixAndSkuId));
-                                }
-    
                                 if (!config.UseThreeLevelsInCommerce && config.ItemsToSkus && structureEntity.Type == "Item")
                                 {
                                     string channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, config);
