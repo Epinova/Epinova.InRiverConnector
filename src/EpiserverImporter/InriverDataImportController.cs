@@ -8,6 +8,7 @@ using LogManager = log4net.LogManager;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
+    [ImporterExceptionFilter]
     public class InriverDataImportController : SecuredApiController
     {
         private readonly ICatalogImporter _catalogImporter;
