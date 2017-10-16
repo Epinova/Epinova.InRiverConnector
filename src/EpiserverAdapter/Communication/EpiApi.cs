@@ -2,14 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
-using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-using inRiver.EPiServerCommerce.Interfaces;
-using inRiver.EPiServerCommerce.Interfaces.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.Interfaces;
+using Epinova.InRiverConnector.Interfaces.Enums;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
+namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     internal class EpiApi
     {

@@ -1,7 +1,7 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
-{
-    using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 
+namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
+{
     public class EpiLockObject
     {
         private static EpiLockObject instance = new EpiLockObject();

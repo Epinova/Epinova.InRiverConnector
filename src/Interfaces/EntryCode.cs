@@ -1,4 +1,4 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces
+﻿namespace Epinova.InRiverConnector.Interfaces
 {
     public class EntryCode
     {

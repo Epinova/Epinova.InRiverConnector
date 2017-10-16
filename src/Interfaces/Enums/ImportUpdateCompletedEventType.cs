@@ -1,4 +1,4 @@
-﻿namespace inRiver.EPiServerCommerce.Interfaces.Enums
+﻿namespace Epinova.InRiverConnector.Interfaces.Enums
 {
     public enum ImportUpdateCompletedEventType
     {

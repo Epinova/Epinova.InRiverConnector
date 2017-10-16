@@ -5,7 +5,7 @@ using inRiver.Integration.Reporting;
 using inRiver.Remoting;
 using inRiver.Remoting.Connect;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ConnectorEventHelper
     {

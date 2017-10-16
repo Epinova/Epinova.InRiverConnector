@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class SecuredApiController : ApiController
     {

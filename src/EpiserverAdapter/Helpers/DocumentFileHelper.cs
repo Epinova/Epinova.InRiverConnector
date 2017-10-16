@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.IO.Packaging;
 using System.Linq;
@@ -10,7 +9,7 @@ using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class DocumentFileHelper
     {

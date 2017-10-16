@@ -1,4 +1,4 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Enums
+﻿namespace Epinova.InRiverConnector.EpiserverAdapter.Enums
 {
     public enum CVLDataMode
     {

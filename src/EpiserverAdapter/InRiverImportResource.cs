@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
-using inRiver.EPiServerCommerce.Interfaces;
+using Epinova.InRiverConnector.Interfaces;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter
+namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     /// <summary>
     /// Describes a resource coming from inRiver.

@@ -1,17 +1,17 @@
-﻿using inRiver.Integration.Logging;
-using inRiver.Remoting.Log;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
-using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
+using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
+using inRiver.Integration.Logging;
 using inRiver.Remoting;
+using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ChannelHelper
     {

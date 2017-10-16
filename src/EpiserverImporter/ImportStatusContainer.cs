@@ -1,4 +1,4 @@
-﻿namespace inRiver.EPiServerCommerce.Importer
+﻿namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class ImportStatusContainer
     {

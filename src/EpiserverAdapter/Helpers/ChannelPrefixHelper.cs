@@ -3,7 +3,7 @@ using System.Linq;
 using inRiver.Remoting;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ChannelPrefixHelper
     {

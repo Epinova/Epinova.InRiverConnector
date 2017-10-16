@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
-namespace inRiver.EPiServerCommerce.Interfaces
+namespace Epinova.InRiverConnector.Interfaces
 {
     public interface IInRiverImportResource
     {

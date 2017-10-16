@@ -1,4 +1,4 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter
+﻿namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class ConfigKeys
     {

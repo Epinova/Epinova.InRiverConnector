@@ -7,8 +7,8 @@
     <ProjectGuid>{CF5F6052-CB46-44CE-9272-E7D05720BF3A}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>inRiver.EPiServerCommerce.Importer</RootNamespace>
-    <AssemblyName>inRiver.EPiServerCommerce.Importer</AssemblyName>
+    <RootNamespace>Epinova.InRiverConnector.EpiserverImporter</RootNamespace>
+    <AssemblyName>Epinova.InRiverConnector.EpiserverImporter</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <RestorePackages>true</RestorePackages>

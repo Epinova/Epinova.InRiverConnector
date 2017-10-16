@@ -1,7 +1,7 @@
-﻿using EPiServer.Commerce.Catalog.ContentTypes;
-using inRiver.EPiServerCommerce.Interfaces;
+﻿using Epinova.InRiverConnector.Interfaces;
+using EPiServer.Commerce.Catalog.ContentTypes;
 
-namespace inRiver.EPiServerCommerce.Importer.EventHandling
+namespace Epinova.InRiverConnector.EpiserverImporter.EventHandling
 {
     public interface IDeleteActionsHandler
     {

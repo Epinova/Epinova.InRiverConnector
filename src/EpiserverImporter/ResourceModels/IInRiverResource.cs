@@ -1,8 +1,8 @@
 using System.Collections.Generic;
+using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Core;
-using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Importer.ResourceModels
+namespace Epinova.InRiverConnector.EpiserverImporter.ResourceModels
 {
     public interface IInRiverResource : IContentData
     {

@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Web.Http;
+using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Logging;
-using inRiver.EPiServerCommerce.Interfaces;
 using log4net;
 using LogManager = log4net.LogManager;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class InriverDataImportController : SecuredApiController
     {

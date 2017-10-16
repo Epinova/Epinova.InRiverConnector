@@ -6,12 +6,12 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
-using inRiver.EPiServerCommerce.Interfaces;
-using inRiver.EPiServerCommerce.MediaPublisher.Poco;
-using inRiver.Remoting;
+using Epinova.InRiverConnector.EpiserverAdapter.Poco;
+using Epinova.InRiverConnector.Interfaces;
 using inRiver.Remoting.Log;
+using EntryCode = Epinova.InRiverConnector.EpiserverAdapter.Poco.EntryCode;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter
+namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class ResourceImporter
     {
@@ -25,7 +25,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
         
         public bool ImportResources(string manifest, string baseResourcePath)
         {
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Information,$"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Information,$"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
 
             var timeout = _config.EpiRestTimeout;
             var apikey = _config.EpiApiKey;
@@ -54,7 +54,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 newRes.Codes = new List<string>();
                 if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
                 {
-                    foreach (MediaPublisher.Poco.EntryCode entryCode in resource.ParentEntries.EntryCode)
+                    foreach (EntryCode entryCode in resource.ParentEntries.EntryCode)
                     {
                         if (!string.IsNullOrEmpty(entryCode.Value))
                         {
@@ -89,7 +89,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 
             if (resourcesForImport.Count == 0)
             {
-                Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, string.Format("Nothing to tell server about."));
+                inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, string.Format("Nothing to tell server about."));
                 return true;
             }
 
@@ -161,7 +161,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
                 HttpClient client = new HttpClient();
                 string baseUrl = importEndpoint.Scheme + "://" + importEndpoint.Authority;
 
-                Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, string.Format("Sending {2} of {3} resources from {0} to {1}", manifest, importEndpoint, resources.Count, resourcesForImport.Count));
+                inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, string.Format("Sending {2} of {3} resources from {0} to {1}", manifest, importEndpoint, resources.Count, resourcesForImport.Count));
                 client.BaseAddress = new Uri(baseUrl);
 
                 // Add an Accept header for JSON format.
@@ -200,14 +200,14 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
 
                         if (resp.StartsWith("ERROR"))
                         {
-                            Integration.Logging.IntegrationLogger.Write(LogLevel.Error, resp);
+                            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, resp);
                             return false;
                         }
                     }
                 }
                 else
                 {
-                    Integration.Logging.IntegrationLogger.Write(
+                    inRiver.Integration.Logging.IntegrationLogger.Write(
                         LogLevel.Error,
                         string.Format("Import failed: {0} ({1})", (int)response.StatusCode, response.ReasonPhrase));
                     return false;
@@ -257,7 +257,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter
             }
             
             string errorMsg = string.Format("Import failed: {0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }
     }

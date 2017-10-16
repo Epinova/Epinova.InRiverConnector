@@ -2,16 +2,16 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
-using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
-using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
-using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using Epinova.InRiverConnector.EpiserverAdapter.Communication;
+using Epinova.InRiverConnector.EpiserverAdapter.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
+using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Connect;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Utilities
+namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 {
     public class AddUtility
     {

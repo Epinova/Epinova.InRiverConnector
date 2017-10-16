@@ -1,7 +1,7 @@
-﻿namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
-{
-    using System.Diagnostics;
+﻿using System.Diagnostics;
 
+namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
+{
     public static class StopwatchExtentions
     {
         internal static string GetElapsedTimeFormated(this Stopwatch stopwatch)

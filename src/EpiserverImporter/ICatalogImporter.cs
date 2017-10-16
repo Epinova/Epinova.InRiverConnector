@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Web.Http;
-using inRiver.EPiServerCommerce.Interfaces;
+using Epinova.InRiverConnector.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public interface ICatalogImporter
     {

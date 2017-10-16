@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Threading;
 using inRiver.Remoting.Log;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
+namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class RestEndpoint<T>
     {
@@ -38,7 +38,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
         {
             var url = GetUrl();
 
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
             var response = _httpClient.PostAsJsonAsync(url, message).Result;
             if (response.IsSuccessStatusCode)
@@ -69,14 +69,14 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
 
                 if (resp.StartsWith("ERROR"))
                 {
-                    Integration.Logging.IntegrationLogger.Write(LogLevel.Error, resp);
+                    inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, resp);
                 }
 
                 return resp;
             }
             
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }
 
@@ -89,7 +89,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                 return response.Content.ReadAsAsync<string>().Result;
             }
             string errorMsg = string.Format("Import failed: {0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
 
             throw new HttpRequestException(errorMsg);
         }
@@ -98,7 +98,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
         {
             Uri uri = new Uri(GetUrl());
 
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {uri}");
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {uri}");
 
             HttpResponseMessage response = _httpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
 
@@ -107,7 +107,7 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                 return response.Content.ReadAsAsync<List<string>>().Result;
             }
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
-            Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }
 

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace inRiver.EPiServerCommerce.Interfaces
+namespace Epinova.InRiverConnector.Interfaces
 {
     public class ResourceMetaField
     {

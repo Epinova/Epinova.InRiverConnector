@@ -7,8 +7,8 @@
     <ProjectGuid>{0C76565D-930B-4478-9101-AAD7BCED1D6F}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>inRiver.EPiServerCommerce.Interfaces</RootNamespace>
-    <AssemblyName>inRiver.EPiServerCommerce.Interfaces</AssemblyName>
+    <RootNamespace>Epinova.InRiverConnector.Interfaces</RootNamespace>
+    <AssemblyName>Epinova.InRiverConnector.Interfaces</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />

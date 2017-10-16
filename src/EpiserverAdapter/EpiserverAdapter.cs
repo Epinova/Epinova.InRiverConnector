@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
-using inRiver.EPiServerCommerce.CommerceAdapter.Communication;
-using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
-using inRiver.EPiServerCommerce.CommerceAdapter.EpiXml;
-using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
-using inRiver.EPiServerCommerce.CommerceAdapter.Utilities;
-using inRiver.EPiServerCommerce.Interfaces.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.Communication;
+using Epinova.InRiverConnector.EpiserverAdapter.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
+using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.EpiserverAdapter.Utilities;
+using Epinova.InRiverConnector.Interfaces.Enums;
 using inRiver.Integration.Configuration;
 using inRiver.Integration.Export;
 using inRiver.Integration.Interface;
@@ -19,9 +20,8 @@ using inRiver.Remoting.Connect;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 using inRiver.Remoting.Query;
-using System.Linq;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter
+namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class EpiserverAdapter : ServerListener, IOutboundConnector, IChannelListener, ICVLListener
     {

@@ -2,11 +2,11 @@
 using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
-using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using inRiver.Remoting;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.Helpers
+namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class EpiMappingHelper
     {

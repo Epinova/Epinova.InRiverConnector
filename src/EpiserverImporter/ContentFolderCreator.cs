@@ -5,7 +5,7 @@ using EPiServer.DataAccess;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class ContentFolderCreator
     {

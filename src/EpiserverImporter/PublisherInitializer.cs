@@ -2,7 +2,7 @@
 using EPiServer.Framework;
 using EPiServer.Framework.Initialization;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.EpiserverImporter
 {
     [InitializableModule]
     [ModuleDependency(typeof(EPiServer.Web.InitializationModule))]

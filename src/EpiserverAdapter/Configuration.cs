@@ -4,13 +4,13 @@ using System.Globalization;
 using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
-using inRiver.EPiServerCommerce.CommerceAdapter.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter
+namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class Configuration
     {

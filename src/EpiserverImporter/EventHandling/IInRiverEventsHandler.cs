@@ -1,6 +1,6 @@
-﻿using inRiver.EPiServerCommerce.Interfaces.Enums;
+﻿using Epinova.InRiverConnector.Interfaces.Enums;
 
-namespace inRiver.EPiServerCommerce.Importer.EventHandling
+namespace Epinova.InRiverConnector.EpiserverImporter.EventHandling
 {
     public interface IInRiverEventsHandler
     {

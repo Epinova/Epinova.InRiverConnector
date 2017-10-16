@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
+using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Core;
 using EPiServer.DataAnnotations;
-using inRiver.EPiServerCommerce.Interfaces;
 
-namespace inRiver.EPiServerCommerce.Importer.ResourceModels
+namespace Epinova.InRiverConnector.EpiserverImporter.ResourceModels
 {
     /// <summary>
     /// This media type will be used if there is no more specific type

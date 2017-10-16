@@ -1,6 +1,6 @@
-﻿using inRiver.EPiServerCommerce.Interfaces.Enums;
+﻿using Epinova.InRiverConnector.Interfaces.Enums;
 
-namespace inRiver.EPiServerCommerce.Interfaces
+namespace Epinova.InRiverConnector.Interfaces
 {
     public class ImportUpdateCompletedData
     {

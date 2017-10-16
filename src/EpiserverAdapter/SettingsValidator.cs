@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Configuration;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter
+namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class SettingsValidator
     {

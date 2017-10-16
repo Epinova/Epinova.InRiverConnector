@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.Interfaces
 {
     public class EpiserverEntryIdentifier
     {

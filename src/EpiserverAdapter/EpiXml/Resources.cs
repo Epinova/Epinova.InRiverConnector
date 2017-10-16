@@ -4,13 +4,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
-using inRiver.EPiServerCommerce.CommerceAdapter.Helpers;
+using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace inRiver.EPiServerCommerce.CommerceAdapter.EpiXml
+namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 {
     public static class Resources
     {

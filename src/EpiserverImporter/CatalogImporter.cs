@@ -7,6 +7,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Epinova.InRiverConnector.EpiserverImporter.EventHandling;
+using Epinova.InRiverConnector.EpiserverImporter.ResourceModels;
+using Epinova.InRiverConnector.Interfaces;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.SpecializedProperties;
@@ -19,9 +22,6 @@ using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
 using EPiServer.Web.Internal;
-using inRiver.EPiServerCommerce.Importer.EventHandling;
-using inRiver.EPiServerCommerce.Importer.ResourceModels;
-using inRiver.EPiServerCommerce.Interfaces;
 using Mediachase.Commerce.Assets;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Catalog.Dto;
@@ -29,7 +29,7 @@ using Mediachase.Commerce.Catalog.ImportExport;
 using Mediachase.Commerce.Catalog.Managers;
 using Mediachase.Commerce.Catalog.Objects;
 
-namespace inRiver.EPiServerCommerce.Importer
+namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class CatalogImporter : ICatalogImporter
     {
