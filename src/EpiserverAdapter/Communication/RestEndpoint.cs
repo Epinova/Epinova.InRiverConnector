@@ -11,8 +11,8 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
     {
         private readonly string _endpointAddress;       
         private readonly string _action;       
-        private readonly string _apikey;
-        
+        private readonly int _timeout;
+
         // ReSharper disable once StaticMemberInGenericType
         private static HttpClient _httpClient;
 
@@ -25,13 +25,13 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
         {
             _action = action;
             _endpointAddress = config.EpiEndpoint;
+            _timeout = config.EpiRestTimeout;
 
             Uri uri = new Uri(GetUrl());
             _httpClient.BaseAddress = new Uri(uri.Scheme + "://" + uri.Authority);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
             _httpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
-
         }
 
         public string Post(T message)
@@ -57,11 +57,11 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
                     }
                     else if (tries < 30)
                     {
-                        Thread.Sleep(30000);
+                        Thread.Sleep(15000);
                     }
                     else
                     {
-                        Thread.Sleep(300000);
+                        Thread.Sleep(150000);
                     }
                     
                     resp = Get(isImportingAction);
@@ -97,34 +97,18 @@ namespace inRiver.EPiServerCommerce.CommerceAdapter.Communication
         public List<string> PostWithStringListAsReturn(T message)
         {
             Uri uri = new Uri(GetUrl());
-            HttpClient client = new HttpClient();
-            string baseUrl = uri.Scheme + "://" + uri.Authority;
 
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug,
-                string.Format("Posting to {0}", uri.ToString()));
+            Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {uri}");
 
-            client.BaseAddress = new Uri(baseUrl);
+            HttpResponseMessage response = _httpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
 
-            // Add an Accept header for JSON format.
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("apikey", _apikey);
-
-            // HttpResponseMessage response = client.GetAsync("").Result;  // Blocking call!
-            client.Timeout = new TimeSpan(_timeout, 0, 0);
-            HttpResponseMessage response = client.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
             if (response.IsSuccessStatusCode)
             {
-                // Parse the response body. Blocking!
                 return response.Content.ReadAsAsync<List<string>>().Result;
             }
-            else
-            {
-                string errorMsg = string.Format("Import failed: {0} ({1})", (int)response.StatusCode,
-                    response.ReasonPhrase);
-                inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error,
-                    errorMsg);
-                throw new HttpRequestException(errorMsg);
-            }
+            string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
+            Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            throw new HttpRequestException(errorMsg);
         }
 
         private string GetUrl(string action)
