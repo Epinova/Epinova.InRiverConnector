@@ -323,16 +323,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 "MetaField",
                 new XElement("Name", name),
                 new XElement("Type", "ShortString"),
-                new XElement(
-                    "Data",
+                new XElement("Data",
                     new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
                     new XAttribute("value", value)));
         }
 
         public static XElement CreateNodeEntryRelationElement(string sourceId, string targetId, int sortOrder, Configuration config, Dictionary<int, Entity> channelEntities = null)
         {
-            return new XElement(
-                "NodeEntryRelation",
+            return new XElement("NodeEntryRelation",
                 new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
                 new XElement("NodeCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
                 new XElement("SortOrder", sortOrder));
@@ -340,8 +338,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public static XElement CreateNodeRelationElement(string sourceId, string targetId, int sortOrder, Configuration config)
         {
-            return new XElement(
-                "NodeRelation",
+            return new XElement("NodeRelation",
                 new XElement("ChildNodeCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
                 new XElement("ParentNodeCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
                 new XElement("SortOrder", sortOrder));

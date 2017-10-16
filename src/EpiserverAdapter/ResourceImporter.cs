@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -17,9 +16,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
     {
         private readonly Configuration _config;
 
+        private static HttpClient _httpClient;
+        
+        static ResourceImporter()
+        {
+            _httpClient = new HttpClient();
+        }
+
         public ResourceImporter(Configuration config)
         {
             _config = config;
+            Uri uri = new Uri(_config.EpiEndpoint);
+            var baseUrl = uri.Scheme + "://" + uri.Authority;
+
+            _httpClient.BaseAddress = new Uri(baseUrl);
+            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _httpClient.DefaultRequestHeaders.Add("apikey", _config.EpiApiKey);
+            _httpClient.Timeout = new TimeSpan(_config.EpiRestTimeout, 0, 0);
         }
 
         
@@ -31,7 +44,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var apikey = _config.EpiApiKey;
             var endpointAddress = _config.EpiEndpoint;
             
-            // Name of resource import controller method
             endpointAddress = endpointAddress + "ImportResources";
 
             return ImportResourcesToEPiServerCommerce(manifest, baseResourcePath, endpointAddress, apikey, timeout);
@@ -139,14 +151,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return metaFields;
         }
 
-        /// <summary>
-        /// </summary>
-        /// <param name="manifest"></param>
         /// <param name="importEndpoint">// http://server:port/inriverapi/InriverDataImport/ImportImages</param>
-        /// <param name="resourcesForImport"></param>
-        /// <param name="apikey"></param>
-        /// <param name="timeout"></param>
-        /// <returns></returns>
         private bool PostResourceDataToImporterEndPoint(string manifest, Uri importEndpoint, List<InRiverImportResource> resourcesForImport, string apikey, int timeout)
         {
             List<List<InRiverImportResource>> listofLists = new List<List<InRiverImportResource>>();
@@ -176,7 +181,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     var result = response.Content.ReadAsAsync<bool>().Result;
                     if (result)
                     {
-                        string resp = Get(apikey, timeout);
+                        string resp = GetImportStatus();
 
                         int tries = 0;
                         while (resp == "importing")
@@ -195,7 +200,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                 Thread.Sleep(600000);
                             }
 
-                            resp = Get(apikey, timeout);
+                            resp = GetImportStatus();
                         }
 
                         if (resp.StartsWith("ERROR"))
@@ -217,46 +222,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return true;
         }
 
-        private string Get(string apikey, int timeout)
+        private string GetImportStatus()
         {
-            string endpointAddress = _settings["EPI_ENDPOINT_URL"];
-            if (string.IsNullOrEmpty(endpointAddress))
-            {
-                throw new ConfigurationErrorsException("Missing EPI_ENDPOINT_URL setting on connector. It should point to the import end point on the EPiServer Commerce web site. ");
-            }
-
-            if (endpointAddress.EndsWith("/") == false)
-            {
-                endpointAddress = endpointAddress + "/";
-            }
-
-            // Name of resource import controller method
+            var endpointAddress = _config.EpiEndpoint;
             endpointAddress = endpointAddress + "IsImporting";
+            var uri = new Uri(endpointAddress);
 
-            Uri uri = new Uri(endpointAddress);
-
-            HttpClient client = new HttpClient();
-            string baseUrl = uri.Scheme + "://" + uri.Authority;
-
-            client.BaseAddress = new Uri(baseUrl);
-
-            // Add an Accept header for JSON format.
-            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            client.DefaultRequestHeaders.Add("apikey", apikey);
-
-            // HttpResponseMessage response = client.GetAsync("").Result;  // Blocking call!
-            client.Timeout = new TimeSpan(timeout, 0, 0);
-            HttpResponseMessage response = client.GetAsync(uri.PathAndQuery).Result;
+            HttpResponseMessage response = _httpClient.GetAsync(uri.PathAndQuery).Result;
 
             if (response.IsSuccessStatusCode)
             {
-                // Parse the response body. Blocking!
-                string resp = response.Content.ReadAsAsync<string>().Result;
-
+                var resp = response.Content.ReadAsAsync<string>().Result;
                 return resp;
             }
             
-            string errorMsg = string.Format("Import failed: {0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
+            string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
             inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }

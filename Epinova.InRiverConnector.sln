@@ -9,6 +9,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Interfaces", "src\Interface
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiserverImporter", "src\EpiserverImporter\EpiserverImporter.csproj", "{CF5F6052-CB46-44CE-9272-E7D05720BF3A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FCAD92E3-3811-4823-B1B1-2D4ABC8FAADC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EpiserverAdapterTests", "tests\EpiserverAdapterTests\EpiserverAdapterTests.csproj", "{9CBB23AF-FC5F-45CA-81BE-47365DFDE0B8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,8 +31,15 @@ Global
 		{CF5F6052-CB46-44CE-9272-E7D05720BF3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CF5F6052-CB46-44CE-9272-E7D05720BF3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CF5F6052-CB46-44CE-9272-E7D05720BF3A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9CBB23AF-FC5F-45CA-81BE-47365DFDE0B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9CBB23AF-FC5F-45CA-81BE-47365DFDE0B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9CBB23AF-FC5F-45CA-81BE-47365DFDE0B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9CBB23AF-FC5F-45CA-81BE-47365DFDE0B8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9CBB23AF-FC5F-45CA-81BE-47365DFDE0B8} = {FCAD92E3-3811-4823-B1B1-2D4ABC8FAADC}
 	EndGlobalSection
 EndGlobal

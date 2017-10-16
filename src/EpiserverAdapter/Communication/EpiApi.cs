@@ -19,7 +19,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    RestEndpoint<int> endpoint = new RestEndpoint<int>(config.Settings, "DeleteCatalog");
+                    RestEndpoint<int> endpoint = new RestEndpoint<int>(config, "DeleteCatalog");
                     endpoint.Post(catalogId);
                 }
                 catch (Exception exception)
@@ -36,7 +36,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 try
                 {
                     string catalogNode = ChannelPrefixHelper.GetEpiserverCode(catalogNodeId, config);
-                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config.Settings, "DeleteCatalogNode");
+                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config, "DeleteCatalogNode");
                     endpoint.Post(catalogNode);
                 }
                 catch (Exception ex)
@@ -53,7 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 try
                 {
                     string catalogEntryId = ChannelPrefixHelper.GetEpiserverCode(entityId, config);
-                    var endpoint = new RestEndpoint<string>(config.Settings, "DeleteCatalogEntry");
+                    var endpoint = new RestEndpoint<string>(config, "DeleteCatalogEntry");
                     endpoint.Post(catalogEntryId);
                 }
                 catch (Exception exception)
@@ -84,7 +84,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                               ParentEntryId = parentEntryId
                                                           };
 
-                    RestEndpoint<LinkEntityUpdateData> endpoint = new RestEndpoint<LinkEntityUpdateData>(config.Settings, "UpdateLinkEntityData");
+                    RestEndpoint<LinkEntityUpdateData> endpoint = new RestEndpoint<LinkEntityUpdateData>(config, "UpdateLinkEntityData");
                     endpoint.Post(dataToSend);
                 }
                 catch (Exception exception)
@@ -121,7 +121,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                                                 TargetIds = targetIds
                                                                             };
 
-                    var endpoint = new RestEndpoint<GetLinkEntityAssociationsForEntityData>(config.Settings, "GetLinkEntityAssociationsForEntity");
+                    var endpoint = new RestEndpoint<GetLinkEntityAssociationsForEntityData>(config, "GetLinkEntityAssociationsForEntity");
                     ids = endpoint.PostWithStringListAsReturn(dataToSend);
                 }
                 catch (Exception exception)
@@ -141,7 +141,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 {
                     string entryNodeId = ChannelPrefixHelper.GetEpiserverCode(nodeId, config);
 
-                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config.Settings, "CheckAndMoveNodeIfNeeded");
+                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config, "CheckAndMoveNodeIfNeeded");
                     endpoint.Post(entryNodeId);
                 }
                 catch (Exception exception)
@@ -195,7 +195,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                     ParentExistsInChannelNodes = parentExistsInChannelNodes
                                                 };
 
-                    var endpoint = new RestEndpoint<UpdateRelationData>(config.Settings, "UpdateEntryRelations");
+                    var endpoint = new RestEndpoint<UpdateRelationData>(config, "UpdateEntryRelations");
                     endpoint.Post(updateEntryRelationData);
                 }
                 catch (Exception exception)
@@ -216,7 +216,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    var endpoint = new RestEndpoint<string>(config.Settings, "ImportCatalogXml");
+                    var endpoint = new RestEndpoint<string>(config, "ImportCatalogXml");
                     string result = endpoint.Post(filePath);
                     IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
                     return true;
@@ -257,7 +257,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    var endpoint = new RestEndpoint<ImportUpdateCompletedData>(config.Settings, "ImportUpdateCompleted");
+                    var endpoint = new RestEndpoint<ImportUpdateCompletedData>(config, "ImportUpdateCompleted");
                     var data = new ImportUpdateCompletedData
                                 {
                                     CatalogName = catalogName,
@@ -282,7 +282,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    var endpoint = new RestEndpoint<DeleteCompletedData>(config.Settings, "DeleteCompleted");
+                    var endpoint = new RestEndpoint<DeleteCompletedData>(config, "DeleteCompleted");
                     var data = new DeleteCompletedData
                                 {
                                    CatalogName = catalogName,
