@@ -15,7 +15,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 {
     public class AddUtility
     {
-        private Configuration ConnectorConfig { get; set; }
+        private Configuration ConnectorConfig { get; }
 
         public AddUtility(Configuration connectorConfig)
         {
@@ -68,7 +68,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Sending Resources to EPiServer...", 76);
-            if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(ConnectorConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(ConnectorConfig.ResourcesRootPath, folderDateTime), ConnectorConfig))
+            if (EpiApi.ImportResources(Path.Combine(ConnectorConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(ConnectorConfig.ResourcesRootPath, folderDateTime), ConnectorConfig))
             {
                 ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Resources to EPiServer...", 99);
                 EpiApi.SendHttpPost(ConnectorConfig, Path.Combine(ConnectorConfig.ResourcesRootPath, folderDateTime, resourceZipFile));

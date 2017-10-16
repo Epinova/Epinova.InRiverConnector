@@ -272,7 +272,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             
             IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-            if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
+            if (EpiApi.ImportResources(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
             {
                 EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, resourceZipFile));
             }
@@ -560,12 +560,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                         IntegrationLogger.Write(LogLevel.Debug, "Resources saved! Starting automatic import!");
 
-                        if (sendUnlinkResource && EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
+                        if (sendUnlinkResource && EpiApi.ImportResources(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
                         {
                             EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, zipFileUnlink));
                         }
 
-                        if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2), DeleteUtilConfig))
+                        if (EpiApi.ImportResources(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2), DeleteUtilConfig))
                         {
                             EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, zipFileDelete));
                         }

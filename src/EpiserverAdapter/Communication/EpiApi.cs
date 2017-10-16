@@ -229,7 +229,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static bool StartAssetImportIntoEpiServerCommerce(string manifest, string baseFilePpath, Configuration config)
+        internal static bool ImportResources(string manifest, string baseFilePpath, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {

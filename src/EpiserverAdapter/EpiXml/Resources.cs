@@ -66,8 +66,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     new XElement(
                         "Resources",
                         new XElement("ResourceMetaFields"),
-                        new XElement(
-                            "ResourceFiles",
+                        new XElement("ResourceFiles",
                             from id in deletedResources select new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
         }
 
@@ -89,8 +88,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             return
                 new XDocument(
-                    new XElement(
-                        "Resources",
+                    new XElement("Resources",
                         new XElement("ResourceMetaFields"),
                         new XElement("ResourceFiles", resourceElement)));
         }
@@ -112,21 +110,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         internal static bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)
         {
-            Stopwatch saveFileStopWatch = new Stopwatch();
             string fileName = string.Empty;
             try
             {
-                saveFileStopWatch.Start();
-                if (resource == null)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, "Resource is null!");
-                    return false;
-                }
-
+                var stopwatch = Stopwatch.StartNew();
+                
                 int resourceFileId = GetResourceFileId(resource);
                 if (resourceFileId < 0)
                 {
-                    IntegrationLogger.Write(LogLevel.Information, string.Format("Resource with id:{0} has no value for ResourceFileId", resource.Id));
+                    IntegrationLogger.Write(LogLevel.Information, $"Resource with id:{resource.Id} has no value for ResourceFileId");
                     return false;
                 }
 
@@ -135,13 +127,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     byte[] resourceData = RemoteManager.UtilityService.GetFile(resourceFileId, displayConfiguration);
                     if (resourceData == null)
                     {
-                        IntegrationLogger.Write(LogLevel.Error, string.Format("Resource with id:{0} and ResourceFileId: {1} could not get file", resource.Id, resourceFileId));
+                        IntegrationLogger.Write(LogLevel.Error, $"Resource with id:{resource.Id} and ResourceFileId: {resourceFileId} could not get file");
                         return false;
                     }
 
                     fileName = GetResourceFileName(resource, resourceFileId, displayConfiguration, config);
 
-                    string folder = GetFolderFromDisplayConfiguration(displayConfiguration, resource, config);
+                    string folder = GetFolderName(displayConfiguration, resource, config);
                     string dir = Path.Combine(config.ResourcesRootPath, folderDateTime, folder);
 
                     if (!Directory.Exists(dir))
@@ -151,19 +143,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     
                     File.WriteAllBytes(Path.Combine(dir, fileName), resourceData);
                 }
+                stopwatch.Stop();
+                IntegrationLogger.Write(LogLevel.Debug, $"Saving Resource {resource.Id} to {fileName} took {stopwatch.GetElapsedTimeFormated()}");
             }
             catch (Exception ex)
             {
                 if (resource != null)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Could not save resource! id:{0}, ResourceFileId:{1}", resource.Id, resource.GetField("ResourceFileId")), ex);
+                    IntegrationLogger.Write(LogLevel.Error, $"Could not save resource! id:{resource.Id}, ResourceFileId:{resource.GetField("ResourceFileId")}", ex);
                 }
 
                 return false;
             }
-            
-            saveFileStopWatch.Stop();
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("Saving Resource {0} to {1} took {2}", resource.Id, fileName, saveFileStopWatch.GetElapsedTimeFormated()));
+
             return true;
         }
 
@@ -181,7 +173,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             foreach (string displayConfiguration in GetDisplayConfigurations(resource, config))
             {
                 string fileName = GetResourceFileName(resource, id, displayConfiguration, config);
-                string folder = GetFolderFromDisplayConfiguration(displayConfiguration, resource, config);
+                string folder = GetFolderName(displayConfiguration, resource, config);
                 paths.Add(new XElement("Path", string.Format("./{0}/{1}", folder, fileName)));
             }
 
@@ -202,7 +194,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private static string GetResourceFileName(Entity resource, int resourceFileId, string displayConfiguration, Configuration config)
         {
             Field resourceFileNameField = resource.GetField("ResourceFilename");
-            string fileName = string.Format("[{0}].jpg", resourceFileId);
+            string fileName = $"[{resourceFileId}].jpg";
             if (resourceFileNameField != null && !resourceFileNameField.IsEmpty())
             {
                 string fileType = Path.GetExtension(resourceFileNameField.Data.ToString());
@@ -225,7 +217,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
 
                 fileName = Path.GetFileNameWithoutExtension(resourceFileNameField.Data.ToString());
-                fileName = string.Format("{0}{1}", fileName, fileType);
+                fileName = $"{fileName}{fileType}";
             }
 
             return fileName;
@@ -238,18 +230,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 return config.ResourceConfigurations;
             }
 
-            IntegrationLogger.Write(LogLevel.Debug,
-                $"No image configuration found for Resource {resource.Id}. Original will be used");
+            IntegrationLogger.Write(LogLevel.Debug, $"No image configuration found for Resource {resource.Id}. Original will be used");
             return new[] { Configuration.OriginalDisplayConfiguration };
         }
 
         private static bool IsImage(Entity resource)
         {
             var fileEnding = resource.GetField("ResourceFilename")?.Data?.ToString().Split('.').Last();
-            return !string.IsNullOrWhiteSpace(fileEnding) && RemoteManager.UtilityService.GetAllImageServiceConfigurations().Exists(x => string.Compare(x.Extension, fileEnding, StringComparison.OrdinalIgnoreCase) == 0);
+            var imageServiceConfigs = RemoteManager.UtilityService.GetAllImageServiceConfigurations();
+            var configsHasExtension = imageServiceConfigs.Exists(x => string.Compare(x.Extension, fileEnding, StringComparison.OrdinalIgnoreCase) == 0);
+
+            return !string.IsNullOrWhiteSpace(fileEnding) && configsHasExtension;
         }
 
-        private static string GetFolderFromDisplayConfiguration(string displayConfiguration, Entity resource, Configuration config)
+        private static string GetFolderName(string displayConfiguration, Entity resource, Configuration config)
         {
             if (!string.IsNullOrEmpty(displayConfiguration) && config.ChannelMimeTypeMappings.ContainsKey(displayConfiguration))
             {

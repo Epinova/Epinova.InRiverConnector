@@ -183,7 +183,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Resources to EPiServer...", 76);
 
-                if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
+                if (EpiApi.ImportResources(
+                    Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), 
+                    Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
                 {
                     ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Resources to EPiServer...", 99);
                     EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
@@ -324,8 +326,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         }
 
-        public void ChannelEntityUpdated(int channelId, int entityId, string data)
+        public void ChannelEntityUpdated(int channelId, int entityId)
         {
+            var data = String.Empty;
             if (channelId != _config.ChannelId)
             {
                 return;
@@ -371,109 +374,30 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 bool resourceIncluded = false;
                 string channelName = EpiMappingHelper.GetNameForEntity(channelEntity, _config, 100);
 
-                _config.ChannelStructureEntities =
-                    ChannelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
+                _config.ChannelStructureEntities = ChannelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
                 ChannelHelper.BuildEntityIdAndTypeDict(_config);
 
                 if (updatedEntity.EntityType.Id.Equals("Resource"))
                 {
-                    XDocument resDoc = Resources.HandleResourceUpdate(updatedEntity, _config, folderDateTime);
-
-                    DocumentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime);
-
-                    string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);
-                    DocumentFileHelper.ZipFile(
-                        Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"),
-                        resourceZipFile);
-                    IntegrationLogger.Write(LogLevel.Debug, "Resources saved!");
-            
-                    IntegrationLogger.Write(LogLevel.Debug, "Starting automatic resource import!");
-                    if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
-                    {
-                        EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
-                        resourceIncluded = true;
-                    }
+                    resourceIncluded = HandleResourceUpdate(updatedEntity, folderDateTime, channelIdentifier);
                 }
                 else
                 {
-                    IntegrationLogger.Write(
-                        LogLevel.Debug,
-                        string.Format(
-                            "Updated entity found. Type: {0}, id: {1}",
-                            updatedEntity.EntityType.Id,
-                            updatedEntity.Id));
+                    IntegrationLogger.Write(LogLevel.Debug, $"Updated entity found. Type: {updatedEntity.EntityType.Id}, id: {updatedEntity.Id}");
 
-                    #region SKU and ChannelNode
                     if (updatedEntity.EntityType.Id.Equals("Item") && data != null && data.Split(',').Contains("SKUs"))
                     {
-                        Field currentField = RemoteManager.DataService.GetField(entityId, "SKUs");
-
-                        List<Field> fieldHistory = RemoteManager.DataService.GetFieldHistory(entityId, "SKUs");
-
-                        Field previousField = fieldHistory.FirstOrDefault(f => f.Revision == currentField.Revision - 1);
-
-                        string oldXml = string.Empty;
-                        if (previousField != null && previousField.Data != null)
-                        {
-                            oldXml = (string)previousField.Data;
-                        }
-
-                        string newXml = string.Empty;
-                        if (currentField.Data != null)
-                        {
-                            newXml = (string)currentField.Data;
-                        }
-
-                        List<XElement> skusToDelete, skusToAdd;
-                        BusinessHelper.CompareAndParseSkuXmls(oldXml, newXml, out skusToAdd, out skusToDelete);
-
-                        foreach (XElement skuToDelete in skusToDelete)
-                        {
-                            EpiApi.DeleteCatalogEntry(skuToDelete.Attribute("id").Value, _config);
-                        }
-
-                        if (skusToAdd.Count > 0)
-                        {
-                            new AddUtility(_config).Add(
-                                channelEntity,
-                                entityUpdatedConnectorEvent,
-                                out resourceIncluded);
-                        }
+                        HandleItemUpdate(entityId, channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
                     }
                     else if (updatedEntity.EntityType.Id.Equals("ChannelNode"))
                     {
-                        new AddUtility(_config).Add(
-                            channelEntity,
-                            entityUpdatedConnectorEvent,
-                            out resourceIncluded);
-
-                        entityUpdatedStopWatch.Stop();
-                        IntegrationLogger.Write(
-                            LogLevel.Information,
-                            string.Format(
-                                "Update done for channel {0}, took {1}!",
-                                channelId,
-                                entityUpdatedStopWatch.GetElapsedTimeFormated()));
-
-                        ConnectorEventHelper.UpdateEvent(
-                            entityUpdatedConnectorEvent,
-                            "ChannelEntityUpdated complete",
-                            100);
-
-                        // Fire the complete event
-                        EpiApi.ImportUpdateCompleted(
-                            channelName,
-                            ImportUpdateCompletedEventType.EntityUpdated,
-                            resourceIncluded,
-                            _config);
+                        HandleChannelNodeUpdate(channelId, channelEntity, entityUpdatedConnectorEvent, entityUpdatedStopWatch, channelName);
                         return;
                     }
-                    #endregion
 
                     if (updatedEntity.EntityType.IsLinkEntityType)
                     {
-                        //ChannelEntities will be used for LinkEntity when we get EPiCode with channel prefix
                         if (!_config.ChannelEntities.ContainsKey(updatedEntity.Id))
                         {
                             _config.ChannelEntities.Add(updatedEntity.Id, updatedEntity);
@@ -532,6 +456,84 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             IntegrationLogger.Write(LogLevel.Information, string.Format("Update done for channel {0}, took {1}!", channelId, entityUpdatedStopWatch.GetElapsedTimeFormated()));
             ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, "ChannelEntityUpdated complete", 100);
+        }
+
+        private void HandleItemUpdate(int entityId, Entity channelEntity, ConnectorEvent entityUpdatedConnectorEvent, out bool resourceIncluded)
+        {
+            resourceIncluded = false;
+            Field currentField = RemoteManager.DataService.GetField(entityId, "SKUs");
+
+            List<Field> fieldHistory = RemoteManager.DataService.GetFieldHistory(entityId, "SKUs");
+
+            Field previousField = fieldHistory.FirstOrDefault(f => f.Revision == currentField.Revision - 1);
+
+            string oldXml = string.Empty;
+            if (previousField != null && previousField.Data != null)
+            {
+                oldXml = (string) previousField.Data;
+            }
+
+            string newXml = string.Empty;
+            if (currentField.Data != null)
+            {
+                newXml = (string) currentField.Data;
+            }
+
+            List<XElement> skusToDelete, skusToAdd;
+            BusinessHelper.CompareAndParseSkuXmls(oldXml, newXml, out skusToAdd, out skusToDelete);
+
+            foreach (XElement skuToDelete in skusToDelete)
+            {
+                EpiApi.DeleteCatalogEntry(skuToDelete.Attribute("id").Value, _config);
+            }
+
+            if (skusToAdd.Count > 0)
+            {
+                new AddUtility(_config).Add(
+                    channelEntity,
+                    entityUpdatedConnectorEvent,
+                    out resourceIncluded);
+            }
+        }
+
+        private void HandleChannelNodeUpdate(int channelId, 
+                                             Entity channelEntity, 
+                                             ConnectorEvent entityUpdatedConnectorEvent,
+                                             Stopwatch entityUpdatedStopWatch, 
+                                             string channelName)
+        {
+            bool resourceIncluded;
+            new AddUtility(_config).Add(channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
+
+            entityUpdatedStopWatch.Stop();
+            IntegrationLogger.Write(LogLevel.Information, $"Update done for channel {channelId}, took {entityUpdatedStopWatch.GetElapsedTimeFormated()}!");
+
+            ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, "ChannelEntityUpdated complete", 100);
+            EpiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded, _config);
+        }
+
+        private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime, string channelIdentifier)
+        {
+            var resourceIncluded = false;
+
+            XDocument resDoc = Resources.HandleResourceUpdate(updatedEntity, _config, folderDateTime);
+            DocumentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime);
+
+            string resourceZipFile = $"resource_{folderDateTime}.zip";
+
+            DocumentFileHelper.ZipFile(
+                Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"),
+                resourceZipFile);
+
+            IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
+
+            if (EpiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"),
+                Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
+            {
+                EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
+                resourceIncluded = true;
+            }
+            return resourceIncluded;
         }
 
         public void ChannelEntityDeleted(int channelId, Entity deletedEntity)
