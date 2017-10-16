@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Web.Http;
 using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Logging;
@@ -36,114 +35,51 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             return ImportStatusContainer.Instance.Message;
         }
 
-        // TODO: Global exception logging, ref PIM-78
-
         [HttpPost]
-        public bool DeleteCatalogEntry([FromBody] string catalogEntryId)
+        public void DeleteCatalogEntry([FromBody] string catalogEntryId)
         {
             _logger.Debug("DeleteCatalogEntry");
 
-            try
-            {
-                _catalogImporter.DeleteCatalogEntry(catalogEntryId);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Error while deleting catalog entry with code {catalogEntryId}", ex);
-                return false;
-            }
-
-            return true;
+            _catalogImporter.DeleteCatalogEntry(catalogEntryId);
         }
 
         [HttpPost]
-        public bool DeleteCatalog([FromBody] int catalogId)
+        public void DeleteCatalog([FromBody] int catalogId)
         {
             _logger.Debug("DeleteCatalog");
             
-            try
-            {
-                _catalogImporter.DeleteCatalog(catalogId);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Error while deleting catalog with id: {catalogId}", ex);
-                return false;
-            }
-
-            return true;
+            _catalogImporter.DeleteCatalog(catalogId);
         }
 
         [HttpPost]
-        public bool DeleteCatalogNode([FromBody] string catalogNodeId)
+        public void DeleteCatalogNode([FromBody] string catalogNodeId)
         {
             Log.Debug("DeleteCatalogNode");
 
-            try
-            {
-                _catalogImporter.DeleteCatalogNode(catalogNodeId);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Error while deleting catalogNode with id: {catalogNodeId}", ex);
-                return false;
-            }
-            
-            return true;
+            _catalogImporter.DeleteCatalogNode(catalogNodeId);
         }
 
         [HttpPost]
-        public bool CheckAndMoveNodeIfNeeded([FromBody] string catalogNodeId)
+        public void CheckAndMoveNodeIfNeeded([FromBody] string catalogNodeId)
         {
             Log.Debug("CheckAndMoveNodeIfNeeded");
 
-            try
-            {
-                _catalogImporter.CheckAndMoveNodeIfNeeded(catalogNodeId);
-            }
-            catch (Exception ex)
-            {
-                Log.Error($"Could not CheckAndMoveNodeIfNeeded for catalogNode with id: {catalogNodeId}", ex);
-                return false;
-            }
-
-            return true;
+            _catalogImporter.CheckAndMoveNodeIfNeeded(catalogNodeId);
         }
 
         [HttpPost]
-        public bool UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
+        public void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
         {
             Log.Debug("UpdateLinkEntityData");
-
-            try
-            {
-                _catalogImporter.UpdateLinkEntityData(linkEntityUpdateData);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error($"Could not update LinkEntityData for entity with id:{linkEntityUpdateData.LinkEntityIdString}", ex);
-                return false;
-            }
-
-            return true;
+            _catalogImporter.UpdateLinkEntityData(linkEntityUpdateData);
         }
 
         [HttpPost]
-        public bool UpdateEntryRelations(UpdateRelationData updateRelationData)
+        public void UpdateEntryRelations(UpdateRelationData updateRelationData)
         {
             Log.Debug("UpdateEntryRelations");
 
-            try
-            {
-                _catalogImporter.UpdateEntryRelations(updateRelationData);
-            }
-            catch (Exception ex)
-            {
-                Log.Warn(string.Format("Could not update entry relations catalog with id:{0}", updateRelationData.CatalogEntryIdString), ex);
-                return false;
-            }
-
-            return true;
+            _catalogImporter.UpdateEntryRelations(updateRelationData);
         }
 
         [HttpPost]
@@ -151,16 +87,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             Log.Debug("GetLinkEntityAssociationsForEntity");
 
-            try
-            {
-                return _catalogImporter.GetLinkEntityAssociationsForEntity(data);
-            }
-            catch (Exception e)
-            {
-                Log.Error($"Could not GetLinkEntityAssociationsForEntity for parentIds: {data.ParentIds}", e);
-            }
-
-            return new List<string>();
+            return _catalogImporter.GetLinkEntityAssociationsForEntity(data);
         }
 
         public string Get()
@@ -173,14 +100,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         public string ImportCatalogXml([FromBody] string path)
         {
             ImportStatusContainer.Instance.Message = "importing";
-            try
-            {
-                _catalogImporter.ImportCatalogXml(path);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error("Error while importing catalog XML", ex);
-            }
+
+            _catalogImporter.ImportCatalogXml(path);
 
             return ImportStatusContainer.Instance.Message;
         }
@@ -194,29 +115,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public bool ImportUpdateCompleted(ImportUpdateCompletedData data)
         {
-            try
-            {
-                return _catalogImporter.ImportUpdateCompleted(data);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error in ImportUpdateCompleted", ex);
-                return false;
-            }
+            return _catalogImporter.ImportUpdateCompleted(data);
         }
 
         [HttpPost]
-        public bool DeleteCompleted(DeleteCompletedData data)
+        public void DeleteCompleted(DeleteCompletedData data)
         {
-            try
-            {
-                return _catalogImporter.DeleteCompleted(data);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Error in DeleteCompleted", ex);
-                return false;
-            }
+            _catalogImporter.DeleteCompleted(data);
         }
     }
 }
