@@ -301,36 +301,31 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (_epiCodeMapping == null)
+                if (_epiCodeMapping != null)
+                    return _epiCodeMapping;
+
+                if (!_settings.ContainsKey("EPI_CODE_FIELDS"))
                 {
-                    if (!_settings.ContainsKey("EPI_CODE_FIELDS"))
-                    {
-                        _epiCodeMapping = new Dictionary<string, string>();
-
-                        return _epiCodeMapping;
-                    }
-
-                    string value = _settings["EPI_CODE_FIELDS"];
-
                     _epiCodeMapping = new Dictionary<string, string>();
-                    if (!string.IsNullOrEmpty(value))
+                    return _epiCodeMapping;
+                }
+
+                var rawValue = _settings["EPI_CODE_FIELDS"];
+
+                _epiCodeMapping = new Dictionary<string, string>();
+                if (string.IsNullOrEmpty(rawValue))
+                    return _epiCodeMapping;
+
+                List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
+
+                var values = rawValue.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var val in values)
+                {
+                    FieldType fieldType = fieldTypes.FirstOrDefault(x => x.Id.Equals(val, StringComparison.InvariantCultureIgnoreCase));
+                    if (fieldType != null && !_epiCodeMapping.ContainsKey(fieldType.EntityTypeId))
                     {
-                        List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
-
-                        string[] values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (string val in values)
-                        {
-                            if (string.IsNullOrEmpty(val))
-                            {
-                                continue;
-                            }
-
-                            FieldType fieldType = fieldTypes.FirstOrDefault(fT => fT.Id.ToLower() == val.ToLower());
-                            if (fieldType != null && !_epiCodeMapping.ContainsKey(fieldType.EntityTypeId))
-                            {
-                                _epiCodeMapping.Add(fieldType.EntityTypeId, fieldType.Id);
-                            }
-                        }
+                        _epiCodeMapping.Add(fieldType.EntityTypeId, fieldType.Id);
                     }
                 }
 

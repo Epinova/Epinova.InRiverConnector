@@ -260,43 +260,31 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 Entity channelEntity = InitiateChannelConfiguration(channelId);
                 if (channelEntity == null)
                 {
-                    ConnectorEventHelper.UpdateEvent(
-                        entityAddedConnectorEvent,
-                        "Failed to initial ChannelLinkAdded. Could not find the channel.",
-                        -1,
-                        true);
+                    ConnectorEventHelper.UpdateEvent(entityAddedConnectorEvent, "Failed to initial ChannelLinkAdded. Could not find the channel.", -1,true);
                     return;
                 }
 
-                List<StructureEntity> addedStructureEntities =
-                    ChannelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
+                var addedStructureEntities = ChannelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
                 foreach (StructureEntity addedStructureEntity in addedStructureEntities)
                 {
                     _config.ChannelStructureEntities.Add(
-                        ChannelHelper.GetParentStructureEntity(
-                            _config.ChannelId,
-                            addedStructureEntity.ParentId,
-                            addedStructureEntity.EntityId,
-                            addedStructureEntities));
+                        ChannelHelper.GetParentStructureEntity(_config.ChannelId, addedStructureEntity.ParentId, addedStructureEntity.EntityId, addedStructureEntities));
                 }
 
                 _config.ChannelStructureEntities.AddRange(addedStructureEntities);
 
                 string targetEntityPath = ChannelHelper.GetTargetEntityPath(entityId, addedStructureEntities);
+                var childLinkEntities = ChannelHelper.GetChildrenEntitiesInChannel(entityId, targetEntityPath);
 
-                foreach (
-                    StructureEntity childStructureEntity in
-                        ChannelHelper.GetChildrenEntitiesInChannel(entityId, targetEntityPath))
+                foreach (var linkEntity in childLinkEntities)
                 {
-                    _config.ChannelStructureEntities.AddRange(
-                        ChannelHelper.GetChildrenEntitiesInChannel(
-                            childStructureEntity.EntityId,
-                            childStructureEntity.Path));
+                    var childLinkedEntities = ChannelHelper.GetChildrenEntitiesInChannel(linkEntity.EntityId, linkEntity.Path);
+                    _config.ChannelStructureEntities.AddRange(childLinkedEntities);
                 }
 
-                _config.ChannelStructureEntities.AddRange(
-                    ChannelHelper.GetChildrenEntitiesInChannel(entityId, targetEntityPath));
+                _config.ChannelStructureEntities.AddRange(childLinkEntities);
+
                 ChannelHelper.BuildEntityIdAndTypeDict(_config);
 
                 new AddUtility(_config).Add(channelEntity, entityAddedConnectorEvent, out resourceIncluded);
@@ -325,10 +313,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
 
         }
-
-        public void ChannelEntityUpdated(int channelId, int entityId)
+        
+        public void ChannelEntityUpdated(int channelId, int entityId, string data)
         {
-            var data = String.Empty;
             if (channelId != _config.ChannelId)
             {
                 return;
@@ -337,8 +324,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _config.ChannelEntities = new Dictionary<int, Entity>();
             _config.ChannelStructureEntities = new List<StructureEntity>();
 
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("Received entity update for entity {0} in channel {1}", entityId, channelId));
-            ConnectorEvent entityUpdatedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, string.Format("Received entity update for entity {0} in channel {1}", entityId, channelId), 0);
+            IntegrationLogger.Write(LogLevel.Debug, $"Received entity update for entity {entityId} in channel {channelId}");
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated,
+                $"Received entity update for entity {entityId} in channel {channelId}", 0);
 
             Stopwatch entityUpdatedStopWatch = new Stopwatch();
             entityUpdatedStopWatch.Start();
@@ -347,14 +335,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 if (channelId == entityId)
                 {
-                    ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, string.Format("ChannelEntityUpdated, updated Entity is the Channel, no action required"), 100);
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, "ChannelEntityUpdated, updated Entity is the Channel, no action required", 100);
                     return;
                 }
 
                 Entity channelEntity = InitiateChannelConfiguration(channelId);
                 if (channelEntity == null)
                 {
-                    ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, string.Format("Failed to initial ChannelEntityUpdated. Could not find the channel with id: {0}", channelId), -1, true);
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, $"Failed to initial ChannelEntityUpdated. Could not find the channel with id: {channelId}", -1, true);
                     return;
                 }
 
@@ -363,8 +351,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 if (updatedEntity == null)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("ChannelEntityUpdated, could not find entity with id: {0}", entityId));
-                    ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, string.Format("ChannelEntityUpdated, could not find entity with id: {0}", entityId), -1, true);
+                    IntegrationLogger.Write(LogLevel.Error, $"ChannelEntityUpdated, could not find entity with id: {entityId}");
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, $"ChannelEntityUpdated, could not find entity with id: {entityId}", -1, true);
 
                     return;
                 }
@@ -388,11 +376,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                     if (updatedEntity.EntityType.Id.Equals("Item") && data != null && data.Split(',').Contains("SKUs"))
                     {
-                        HandleItemUpdate(entityId, channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
+                        HandleItemUpdate(entityId, channelEntity, connectorEvent, out resourceIncluded);
                     }
                     else if (updatedEntity.EntityType.Id.Equals("ChannelNode"))
                     {
-                        HandleChannelNodeUpdate(channelId, channelEntity, entityUpdatedConnectorEvent, entityUpdatedStopWatch, channelName);
+                        HandleChannelNodeUpdate(channelId, channelEntity, connectorEvent, entityUpdatedStopWatch, channelName);
                         return;
                     }
 
@@ -445,7 +433,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             catch (Exception ex)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Exception in ChannelEntityUpdated", ex);
-                ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, ex.Message, -1, true);
+                ConnectorEventHelper.UpdateEvent(connectorEvent, ex.Message, -1, true);
             }
             finally
             {
@@ -455,7 +443,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
 
             IntegrationLogger.Write(LogLevel.Information, string.Format("Update done for channel {0}, took {1}!", channelId, entityUpdatedStopWatch.GetElapsedTimeFormated()));
-            ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, "ChannelEntityUpdated complete", 100);
+            ConnectorEventHelper.UpdateEvent(connectorEvent, "ChannelEntityUpdated complete", 100);
         }
 
         private void HandleItemUpdate(int entityId, Entity channelEntity, ConnectorEvent entityUpdatedConnectorEvent, out bool resourceIncluded)
@@ -591,7 +579,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return;
             }
 
-            ChannelEntityUpdated(channelId, entityId, string.Empty);
+            ChannelEntityUpdated(channelId, entityId, null);
         }
 
         public void ChannelEntitySpecificationFieldAdded(int channelId, int entityId, string fieldName)
@@ -601,7 +589,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return;
             }
 
-            ChannelEntityUpdated(channelId, entityId, string.Empty);
+            ChannelEntityUpdated(channelId, entityId, null);
         }
 
         public void ChannelEntitySpecificationFieldUpdated(int channelId, int entityId, string fieldName)
@@ -611,7 +599,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return;
             }
 
-            ChannelEntityUpdated(channelId, entityId, string.Empty);
+            ChannelEntityUpdated(channelId, entityId, null);
         }
 
         public void ChannelLinkAdded(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
@@ -974,7 +962,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                         foreach (Entity entity in entitesToUpdate)
                         {
-                            ChannelEntityUpdated(_config.ChannelId, entity.Id, string.Empty);
+                            ChannelEntityUpdated(_config.ChannelId, entity.Id, null);
                         }
                     }
                 }
