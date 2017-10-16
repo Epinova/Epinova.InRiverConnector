@@ -163,7 +163,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
             
             saveFileStopWatch.Stop();
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("Saving Resource {0} to {1} took {2}", resource.Id, fileName, BusinessHelper.GetElapsedTimeFormated(saveFileStopWatch)));
+            IntegrationLogger.Write(LogLevel.Debug, string.Format("Saving Resource {0} to {1} took {2}", resource.Id, fileName, saveFileStopWatch.GetElapsedTimeFormated()));
             return true;
         }
 

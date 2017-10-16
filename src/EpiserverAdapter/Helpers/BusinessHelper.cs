@@ -44,16 +44,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
         }
 
-        public static string GetElapsedTimeFormated(Stopwatch stopwatch)
-        {
-            if (stopwatch.ElapsedMilliseconds < 1000)
-            {
-                return string.Format("{0} ms", stopwatch.ElapsedMilliseconds);
-            }
-
-            return stopwatch.Elapsed.ToString("hh\\:mm\\:ss");
-        }
-
         public static bool FieldTypeIsMultiLanguage(FieldType fieldType)
         {
             if (fieldType.DataType.Equals(DataType.LocaleString))

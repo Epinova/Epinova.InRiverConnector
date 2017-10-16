@@ -316,7 +316,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             entityAddedStopWatch.Stop();
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("Add done for channel {0}, took {1}!", channelId, BusinessHelper.GetElapsedTimeFormated(entityAddedStopWatch)));
+            IntegrationLogger.Write(LogLevel.Information, string.Format("Add done for channel {0}, took {1}!", channelId, entityAddedStopWatch.GetElapsedTimeFormated()));
             ConnectorEventHelper.UpdateEvent(entityAddedConnectorEvent, "ChannelEntityAdded complete", 100);
 
             if (!entityAddedConnectorEvent.IsError)
@@ -459,7 +459,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                             string.Format(
                                 "Update done for channel {0}, took {1}!",
                                 channelId,
-                                BusinessHelper.GetElapsedTimeFormated(entityUpdatedStopWatch)));
+                                entityUpdatedStopWatch.GetElapsedTimeFormated()));
 
                         ConnectorEventHelper.UpdateEvent(
                             entityUpdatedConnectorEvent,
@@ -538,7 +538,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _config.ChannelEntities = new Dictionary<int, Entity>();
             }
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("Update done for channel {0}, took {1}!", channelId, BusinessHelper.GetElapsedTimeFormated(entityUpdatedStopWatch)));
+            IntegrationLogger.Write(LogLevel.Information, string.Format("Update done for channel {0}, took {1}!", channelId, entityUpdatedStopWatch.GetElapsedTimeFormated()));
             ConnectorEventHelper.UpdateEvent(entityUpdatedConnectorEvent, "ChannelEntityUpdated complete", 100);
         }
 
@@ -580,7 +580,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _config.EntityIdAndType = new Dictionary<int, string>();
             }
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("Delete done for channel {0}, took {1}!", channelId, BusinessHelper.GetElapsedTimeFormated(deleteStopWatch)));
+            IntegrationLogger.Write(LogLevel.Information, string.Format("Delete done for channel {0}, took {1}!", channelId, deleteStopWatch.GetElapsedTimeFormated()));
             ConnectorEventHelper.UpdateEvent(entityDeletedConnectorEvent, "ChannelEntityDeleted complete", 100);
 
             if (!entityDeletedConnectorEvent.IsError)
