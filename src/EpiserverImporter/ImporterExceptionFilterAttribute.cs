@@ -1,6 +1,7 @@
 ﻿using System.Web.Http.Filters;
 using EPiServer.Logging;
 using EPiServer.ServiceLocation;
+using Newtonsoft.Json;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
@@ -10,7 +11,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             var logger = ServiceLocator.Current.GetInstance<ILogger>();
 
-            logger.Error("Error in inRiver import!", actionExecutedContext.Exception);
+            var uri = actionExecutedContext.Request.RequestUri;
+            var actionName = actionExecutedContext.ActionContext.ActionDescriptor.ActionName;
+            var arguments = JsonConvert.SerializeObject(actionExecutedContext.ActionContext.ActionArguments);
+
+            logger.Error($"Error when importing data from inRiver. Request URI: {uri}. Action: {actionName}. Arguments: {arguments}", actionExecutedContext.Exception);
 
             base.OnException(actionExecutedContext);
         }

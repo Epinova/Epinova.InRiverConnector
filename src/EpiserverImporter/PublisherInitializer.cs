@@ -1,12 +1,13 @@
 ﻿using System.Web.Http;
 using EPiServer.Framework;
 using EPiServer.Framework.Initialization;
+using EPiServer.ServiceLocation;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
     [InitializableModule]
     [ModuleDependency(typeof(EPiServer.Web.InitializationModule))]
-    public class PublisherInitializer : IInitializableModule
+    public class PublisherInitializer : IInitializableModule, IConfigurableModule
     {
         /// <summary>
         /// Initializate the inRiver Web API.
@@ -35,6 +36,14 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public void Uninitialize(InitializationEngine context)
         {
+        }
+
+        public void ConfigureContainer(ServiceConfigurationContext context)
+        {
+            context.StructureMap().Configure(x =>
+            {
+                x.For<ICatalogImporter>().Use<CatalogImporter>();
+            });
         }
     }
 
