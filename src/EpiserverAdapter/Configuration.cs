@@ -51,7 +51,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _settings = RemoteManager.UtilityService.GetConnector(id).Settings;
             var settingsValidator = new SettingsValidator(_settings);
             settingsValidator.ValidateSettings();
-
+            Endpoints = new EndpointCollection(EpiEndpoint);
             Id = id;
             LinkTypes = new List<LinkType>(RemoteManager.ModelService.GetAllLinkTypes());
             _epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
@@ -72,6 +72,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public int EpiRestTimeout => int.Parse(_settings[ConfigKeys.EpiTimeout]);
         public string EpiApiKey => _settings[ConfigKeys.EpiApiKey];
         public string EpiEndpoint => _settings[ConfigKeys.EpiEndpoint];
+        public EndpointCollection Endpoints { get; set; }
 
         public static string DateTimeFormatString => "yyyy-MM-dd HH:mm:ss";
 

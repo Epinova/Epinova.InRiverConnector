@@ -167,7 +167,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else if (fieldType.DataType.Equals(DataType.CVL))
             {
-                type = fieldType.Multivalue ? "EnumMultiValue" : "EnumSingleValue";
+                type = "LongString";
             }
             else if (fieldType.DataType.Equals(DataType.DateTime))
             {
@@ -276,65 +276,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return type;
-        }
-
-        public static List<XElement> GetDictionaryValues(FieldType fieldType, Configuration configuration)
-        {
-            CVL currentCVL = BusinessHelper.CvLs.ToList().FirstOrDefault(c => c.Id.Equals(fieldType.CVLId));
-            if (currentCVL == null)
-            {
-                return null;
-            }
-
-            List<CVLValue> currentCvlValues = BusinessHelper.CVLValues.ToList().Where(cv => cv.CVLId.Equals(fieldType.CVLId)).ToList();
-            if (!currentCvlValues.Any())
-            {
-                return null;
-            }
-
-            List<XElement> values = new List<XElement>();
-            foreach (CVLValue cvlValue in currentCvlValues)
-            {
-                if (configuration.ActiveCVLDataMode.Equals(CVLDataMode.Keys))
-                {
-                    if (!values.Any(d => d.Value.Equals(cvlValue.Key)))
-                    {
-                        values.Add(new XElement("Dictionary", cvlValue.Key));
-                    }
-                }
-                else
-                {
-                    string value;
-                    if (currentCVL.DataType.Equals(DataType.LocaleString))
-                    {
-                        foreach (string localeString in GetLocaleStringValues(cvlValue.Value, configuration))
-                        {
-                            value = localeString;
-                            if (configuration.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
-                            {
-                                value = cvlValue.Key + Configuration.CVLKeyDelimiter + value;
-                            }
-
-                            values.Add(new XElement("Dictionary", value));
-                        }
-                    }
-                    else
-                    {
-                        value = cvlValue.Value.ToString();
-                        if (configuration.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
-                        {
-                            value = cvlValue.Key + Configuration.CVLKeyDelimiter + value;
-                        }
-
-                        if (!values.Any(d => d.Value.Equals(cvlValue.Value)))
-                        {
-                            values.Add(new XElement("Dictionary", value));
-                        }
-                    }
-                }
-            }
-
-            return values;
         }
 
         public static List<string> GetLocaleStringValues(object data, Configuration configuration)

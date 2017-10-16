@@ -12,9 +12,18 @@ using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 {
-    public static class EpiDocument
+    public class EpiDocumentFactory
     {
-        public static XDocument CreateImportDocument(Entity channelEntity, 
+        private readonly Configuration _config;
+        private readonly EpiApi _epiApi;
+
+        public EpiDocumentFactory(Configuration config)
+        {
+            _config = config;
+            _epiApi = new EpiApi(config);
+        }
+
+        public XDocument CreateImportDocument(Entity channelEntity, 
                                                      XElement metaClasses, 
                                                      XElement associationTypes, 
                                                      Dictionary<string, List<XElement>> epiElementsFromStructure, 
@@ -36,7 +45,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return CreateDocument(catalogElement, metaClasses, associationTypes, config);
         }
 
-        public static XDocument CreateUpdateDocument(Entity channelEntity, Entity updatedEntity, Configuration config)
+        public XDocument CreateUpdateDocument(Entity channelEntity, Entity updatedEntity, Configuration config)
         {
             int count = 0;
             List<XElement> skus = new List<XElement>();
@@ -95,7 +104,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return CreateDocument(catalogElement, null, null, config);
         }
 
-        public static XDocument CreateDocument(XElement catalogElement, XElement metaClasses, XElement associationTypes, Configuration config)
+        public XDocument CreateDocument(XElement catalogElement, XElement metaClasses, XElement associationTypes, Configuration config)
         {
             var result =
                 new XDocument(
@@ -109,19 +118,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return result;
         }
 
-        public static Dictionary<string, List<XElement>> GetEPiElements(Configuration config)
+        public Dictionary<string, List<XElement>> GetEPiElements(Configuration config)
         {
             Dictionary<string, List<XElement>> epiElements = CreateRootNodes();
             FillElementList(epiElements, config);
             return epiElements;
         }
 
-        public static XElement GetAssociationTypes(Configuration config)
+        public XElement GetAssociationTypes(Configuration config)
         {
             return new XElement("AssociationTypes", from lt in config.ExportEnabledLinkTypes select EpiElement.CreateAssociationTypeElement(lt));
         }
 
-        private static Dictionary<string, List<XElement>> CreateRootNodes()
+        private Dictionary<string, List<XElement>> CreateRootNodes()
         {
             var result = new Dictionary<string, List<XElement>>
                              {
@@ -133,7 +142,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return result;
         }
 
-        private static void FillElementList(Dictionary<string, List<XElement>> epiElements, Configuration config)
+        private void FillElementList(Dictionary<string, List<XElement>> epiElements, Configuration config)
         {
             try
             {
@@ -164,7 +173,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
         }
 
-        private static void FillElements(List<StructureEntity> structureEntitiesBatch, 
+        private void FillElements(List<StructureEntity> structureEntitiesBatch, 
                                          Configuration config, 
                                          List<string> addedEntities, 
                                          List<string> addedNodes,
@@ -269,7 +278,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                         if (config.ChannelId.Equals(structureEntity.ParentId))
                         {
-                            EpiApi.CheckAndMoveNodeIfNeeded(id.ToString(CultureInfo.InvariantCulture), config);
+                            _epiApi.CheckAndMoveNodeIfNeeded(id.ToString(CultureInfo.InvariantCulture), config);
                         }
     
                         IntegrationLogger.Write(LogLevel.Debug, string.Format("Trying to add channelNode {0} to Nodes", id));
@@ -783,7 +792,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
         }
 
-        private static Dictionary<int, Entity> GetEntitiesInStructure(List<StructureEntity> batch)
+        private Dictionary<int, Entity> GetEntitiesInStructure(List<StructureEntity> batch)
         {
             Dictionary<int, Entity> channelEntites = new Dictionary<int, Entity>();
 

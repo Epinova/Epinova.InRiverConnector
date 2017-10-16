@@ -594,6 +594,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                     if (fieldType.DataType.Equals(DataType.CVL))
                     {
+                        // TODO: Gjør til LongString som alt annet...
                         metaField.Add(EpiMappingHelper.GetDictionaryValues(fieldType, config));
                     }
 

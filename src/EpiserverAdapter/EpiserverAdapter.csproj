@@ -32,17 +32,17 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="inRiver.Integration">
-      <HintPath>..\lib\inRiver.Integration.exe</HintPath>
+      <HintPath>..\..\lib\inRiver.Integration.exe</HintPath>
     </Reference>
     <Reference Include="inRiver.Remoting">
-      <HintPath>..\lib\inRiver.Remoting.dll</HintPath>
+      <HintPath>..\..\lib\inRiver.Remoting.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Http.Formatting">
-      <HintPath>..\lib\System.Net.Http.Formatting.dll</HintPath>
+      <HintPath>..\..\lib\System.Net.Http.Formatting.dll</HintPath>
     </Reference>
     <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Xml.Linq" />
@@ -54,6 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConfigKeys.cs" />
+    <Compile Include="EndpointCollection.cs" />
     <Compile Include="SettingsValidator.cs" />
     <Compile Include="Helpers\BusinessHelper.cs" />
     <Compile Include="Helpers\ChannelHelper.cs" />
@@ -83,11 +84,11 @@
     <Compile Include="Helpers\StopwatchExtentions.cs" />
     <Compile Include="EpiserverAdapter.cs" />
     <Compile Include="Communication\EpiApi.cs" />
-    <Compile Include="Communication\RestEndpoint.cs" />
+    <Compile Include="Communication\HttpClientInvoker.cs" />
     <Compile Include="Communication\EpiLockObject.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Enums\CVLDataMode.cs" />
-    <Compile Include="EpiXml\EpiDocument.cs" />
+    <Compile Include="EpiXml\EpiDocumentFactory.cs" />
     <Compile Include="EpiXml\EpiElement.cs" />
     <Compile Include="EpiXml\Resources.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

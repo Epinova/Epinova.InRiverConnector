@@ -7,6 +7,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ChannelPrefixHelper
     {
+        private readonly Configuration _config;
+
+        public ChannelPrefixHelper()
+        {
+            
+        }
+        public ChannelPrefixHelper(Configuration config)
+        {
+            _config = config;
+        }
+
+        internal string GetEpiserverCode(int entityId)
+        {
+            //_config.EPiFieldsIninRiver
+            return "";
+        }
+
         internal static string GetEpiserverCode(object code, Configuration configuration)
         {
             int entityId;

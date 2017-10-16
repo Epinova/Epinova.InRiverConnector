@@ -17,11 +17,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 {
     public class DeleteUtility
     {
-        private Configuration DeleteUtilConfig { get; set; }
+        private readonly EpiApi _epiApi;
+        private readonly Configuration _config;
 
-        public DeleteUtility(Configuration deleteUtilConfig)
+        public DeleteUtility(Configuration config)
         {
-            DeleteUtilConfig = deleteUtilConfig;
+            _config = config;
+            _epiApi = new EpiApi(config);
         }
 
         public void Delete(Entity channelEntity, int parentEntityId, Entity targetEntity, string linkTypeId, List<int> productParentIds = null)
@@ -29,11 +31,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             string channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
             
-            ChannelHelper.BuildEntityIdAndTypeDict(DeleteUtilConfig);
+            ChannelHelper.BuildEntityIdAndTypeDict(_config);
 
-            if (!DeleteUtilConfig.ChannelEntities.ContainsKey(targetEntity.Id))
+            if (!_config.ChannelEntities.ContainsKey(targetEntity.Id))
             {
-                DeleteUtilConfig.ChannelEntities.Add(targetEntity.Id, targetEntity);
+                _config.ChannelEntities.Add(targetEntity.Id, targetEntity);
             }
 
             string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);
@@ -46,9 +48,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                 Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
 
-                if (!DeleteUtilConfig.ChannelEntities.ContainsKey(parentEnt.Id))
+                if (!_config.ChannelEntities.ContainsKey(parentEnt.Id))
                 {
-                    DeleteUtilConfig.ChannelEntities.Add(parentEnt.Id, parentEnt);
+                    _config.ChannelEntities.Add(parentEnt.Id, parentEnt);
                 }
 
                 if (targetEntity.EntityType.Id == "Resource")
@@ -104,18 +106,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             List<string> linkEntityIds = new List<string>();
             if (ChannelHelper.LinkTypeHasLinkEntity(linkTypeId))
             {
-                DeleteUtilConfig.ChannelStructureEntities = ChannelHelper.GetAllEntitiesInChannel(
+                _config.ChannelStructureEntities = ChannelHelper.GetAllEntitiesInChannel(
                                                                     channelEntity.Id,
                                                                     Configuration.ExportEnabledEntityTypes);
 
-                List<StructureEntity> newEntityNodes = ChannelHelper.FindEntitiesElementInStructure(DeleteUtilConfig.ChannelStructureEntities, parentEnt.Id, targetEntity.Id, linkTypeId);
+                List<StructureEntity> newEntityNodes = ChannelHelper.FindEntitiesElementInStructure(_config.ChannelStructureEntities, parentEnt.Id, targetEntity.Id, linkTypeId);
 
                 List<string> pars = new List<string>();
-                if (parentEnt.EntityType.Id == "Item" && DeleteUtilConfig.ItemsToSkus)
+                if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)
                 {
-                    pars = EpiElement.SkuItemIds(parentEnt, DeleteUtilConfig);
+                    pars = EpiElement.SkuItemIds(parentEnt, _config);
 
-                    if (DeleteUtilConfig.UseThreeLevelsInCommerce)
+                    if (_config.UseThreeLevelsInCommerce)
                     {
                         pars.Add(parentEnt.Id.ToString(CultureInfo.InvariantCulture));
                     }
@@ -126,11 +128,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 }
 
                 List<string> targets = new List<string>();
-                if (targetEntity.EntityType.Id == "Item" && DeleteUtilConfig.ItemsToSkus)
+                if (targetEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
                 {
-                    targets = EpiElement.SkuItemIds(targetEntity, DeleteUtilConfig);
+                    targets = EpiElement.SkuItemIds(targetEntity, _config);
 
-                    if (DeleteUtilConfig.UseThreeLevelsInCommerce)
+                    if (_config.UseThreeLevelsInCommerce)
                     {
                         targets.Add(targetEntity.Id.ToString(CultureInfo.InvariantCulture));
                     }
@@ -140,9 +142,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     targets.Add(targetEntity.Id.ToString(CultureInfo.InvariantCulture));
                 }
 
-                linkEntityIds = EpiApi.GetLinkEntityAssociationsForEntity(linkTypeId, channelEntity.Id, channelEntity, DeleteUtilConfig, pars, targets);
+                linkEntityIds = _epiApi.GetLinkEntityAssociationsForEntity(linkTypeId, channelEntity.Id, channelEntity, _config, pars, targets);
 
-                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == ChannelPrefixHelper.GetEpiserverCode(n.ParentId, DeleteUtilConfig)));
+                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == ChannelPrefixHelper.GetEpiserverCode(n.ParentId, _config)));
             }
 
             // Add the removed entity element together with all the underlying entity elements
@@ -155,9 +157,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     elementList.Add(copyOfElement);
                 }
 
-                if (DeleteUtilConfig.ChannelEntities.ContainsKey(existingEntity.EntityId))
+                if (_config.ChannelEntities.ContainsKey(existingEntity.EntityId))
                 {
-                    foreach (Link outboundLinks in DeleteUtilConfig.ChannelEntities[existingEntity.EntityId].OutboundLinks)
+                    foreach (Link outboundLinks in _config.ChannelEntities[existingEntity.EntityId].OutboundLinks)
                     {
                         XElement copyOfDescendant = new XElement(outboundLinks.Target.EntityType.Id + "_" + outboundLinks.Target.Id);
                         if (elementList.All(p => p.Name.LocalName != copyOfDescendant.Name.LocalName))
@@ -182,7 +184,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     continue;
                 }
 
-                if (elementEntityType == "Item" && DeleteUtilConfig.ItemsToSkus)
+                if (elementEntityType == "Item" && _config.ItemsToSkus)
                 {
                     Entity deletedEntity = null;
                     
@@ -199,7 +201,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                     if (deletedEntity != null)
                     {
-                        List<XElement> skus = EpiElement.GenerateSkuItemElemetsFromItem(deletedEntity, DeleteUtilConfig);
+                        List<XElement> skus = EpiElement.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
                         foreach (XElement sku in skus)
                         {
                             XElement skuCode = sku.Element("Code");
@@ -210,7 +212,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                         }
                     }
 
-                    if (!DeleteUtilConfig.UseThreeLevelsInCommerce)
+                    if (!_config.UseThreeLevelsInCommerce)
                     {
                         continue;
                     }
@@ -225,11 +227,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             List<string> parents = new List<string> { parentEnt.Id.ToString(CultureInfo.InvariantCulture) };
             if (parentEnt.EntityType.Id == "Item")
             {
-                if (DeleteUtilConfig.ItemsToSkus)
+                if (_config.ItemsToSkus)
                 {
-                    parents = EpiElement.SkuItemIds(parentEnt, DeleteUtilConfig);
+                    parents = EpiElement.SkuItemIds(parentEnt, _config);
 
-                    if (DeleteUtilConfig.UseThreeLevelsInCommerce)
+                    if (_config.UseThreeLevelsInCommerce)
                     {
                         parents.Add(parentEnt.Id.ToString(CultureInfo.InvariantCulture));
                     }
@@ -239,7 +241,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             XDocument updateXml = new XDocument(new XElement("xml", new XAttribute("action", "updated")));
             if (updateXml.Root != null)
             {
-                List<XElement> parentElements = ChannelHelper.GetParentXElements(parentEnt, DeleteUtilConfig);
+                List<XElement> parentElements = ChannelHelper.GetParentXElements(parentEnt, _config);
                 foreach (var parentElement in parentElements)
                 {
                     updateXml.Root.Add(parentElement);
@@ -250,31 +252,31 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             {
                 foreach (string parentId in parents)
                 {
-                    EpiApi.UpdateEntryRelations(entityIdToUpdate.Key, channelEntity.Id, channelEntity, DeleteUtilConfig, parentId, entityIdToUpdate.Value, linkTypeId, linkEntityIds);
+                    _epiApi.UpdateEntryRelations(entityIdToUpdate.Key, channelEntity.Id, channelEntity, _config, parentId, entityIdToUpdate.Value, linkTypeId, linkEntityIds);
                 }
 
-                updateXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(entityIdToUpdate.Key, DeleteUtilConfig)));
+                updateXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(entityIdToUpdate.Key, _config)));
             }
 
-            string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, updateXml, folderDateTime, DeleteUtilConfig);
+            string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, updateXml, folderDateTime, _config);
             IntegrationLogger.Write(LogLevel.Debug, "catalog saved");
-            EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.PublicationsRootPath, folderDateTime, zippedfileName));
+            _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
         }
 
         private void DeleteResource(Entity targetEntity, Entity parentEnt, string channelIdentifier, string folderDateTime, string resourceZipFile)
         {
-            XDocument doc = Resources.HandleResourceUnlink(targetEntity, parentEnt, DeleteUtilConfig);
+            XDocument doc = Resources.HandleResourceUnlink(targetEntity, parentEnt, _config);
 
-            DocumentFileHelper.SaveDocument(channelIdentifier, doc, DeleteUtilConfig, folderDateTime);
+            DocumentFileHelper.SaveDocument(channelIdentifier, doc, _config, folderDateTime);
             IntegrationLogger.Write(LogLevel.Debug, "Resource update-xml saved!");
 
-            DocumentFileHelper.ZipFile(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
+            DocumentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
             
             IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-            if (EpiApi.ImportResources(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
+            if (_epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
             {
-                EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, resourceZipFile));
+                _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
             }
         }
 
@@ -289,12 +291,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", "deleted")));
             Entity parentEntity = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
 
-            if (parentEntity != null && !DeleteUtilConfig.ChannelEntities.ContainsKey(parentEntity.Id))
+            if (parentEntity != null && !_config.ChannelEntities.ContainsKey(parentEntity.Id))
             {
-                DeleteUtilConfig.ChannelEntities.Add(parentEntity.Id, parentEntity);
+                _config.ChannelEntities.Add(parentEntity.Id, parentEntity);
             }
 
-            List<XElement> parentElements = ChannelHelper.GetParentXElements(parentEntity, DeleteUtilConfig);
+            List<XElement> parentElements = ChannelHelper.GetParentXElements(parentEntity, _config);
             foreach (var parentElement in parentElements)
             {
                 deleteXml.Root?.Add(parentElement);
@@ -323,13 +325,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 switch (deletedElementEntityType)
                 {
                     case "Channel":
-                        EpiApi.DeleteCatalog(deletedElementEntityId, DeleteUtilConfig);
-                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, DeleteUtilConfig);
+                        _epiApi.DeleteCatalog(deletedElementEntityId, _config);
+                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, _config);
                         break;
                     case "ChannelNode":
-                        EpiApi.DeleteCatalogNode(deletedElementEntityId, channelEntity.Id, DeleteUtilConfig);
+                        _epiApi.DeleteCatalogNode(deletedElementEntityId, channelEntity.Id, _config);
 
-                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, DeleteUtilConfig)));
+                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, _config)));
 
                         Entity channelNode = targetEntity.Id == deletedElementEntityId
                                                  ? targetEntity
@@ -365,18 +367,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                             }
                         }
 
-                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, DeleteUtilConfig);
+                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, _config);
                         break;
                     case "Item":
-                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, DeleteUtilConfig);
-                        if ((DeleteUtilConfig.ItemsToSkus && DeleteUtilConfig.UseThreeLevelsInCommerce) || !DeleteUtilConfig.ItemsToSkus)
+                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, _config);
+                        if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)
                         {
-                            EpiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), DeleteUtilConfig);
+                            _epiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), _config);
 
-                            deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, DeleteUtilConfig)));
+                            deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, _config)));
                         }
 
-                        if (DeleteUtilConfig.ItemsToSkus)
+                        if (_config.ItemsToSkus)
                         {
                             // delete skus if exist
                             List<string> entitiesToDelete = new List<string>();
@@ -396,7 +398,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                             if (deletedEntity != null)
                             {
-                                List<XElement> skus = EpiElement.GenerateSkuItemElemetsFromItem(deletedEntity, DeleteUtilConfig);
+                                List<XElement> skus = EpiElement.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
 
                                 foreach (XElement sku in skus)
                                 {
@@ -410,22 +412,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                             foreach (string entityIdToDelete in entitiesToDelete)
                             {
-                                EpiApi.DeleteCatalogEntry(entityIdToDelete, DeleteUtilConfig);
+                                _epiApi.DeleteCatalogEntry(entityIdToDelete, _config);
 
-                                deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(entityIdToDelete, DeleteUtilConfig)));
+                                deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(entityIdToDelete, _config)));
                             }
                         }
 
                         break;
                     case "Resource":
-                        deletedResources = new List<string> { ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, DeleteUtilConfig) };
+                        deletedResources = new List<string> { ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, _config) };
                         break;
 
                     case "Product":
-                        EpiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), DeleteUtilConfig);
-                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, DeleteUtilConfig);
+                        _epiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), _config);
+                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, _config);
 
-                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, DeleteUtilConfig)));
+                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, _config)));
 
                         Entity delEntity = RemoteManager.DataService.GetEntity(
                             deletedElementEntityId,
@@ -462,10 +464,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                         break;
                     default:
 
-                        EpiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), DeleteUtilConfig);
-                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, DeleteUtilConfig);
+                        _epiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), _config);
+                        deletedResources = ChannelHelper.GetResourceIds(deletedElement, _config);
 
-                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, DeleteUtilConfig)));
+                        deleteXml.Root?.Add(new XElement("entry", ChannelPrefixHelper.GetEpiserverCode(deletedElementEntityId, _config)));
 
                         Entity prodEntity;
                         if (targetEntity.Id == deletedElementEntityId)
@@ -512,7 +514,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                 foreach (string resourceId in deletedResources)
                 {
-                    string resourceIdWithoutPrefix = resourceId.Substring(DeleteUtilConfig.ChannelIdPrefix.Length);
+                    string resourceIdWithoutPrefix = resourceId.Substring(_config.ChannelIdPrefix.Length);
 
                     int resourceIdAsInt;
 
@@ -530,14 +532,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     XDocument resDoc = Resources.HandleResourceDelete(deletedResources);
                     string folderDateTime2 = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
-                    DocumentFileHelper.SaveDocument(channelIdentifier, resDoc, DeleteUtilConfig, folderDateTime2);
+                    DocumentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime2);
                     string zipFileDelete = string.Format(
                         "resource_{0}{1}.zip",
                         folderDateTime2,
                         deletedElementEntityId);
 
                     DocumentFileHelper.ZipFile(
-                        Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, "Resources.xml"),
+                        Path.Combine(_config.ResourcesRootPath, folderDateTime2, "Resources.xml"),
                         zipFileDelete);
 
                     foreach (string resourceIdString in deletedResources)
@@ -550,24 +552,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                         {
                             // Only do this when removing an link (unlink)
                             Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
-                            var unlinkDoc = Resources.HandleResourceUnlink(resource, parentEnt, DeleteUtilConfig);
+                            var unlinkDoc = Resources.HandleResourceUnlink(resource, parentEnt, _config);
 
-                            DocumentFileHelper.SaveDocument(channelIdentifier, unlinkDoc, DeleteUtilConfig, folderDateTime);
+                            DocumentFileHelper.SaveDocument(channelIdentifier, unlinkDoc, _config, folderDateTime);
                             zipFileUnlink = string.Format("resource_{0}{1}.zip", folderDateTime, deletedElementEntityId);
-                            DocumentFileHelper.ZipFile(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), zipFileUnlink);
+                            DocumentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), zipFileUnlink);
                             sendUnlinkResource = true;
                         }
 
                         IntegrationLogger.Write(LogLevel.Debug, "Resources saved! Starting automatic import!");
 
-                        if (sendUnlinkResource && EpiApi.ImportResources(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
+                        if (sendUnlinkResource && _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
                         {
-                            EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, zipFileUnlink));
+                            _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, zipFileUnlink));
                         }
 
-                        if (EpiApi.ImportResources(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2), DeleteUtilConfig))
+                        if (_epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime2, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime2), _config))
                         {
-                            EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, zipFileDelete));
+                            _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime2, zipFileDelete));
                         }
                     }
                 }
@@ -575,9 +577,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             if (deleteXml.Root != null && deleteXml.Root.Elements().FirstOrDefault(e => e.Name.LocalName == "entry") != null)
             {
-                string zippedCatName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, deleteXml, folderDateTime, DeleteUtilConfig);
+                string zippedCatName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, deleteXml, folderDateTime, _config);
                 IntegrationLogger.Write(LogLevel.Debug, "catalog saved");
-                EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.PublicationsRootPath, folderDateTime, zippedCatName));
+                _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedCatName));
             }
         }
     }

@@ -13,48 +13,54 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     internal class EpiApi
     {
-        internal static void DeleteCatalog(int catalogId, Configuration config)
+        private readonly Configuration _config;
+        private HttpClientInvoker _httpClient; 
+
+        public EpiApi(Configuration config)
+        {
+            _config = config;
+            _httpClient = new HttpClientInvoker(config);
+        }
+
+        internal void DeleteCatalog(int catalogId, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    RestEndpoint<int> endpoint = new RestEndpoint<int>(config, "DeleteCatalog");
-                    endpoint.Post(catalogId);
+                    _httpClient.Post(config.Endpoints.DeleteCatalog, catalogId);
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to delete catalog with id: {0}", catalogId), exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog with id: {catalogId}", exception);
                 }
             }
         }
 
-        internal static void DeleteCatalogNode(int catalogNodeId, int catalogId, Configuration config)
+        internal void DeleteCatalogNode(int catalogNodeId, int catalogId, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
                     string catalogNode = ChannelPrefixHelper.GetEpiserverCode(catalogNodeId, config);
-                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config, "DeleteCatalogNode");
-                    endpoint.Post(catalogNode);
+                    _httpClient.Post(config.Endpoints.DeleteCatalogNode, catalogNode);
                 }
                 catch (Exception ex)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to delete catalogNode with id: {0} for channel: {1}", catalogNodeId, catalogId), ex);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalogNode with id: {catalogNodeId} for channel: {catalogId}", ex);
                 }
             }
         }
 
-        internal static void DeleteCatalogEntry(string entityId, Configuration config)
+        internal void DeleteCatalogEntry(string entityId, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
                     string catalogEntryId = ChannelPrefixHelper.GetEpiserverCode(entityId, config);
-                    var endpoint = new RestEndpoint<string>(config, "DeleteCatalogEntry");
-                    endpoint.Post(catalogEntryId);
+                    _httpClient.Post(config.Endpoints.DeleteCatalogEntry, catalogEntryId);
                 }
                 catch (Exception exception)
                 {
@@ -63,7 +69,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static void UpdateLinkEntityData(Entity linkEntity, int channelId, Entity channelEntity, Configuration config, string parentId)
+        internal void UpdateLinkEntityData(Entity linkEntity, int channelId, Entity channelEntity, Configuration config, string parentId)
         {
             lock (EpiLockObject.Instance)
             {
@@ -84,8 +90,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                               ParentEntryId = parentEntryId
                                                           };
 
-                    RestEndpoint<LinkEntityUpdateData> endpoint = new RestEndpoint<LinkEntityUpdateData>(config, "UpdateLinkEntityData");
-                    endpoint.Post(dataToSend);
+                    _httpClient.Post(config.Endpoints.UpdateLinkEntityData, dataToSend);
                 }
                 catch (Exception exception)
                 {
@@ -94,7 +99,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static List<string> GetLinkEntityAssociationsForEntity(string linkType, int channelId, Entity channelEntity, Configuration config, List<string> parentIds, List<string> targetIds)
+        internal List<string> GetLinkEntityAssociationsForEntity(string linkType, int channelId, Entity channelEntity, Configuration config, List<string> parentIds, List<string> targetIds)
         {
             lock (EpiLockObject.Instance)
             {
@@ -121,28 +126,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                                                 TargetIds = targetIds
                                                                             };
 
-                    var endpoint = new RestEndpoint<GetLinkEntityAssociationsForEntityData>(config, "GetLinkEntityAssociationsForEntity");
-                    ids = endpoint.PostWithStringListAsReturn(dataToSend);
+                    ids = _httpClient.PostWithStringListAsReturn(config.Endpoints.GetLinkEntityAssociationsForEntity, dataToSend);
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Warning, string.Format("Failed to get link entity associations for entity"), exception);
+                    IntegrationLogger.Write(LogLevel.Warning, "Failed to get link entity associations for entity", exception);
                 }
 
                 return ids;
             }
         }
 
-        internal static void CheckAndMoveNodeIfNeeded(string nodeId, Configuration config)
+        internal void CheckAndMoveNodeIfNeeded(string nodeId, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
                     string entryNodeId = ChannelPrefixHelper.GetEpiserverCode(nodeId, config);
-
-                    RestEndpoint<string> endpoint = new RestEndpoint<string>(config, "CheckAndMoveNodeIfNeeded");
-                    endpoint.Post(entryNodeId);
+                    _httpClient.Post(config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
                 }
                 catch (Exception exception)
                 {
@@ -151,7 +153,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static void UpdateEntryRelations(string catalogEntryId, 
+        internal void UpdateEntryRelations(string catalogEntryId, 
                                                   int channelId,
                                                   Entity channelEntity,
                                                   Configuration config, 
@@ -193,8 +195,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                     ParentExistsInChannelNodes = parentExistsInChannelNodes
                                                 };
 
-                    var endpoint = new RestEndpoint<UpdateRelationData>(config, "UpdateEntryRelations");
-                    endpoint.Post(updateEntryRelationData);
+                    _httpClient.Post(config.Endpoints.UpdateEntryRelations, updateEntryRelationData);
                 }
                 catch (Exception exception)
                 {
@@ -208,14 +209,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static bool Import(string filePath, Guid guid, Configuration config)
+        internal bool Import(string filePath, Guid guid, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    var endpoint = new RestEndpoint<string>(config, "ImportCatalogXml");
-                    string result = endpoint.Post(filePath);
+                    string result = _httpClient.Post(config.Endpoints.ImportCatalogXml, filePath);
                     IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
                     return true;
                 }
@@ -229,7 +229,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static bool ImportResources(string manifest, string baseFilePpath, Configuration config)
+        internal bool ImportResources(string manifest, string baseFilePpath, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
@@ -249,56 +249,58 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal static bool ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded, Configuration config)
+        internal bool ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    var endpoint = new RestEndpoint<ImportUpdateCompletedData>(config, "ImportUpdateCompleted");
                     var data = new ImportUpdateCompletedData
                                 {
                                     CatalogName = catalogName,
                                     EventType = eventType,
                                     ResourcesIncluded = resourceIncluded
                                 };
-                    string result = endpoint.Post(data);
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("ImportUpdateCompleted returned: {0}", result));
+
+                    string result = _httpClient.Post(config.Endpoints.ImportUpdateCompleted, data);
+                    IntegrationLogger.Write(LogLevel.Debug, $"ImportUpdateCompleted returned: {result}");
                     return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to fire import update completed for catalog {0}.", catalogName), exception);
+                    IntegrationLogger.Write(LogLevel.Error,
+                        $"Failed to fire import update completed for catalog {catalogName}.", exception);
                     return false;
                 }
             }
         }
 
-        internal static bool DeleteCompleted(string catalogName, DeleteCompletedEventType eventType, Configuration config)
+        internal bool DeleteCompleted(string catalogName, DeleteCompletedEventType eventType, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    var endpoint = new RestEndpoint<DeleteCompletedData>(config, "DeleteCompleted");
                     var data = new DeleteCompletedData
                                 {
                                    CatalogName = catalogName,
                                    EventType = eventType
                                };
-                    string result = endpoint.Post(data);
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("DeleteCompleted returned: {0}", result));
+
+                    string result = _httpClient.Post(config.Endpoints.DeleteCompleted, data);
+                    IntegrationLogger.Write(LogLevel.Debug, $"DeleteCompleted returned: {result}");
                     return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Failed to fire DeleteCompleted for catalog {0}.", catalogName), exception);
+                    IntegrationLogger.Write(LogLevel.Error,
+                        $"Failed to fire DeleteCompleted for catalog {catalogName}.", exception);
                     return false;
                 }
             }
         }
 
-        internal static void SendHttpPost(Configuration config, string filepath)
+        internal void SendHttpPost(Configuration config, string filepath)
         {
             if (string.IsNullOrEmpty(config.HttpPostUrl))
             {

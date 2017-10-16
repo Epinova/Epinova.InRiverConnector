@@ -7,46 +7,37 @@ using inRiver.Remoting.Log;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
-    public class RestEndpoint<T>
+    public class HttpClientInvoker
     {
-        private readonly string _endpointAddress;       
-        private readonly string _action;       
-
         // ReSharper disable once StaticMemberInGenericType
         private static readonly HttpClient _httpClient;
+        private readonly EndpointCollection _endpoints;
+        private readonly string _isImportingAction;
 
-        static RestEndpoint()
+        static HttpClientInvoker()
         {
             _httpClient = new HttpClient();
         }
 
-        public RestEndpoint(Configuration config, string action)
+        public HttpClientInvoker(Configuration config)
         {
-            _action = action;
-            _endpointAddress = config.EpiEndpoint;
-            Uri uri = new Uri(GetUrl());
-
-            _httpClient.BaseAddress = new Uri(uri.Scheme + "://" + uri.Authority);
+            _isImportingAction = _endpoints.IsImporting;
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             _httpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
             _httpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
         }
 
-        public string Post(T message)
+        public string Post<T>(string url, T message)
         {
-            var url = GetUrl();
-
             inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
             var response = _httpClient.PostAsJsonAsync(url, message).Result;
             if (response.IsSuccessStatusCode)
             {
-                var resp = response.Content.ReadAsAsync<string>().Result;
-
+                var parsedResponse = response.Content.ReadAsAsync<string>().Result;
                 int tries = 0;
-                var isImportingAction = GetUrl("IsImporting");
-
-                while (resp == "importing")
+                
+                while (parsedResponse == "importing")
                 {
                     tries++;
                     if (tries < 10)
@@ -62,15 +53,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                         Thread.Sleep(150000);
                     }
                     
-                    resp = Get(isImportingAction);
+                    parsedResponse = Get(_isImportingAction);
                 }
 
-                if (resp.StartsWith("ERROR"))
+                if (parsedResponse.StartsWith("ERROR"))
                 {
-                    inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, resp);
+                    inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, parsedResponse);
                 }
 
-                return resp;
+                return parsedResponse;
             }
             
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
@@ -92,12 +83,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             throw new HttpRequestException(errorMsg);
         }
 
-        public List<string> PostWithStringListAsReturn(T message)
+        public List<string> PostWithStringListAsReturn<T>(string url, T message)
         {
-            Uri uri = new Uri(GetUrl());
+            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {uri}");
-
+            var uri = new Uri(url);
             HttpResponseMessage response = _httpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
 
             if (response.IsSuccessStatusCode)
@@ -107,16 +97,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
             inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
-        }
-
-        private string GetUrl(string action)
-        {
-            return _endpointAddress + action;
-        }
-
-        private string GetUrl()
-        {
-            return GetUrl(_action);
         }
     }
 }
