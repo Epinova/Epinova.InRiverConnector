@@ -42,7 +42,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("DataType", EpiMappingHelper.InRiverDataTypeToEpiType(fieldType, config)),
                 new XElement("Length", EpiMappingHelper.GetMetaFieldLength(fieldType, config)),
                 new XElement("AllowNulls", BusinessHelper.GetAllowsNulls(fieldType, config)),
-                new XElement("SaveHistory", "False"),
                 new XElement("AllowSearch", BusinessHelper.GetAllowsSearch(fieldType)),
                 new XElement("MultiLanguageValue", BusinessHelper.FieldTypeIsMultiLanguage(fieldType)),
                 new XElement("IsSystem", "False"),

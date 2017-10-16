@@ -88,7 +88,6 @@
     <Compile Include="Communication\EpiLockObject.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Enums\CVLDataMode.cs" />
-    <Compile Include="Enums\PublicationMode.cs" />
     <Compile Include="EpiXml\EpiDocument.cs" />
     <Compile Include="EpiXml\EpiElement.cs" />
     <Compile Include="EpiXml\Resources.cs" />

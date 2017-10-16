@@ -518,15 +518,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
             }
         }
-
-        public PublicationMode ActivePublicationMode
-        {
-            get
-            {
-                return PublicationMode.Automatic;
-            }
-        }
-
+        
         public CVLDataMode ActiveCVLDataMode
         {
             get

@@ -164,39 +164,36 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 DocumentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
                 ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done generating/saving Resource.xml", 50);
                 publishStopWatch.Stop();
-
-                if (_config.ActivePublicationMode.Equals(PublicationMode.Automatic))
+                
+                IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
+                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Catalog.xml to EPiServer...", 51);
+                if (EpiApi.Import(
+                        Path.Combine(_config.PublicationsRootPath, folderDateTime, Configuration.ExportFileName),
+                        ChannelHelper.GetChannelGuid(channelEntity, _config),
+                        _config))
                 {
-                    IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Catalog.xml to EPiServer...", 51);
-                    if (EpiApi.Import(
-                            Path.Combine(_config.PublicationsRootPath, folderDateTime, Configuration.ExportFileName),
-                            ChannelHelper.GetChannelGuid(channelEntity, _config),
-                            _config))
-                    {
-                        ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Catalog.xml to EPiServer", 75);
-                        EpiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
-                    }
-                    else
-                    {
-                        ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Error while sending Catalog.xml to EPiServer", -1, true);
-                        return;
-                    }
-
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Resources to EPiServer...", 76);
-
-                    if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
-                    {
-                        ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Resources to EPiServer...", 99);
-                        EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
-                        resourceIncluded = true;
-                    }
-                    else
-                    {
-                        ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Error while sending resources to EPiServer", -1, true);
-                    }
+                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Catalog.xml to EPiServer", 75);
+                    EpiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
+                }
+                else
+                {
+                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Error while sending Catalog.xml to EPiServer", -1, true);
+                    return;
                 }
 
+                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Resources to EPiServer...", 76);
+
+                if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
+                {
+                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Resources to EPiServer...", 99);
+                    EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
+                    resourceIncluded = true;
+                }
+                else
+                {
+                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Error while sending resources to EPiServer", -1, true);
+                }
+                
                 if (!publishConnectorEvent.IsError)
                 {
                     ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Publish done!", 100);
@@ -390,14 +387,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"),
                         resourceZipFile);
                     IntegrationLogger.Write(LogLevel.Debug, "Resources saved!");
-                    if (_config.ActivePublicationMode.Equals(PublicationMode.Automatic))
+            
+                    IntegrationLogger.Write(LogLevel.Debug, "Starting automatic resource import!");
+                    if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
                     {
-                        IntegrationLogger.Write(LogLevel.Debug, "Starting automatic resource import!");
-                        if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
-                        {
-                            EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
-                            resourceIncluded = true;
-                        }
+                        EpiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
+                        resourceIncluded = true;
                     }
                 }
                 else
@@ -511,14 +506,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     }
 
                     string zippedName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, _config);
-
-                    if (_config.ActivePublicationMode.Equals(PublicationMode.Automatic))
+                    
+                    IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
+                    if (EpiApi.Import(Path.Combine(_config.PublicationsRootPath, folderDateTime, "Catalog.xml"), ChannelHelper.GetChannelGuid(channelEntity, _config), _config))
                     {
-                        IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
-                        if (EpiApi.Import(Path.Combine(_config.PublicationsRootPath, folderDateTime, "Catalog.xml"), ChannelHelper.GetChannelGuid(channelEntity, _config), _config))
-                        {
-                            EpiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
-                        }
+                        EpiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
                     }
                 }
 

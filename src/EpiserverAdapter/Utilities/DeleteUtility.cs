@@ -269,14 +269,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             IntegrationLogger.Write(LogLevel.Debug, "Resource update-xml saved!");
 
             DocumentFileHelper.ZipFile(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
-            if (DeleteUtilConfig.ActivePublicationMode.Equals(PublicationMode.Automatic))
-            {
-                IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
+            
+            IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-                if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
-                {
-                    EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, resourceZipFile));
-                }
+            if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
+            {
+                EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, resourceZipFile));
             }
         }
 
@@ -560,21 +558,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                             sendUnlinkResource = true;
                         }
 
-                        IntegrationLogger.Write(LogLevel.Debug, "Resources saved!");
+                        IntegrationLogger.Write(LogLevel.Debug, "Resources saved! Starting automatic import!");
 
-                        if (DeleteUtilConfig.ActivePublicationMode.Equals(PublicationMode.Automatic))
+                        if (sendUnlinkResource && EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
                         {
-                            IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
+                            EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, zipFileUnlink));
+                        }
 
-                            if (sendUnlinkResource && EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime), DeleteUtilConfig))
-                            {
-                                EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime, zipFileUnlink));
-                            }
-
-                            if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2), DeleteUtilConfig))
-                            {
-                                EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, zipFileDelete));
-                            }
+                        if (EpiApi.StartAssetImportIntoEpiServerCommerce(Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, "Resources.xml"), Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2), DeleteUtilConfig))
+                        {
+                            EpiApi.SendHttpPost(DeleteUtilConfig, Path.Combine(DeleteUtilConfig.ResourcesRootPath, folderDateTime2, zipFileDelete));
                         }
                     }
                 }

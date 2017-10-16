@@ -85,14 +85,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             string zippedfileName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, CvlUtilConfig);
             IntegrationLogger.Write(LogLevel.Debug, string.Format("catalog {0} saved", channelIdentifier));
 
-            if (CvlUtilConfig.ActivePublicationMode.Equals(PublicationMode.Automatic))
-            {
-                IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
+            IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-                if (EpiApi.Import(Path.Combine(CvlUtilConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName), ChannelHelper.GetChannelGuid(channelEntity, CvlUtilConfig), CvlUtilConfig))
-                {
-                    EpiApi.SendHttpPost(CvlUtilConfig, Path.Combine(CvlUtilConfig.PublicationsRootPath, folderDateTime, zippedfileName));
-                }
+            if (EpiApi.Import(Path.Combine(CvlUtilConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName), ChannelHelper.GetChannelGuid(channelEntity, CvlUtilConfig), CvlUtilConfig))
+            {
+                EpiApi.SendHttpPost(CvlUtilConfig, Path.Combine(CvlUtilConfig.PublicationsRootPath, folderDateTime, zippedfileName));
             }
         }
     }
