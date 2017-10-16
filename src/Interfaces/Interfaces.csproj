@@ -40,9 +40,6 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\inRiver.Connectors.EPiServer\Properties\AssemblyInfoEpiServer.cs">
-      <Link>Properties\AssemblyInfoEpiServer.cs</Link>
-    </Compile>
     <Compile Include="DeleteCompletedData.cs" />
     <Compile Include="EntryCode.cs" />
     <Compile Include="Enums\DeleteCompletedEventType.cs" />

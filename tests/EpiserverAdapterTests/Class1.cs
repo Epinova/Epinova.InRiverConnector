@@ -1,6 +1,6 @@
 ﻿namespace Epinova.InRiverConnector.EpiserverAdapterTests
 {
-    public class SomeTests
+    public class Class1
     {
         
     }
