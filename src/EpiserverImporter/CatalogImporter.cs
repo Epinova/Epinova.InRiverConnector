@@ -102,7 +102,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public void DeleteCatalog(int catalogId)
         {
-            _logger.Debug("DeleteCatalog");
             List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
             if (RunIDeleteActionsHandlers)

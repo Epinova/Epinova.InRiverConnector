@@ -703,7 +703,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             linkAddedStopWatch.Stop();
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("ChannelLinkAdded done for channel {0}, took {1}!", channelId, linkAddedStopWatch.GetElapsedTimeFormated()));
+            IntegrationLogger.Write(LogLevel.Information,
+                $"ChannelLinkAdded done for channel {channelId}, took {linkAddedStopWatch.GetElapsedTimeFormated()}!");
             ConnectorEventHelper.UpdateEvent(linkAddedConnectorEvent, "ChannelLinkAdded complete", 100);
 
             if (!linkAddedConnectorEvent.IsError)
@@ -723,8 +724,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _config.ChannelStructureEntities = new List<StructureEntity>();
             _config.ChannelEntities = new Dictionary<int, Entity>();
 
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("Received link deleted for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId));
-            ConnectorEvent linkDeletedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted, string.Format("Received link deleted for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId), 0);
+            IntegrationLogger.Write(LogLevel.Debug,
+                $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}");
+            var linkDeletedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
+                $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}", 0);
 
             Stopwatch linkDeletedStopWatch = new Stopwatch();
 
@@ -743,21 +746,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 new DeleteUtility(_config).Delete(channelEntity, sourceEntityId, targetEntity, linkTypeId);
 
-                /*
-                if (linkEntityId.HasValue)
-                {
-                    //If its the last one. The linkEntity should be deleted in EPi.
-                    Entity linkEntity = RemoteManager.DataService.GetEntity(linkEntityId.Value, LoadLevel.DataAndLinks);
-
-                    if (linkEntity == null)
-                    {
-                        //Its the last one that were existing on LinkEntity. Send Delete to EPi
-                        new DeleteUtility(config).DeleteLinkEntity(channelEntity, linkEntityId.Value);
-                    }
-
-                    //new DeleteUtility(config).Delete(channelEntity, -1, linkEntity, string.Empty);
-                }*/
-
                 linkDeletedStopWatch.Stop();
             }
             catch (Exception ex)
@@ -774,7 +762,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             linkDeletedStopWatch.Stop();
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("ChannelLinkDeleted done for channel {0}, took {1}!", channelId, linkDeletedStopWatch.GetElapsedTimeFormated()));
+            IntegrationLogger.Write(LogLevel.Information,
+                $"ChannelLinkDeleted done for channel {channelId}, took {linkDeletedStopWatch.GetElapsedTimeFormated()}!");
             ConnectorEventHelper.UpdateEvent(linkDeletedConnectorEvent, "ChannelLinkDeleted complete", 100);
 
             if (!linkDeletedConnectorEvent.IsError)
@@ -793,8 +782,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             _config.ChannelStructureEntities = new List<StructureEntity>();
 
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("Received link update for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId));
-            ConnectorEvent linkUpdatedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded, string.Format("Received link update for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId), 0);
+            IntegrationLogger.Write(LogLevel.Debug,
+                $"Received link update for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}");
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded, string.Format("Received link update for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId), 0);
 
             bool resourceIncluded;
 
@@ -803,23 +793,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 linkAddedStopWatch.Start();
 
-                // NEW CODE
                 Entity channelEntity = InitiateChannelConfiguration(channelId);
                 if (channelEntity == null)
                 {
                     ConnectorEventHelper.UpdateEvent(
-                        linkUpdatedConnectorEvent,
+                        connectorEvent,
                         "Failed to initial ChannelLinkUpdated. Could not find the channel.",
                         -1,
                         true);
                     return;
                 }
 
-                ConnectorEventHelper.UpdateEvent(linkUpdatedConnectorEvent, "Fetching channel entities...", 1);
+                ConnectorEventHelper.UpdateEvent(connectorEvent, "Fetching channel entities...", 1);
 
                 var targetEntityStructure = ChannelHelper.GetEntityInChannelWithParent(_config.ChannelId, targetEntityId, sourceEntityId);
 
-                StructureEntity parentStructureEntity = ChannelHelper.GetParentStructureEntity(_config.ChannelId, sourceEntityId, targetEntityId, targetEntityStructure);
+                var parentStructureEntity = ChannelHelper.GetParentStructureEntity(_config.ChannelId, sourceEntityId, targetEntityId, targetEntityStructure);
 
                 if (parentStructureEntity != null)
                 {
@@ -833,18 +822,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     ChannelHelper.BuildEntityIdAndTypeDict(_config);
 
                     ConnectorEventHelper.UpdateEvent(
-                        linkUpdatedConnectorEvent,
+                        connectorEvent,
                         "Done fetching channel entities",
                         10);
 
-                    new AddUtility(_config).Add(channelEntity, linkUpdatedConnectorEvent, out resourceIncluded);
+                    new AddUtility(_config).Add(channelEntity, connectorEvent, out resourceIncluded);
                 }
                 else
                 {
                     linkAddedStopWatch.Stop();
                     resourceIncluded = false;
                     IntegrationLogger.Write(LogLevel.Error, string.Format("Not possible to located source entity {0} in channel structure for target entity {1}", sourceEntityId, targetEntityId));
-                    ConnectorEventHelper.UpdateEvent(linkUpdatedConnectorEvent, string.Format("Not possible to located source entity {0} in channel structure for target entity {1}", sourceEntityId, targetEntityId), -1, true);
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, string.Format("Not possible to located source entity {0} in channel structure for target entity {1}", sourceEntityId, targetEntityId), -1, true);
                     return;
                 }
 
@@ -853,7 +842,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             catch (Exception ex)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Exception in ChannelLinkUpdated", ex);
-                ConnectorEventHelper.UpdateEvent(linkUpdatedConnectorEvent, ex.Message, -1, true);
+                ConnectorEventHelper.UpdateEvent(connectorEvent, ex.Message, -1, true);
                 return;
             }
             finally
@@ -863,10 +852,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             linkAddedStopWatch.Stop();
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("ChannelLinkUpdated done for channel {0}, took {1}!", channelId, linkAddedStopWatch.GetElapsedTimeFormated()));
-            ConnectorEventHelper.UpdateEvent(linkUpdatedConnectorEvent, "ChannelLinkUpdated complete", 100);
+            IntegrationLogger.Write(LogLevel.Information,
+                $"ChannelLinkUpdated done for channel {channelId}, took {linkAddedStopWatch.GetElapsedTimeFormated()}!");
+            ConnectorEventHelper.UpdateEvent(connectorEvent, "ChannelLinkUpdated complete", 100);
 
-            if (!linkUpdatedConnectorEvent.IsError)
+            if (!connectorEvent.IsError)
             {
                 string channelName = EpiMappingHelper.GetNameForEntity(RemoteManager.DataService.GetEntity(channelId, LoadLevel.Shallow), _config, 100);
                 EpiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, resourceIncluded, _config);
@@ -880,9 +870,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void CVLValueCreated(string cvlId, string cvlValueKey)
         {
-            IntegrationLogger.Write(LogLevel.Information, string.Format("CVL value created event received with key '{0}' from CVL with id {1}", cvlValueKey, cvlId));
+            IntegrationLogger.Write(LogLevel.Information,
+                $"CVL value created event received with key '{cvlValueKey}' from CVL with id {cvlId}");
 
-            ConnectorEvent cvlValueCreatedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.CVLValueCreated, string.Format("CVL value created event received with key '{0}' from CVL with id {1}", cvlValueKey, cvlId), 0);
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.CVLValueCreated,
+                $"CVL value created event received with key '{cvlValueKey}' from CVL with id {cvlId}", 0);
 
             try
             {
@@ -900,17 +892,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
                 else
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Could not add CVL value with key {0} to CVL with id {1}", cvlValueKey, cvlId));
-                    ConnectorEventHelper.UpdateEvent(cvlValueCreatedConnectorEvent, string.Format("Could not add CVL value with key {0} to CVL with id {1}", cvlValueKey, cvlId), -1, true);
+                    IntegrationLogger.Write(LogLevel.Error, $"Could not add CVL value with key {cvlValueKey} to CVL with id {cvlId}");
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, $"Could not add CVL value with key {cvlValueKey} to CVL with id {cvlId}", -1, true);
                 }
             }
             catch (Exception ex)
             {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not add CVL value with key {0} to CVL with id {1}", cvlValueKey, cvlId), ex);
-                ConnectorEventHelper.UpdateEvent(cvlValueCreatedConnectorEvent, ex.Message, -1, true);
+                IntegrationLogger.Write(LogLevel.Error,
+                    $"Could not add CVL value with key {cvlValueKey} to CVL with id {cvlId}", ex);
+                ConnectorEventHelper.UpdateEvent(connectorEvent, ex.Message, -1, true);
             }
 
-            ConnectorEventHelper.UpdateEvent(cvlValueCreatedConnectorEvent, "CVLValueCreated complete", 100);
+            ConnectorEventHelper.UpdateEvent(connectorEvent, "CVLValueCreated complete", 100);
 
         }
 
