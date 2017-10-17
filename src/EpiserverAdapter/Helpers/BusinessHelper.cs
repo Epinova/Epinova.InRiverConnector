@@ -439,22 +439,5 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             skusToAdd = newSkus;
             skusToDelete = oldSkus;
         }
-
-        internal static List<FieldType> GetFieldTypesWithCVL(string cvlId)
-        {
-            List<FieldType> hasCVL = new List<FieldType>();
-            foreach (EntityType entityType in Configuration.ExportEnabledEntityTypes)
-            {
-                foreach (FieldType fieldType in entityType.FieldTypes)
-                {
-                    if (!string.IsNullOrEmpty(fieldType.CVLId) && fieldType.CVLId.Equals(cvlId))
-                    {
-                        hasCVL.Add(fieldType);
-                    }
-                }
-            }
-
-            return hasCVL;
-        }
     }
 }

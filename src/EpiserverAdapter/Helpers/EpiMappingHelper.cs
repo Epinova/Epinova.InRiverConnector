@@ -230,7 +230,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 if (config.MappingDocument != null)
                 {
-                    XElement fieldElement = config.MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
+                    XElement fieldElement = config.
+                        MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
                     if (fieldElement != null)
                     {
                         XAttribute attribute = fieldElement.Attribute("EPiDataType");

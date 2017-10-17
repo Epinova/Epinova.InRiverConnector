@@ -863,150 +863,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         }
 
-        public void CVLValueCreated(string cvlId, string cvlValueKey)
-        {
-            IntegrationLogger.Write(LogLevel.Information,
-                $"CVL value created event received with key '{cvlValueKey}' from CVL with id {cvlId}");
-
-            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.CVLValueCreated,
-                $"CVL value created event received with key '{cvlValueKey}' from CVL with id {cvlId}", 0);
-
-            try
-            {
-                CVLValue val = RemoteManager.ModelService.GetCVLValueByKey(cvlValueKey, cvlId);
-
-                if (val != null)
-                {
-                    if (!BusinessHelper.CVLValues.Any(cv => cv.CVLId.Equals(cvlId) && cv.Key.Equals(cvlValueKey)))
-                    {
-                        BusinessHelper.CVLValues.Add(val);
-                    }
-
-                    string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
-                    new CvlUtility(_config).AddCvl(cvlId, folderDateTime);
-                }
-                else
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Could not add CVL value with key {cvlValueKey} to CVL with id {cvlId}");
-                    ConnectorEventHelper.UpdateEvent(connectorEvent, $"Could not add CVL value with key {cvlValueKey} to CVL with id {cvlId}", -1, true);
-                }
-            }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error,
-                    $"Could not add CVL value with key {cvlValueKey} to CVL with id {cvlId}", ex);
-                ConnectorEventHelper.UpdateEvent(connectorEvent, ex.Message, -1, true);
-            }
-
-            ConnectorEventHelper.UpdateEvent(connectorEvent, "CVLValueCreated complete", 100);
-
-        }
-
-        public void CVLValueUpdated(string cvlId, string cvlValueKey)
-        {
-            ConnectorEvent cvlValueUpdatedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.CVLValueCreated, string.Format("CVL value updated for CVL {0} and key {1}", cvlId, cvlValueKey), 0);
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("CVL value updated for CVL {0} and key {1}", cvlId, cvlValueKey));
-
-            try
-            {
-                RemoteManager.ModelService.ReloadCacheForCVLValuesForCVL(cvlId);
-                CVLValue val = RemoteManager.ModelService.GetCVLValueByKey(cvlValueKey, cvlId);
-                if (val != null)
-                {
-                    CVLValue cachedValue = BusinessHelper.CVLValues.FirstOrDefault(cv => cv.CVLId.Equals(cvlId) && cv.Key.Equals(cvlValueKey));
-                    if (cachedValue == null)
-                    {
-                        return;
-                    }
-
-                    string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
-                    new CvlUtility(_config).AddCvl(cvlId, folderDateTime);
-
-                    if (_config.ActiveCVLDataMode == CVLDataMode.KeysAndValues || _config.ActiveCVLDataMode == CVLDataMode.Values)
-                    {
-                        List<FieldType> allFieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
-                        List<FieldType> allFieldsWithThisCvl = allFieldTypes.FindAll(ft => ft.CVLId == cvlId);
-                        Query query = new Query
-                        {
-                            Join = Join.Or,
-                            Criteria = new List<Criteria>()
-                        };
-
-                        foreach (FieldType fieldType in allFieldsWithThisCvl)
-                        {
-                            Criteria criteria = new Criteria
-                            {
-                                FieldTypeId = fieldType.Id,
-                                Operator = Operator.Equal,
-                                Value = cvlValueKey
-                            };
-
-                            query.Criteria.Add(criteria);
-                        }
-
-                        List<Entity> entitesWithThisCvlInPim = RemoteManager.DataService.Search(query, LoadLevel.Shallow);
-                        if (entitesWithThisCvlInPim.Count == 0)
-                        {
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("CVL value updated complete"));
-
-                            ConnectorEventHelper.UpdateEvent(cvlValueUpdatedConnectorEvent, "CVLValueUpdated complete, no action was needed", 100);
-                            return;
-                        }
-
-                        List<StructureEntity> channelEntities = ChannelHelper.GetAllEntitiesInChannel(_config.ChannelId, Configuration.ExportEnabledEntityTypes);
-
-                        List<Entity> entitesToUpdate = new List<Entity>();
-
-                        foreach (Entity entity in entitesWithThisCvlInPim)
-                        {
-                            if (channelEntities.Any() && channelEntities.Exists(i => i.EntityId.Equals(entity.Id)))
-                            {
-                                entitesToUpdate.Add(entity);
-                            }
-                        }
-
-                        foreach (Entity entity in entitesToUpdate)
-                        {
-                            ChannelEntityUpdated(_config.ChannelId, entity.Id, null);
-                        }
-                    }
-                }
-                else
-                {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Could not update CVL value with key {0} for CVL with id {1}", cvlValueKey, cvlId));
-                    ConnectorEventHelper.UpdateEvent(cvlValueUpdatedConnectorEvent, string.Format("Could not update CVL value with key {0} for CVL with id {1}", cvlValueKey, cvlId), -1, true);
-                }
-            }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not add CVL value {0} to CVL with id {1}", cvlValueKey, cvlId), ex);
-                ConnectorEventHelper.UpdateEvent(cvlValueUpdatedConnectorEvent, ex.Message, -1, true);
-            }
-
-            IntegrationLogger.Write(LogLevel.Debug, string.Format("CVL value updated complete"));
-            ConnectorEventHelper.UpdateEvent(cvlValueUpdatedConnectorEvent, "CVLValueUpdated complete", 100);
-        }
-
-        public void CVLValueDeleted(string cvlId, string cvlValueKey)
-        {
-            IntegrationLogger.Write(LogLevel.Information, string.Format("CVL value deleted event received with key '{0}' from CVL with id {1}", cvlValueKey, cvlId));
-            ConnectorEvent cvlValueDeletedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.CVLValueDeleted, string.Format("CVL value deleted event received with key '{0}' from CVL with id {1}", cvlValueKey, cvlId), 0);
-
-            if (BusinessHelper.CVLValues.RemoveAll(cv => cv.CVLId.Equals(cvlId) && cv.Key.Equals(cvlValueKey)) < 1)
-            {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not remove CVL value with key {0} from CVL with id {1}", cvlValueKey, cvlId));
-                ConnectorEventHelper.UpdateEvent(cvlValueDeletedConnectorEvent, string.Format("Could not remove CVL value with key {0} from CVL with id {1}", cvlValueKey, cvlId), -1, true);
-
-                return;
-            }
-
-            ConnectorEventHelper.UpdateEvent(cvlValueDeletedConnectorEvent, "CVLValueDeleted complete", 100);
-        }
-
-        public void CVLValueDeletedAll(string cvlId)
-        {
-
-        }
 
         private Entity InitiateChannelConfiguration(int channelId)
         {
@@ -1076,6 +932,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
 
             return null;
+        }
+
+        public void CVLValueCreated(string cvlId, string cvlValueKey)
+        {
+        }
+
+        public void CVLValueUpdated(string cvlId, string cvlValueKey)
+        {
+            // TODO: Search all entities with this CVL and cvlValueKey, and pass on updates to episerver
+        }
+
+        public void CVLValueDeleted(string cvlId, string cvlValueKey)
+        {
+        }
+
+        public void CVLValueDeletedAll(string cvlId)
+        {
         }
     }
 }

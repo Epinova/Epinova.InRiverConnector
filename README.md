@@ -12,7 +12,11 @@ Both the original file AND the modified file will now reside in the data directo
 
 ## CVL-values
 
-CVL-values are no longer transferred as dictionaries - only the key+value is returned (configuratble as before). Episerver has no need to maintain these values.
+The adapter no longer implements `ICVLListener` - thus it no longer maintains CVLs as dictionaries in Episerver. As a result, CVL-values are no longer transferred as dictionaries - only the key+value is returned (configuratble as before).
+
+Episerver has no need to maintain these values.
+
+Caution: If updating a value that's already in use, this will no longer be updated automatically. Might be re-added in a fundamentally different way later on.
 
 ## Config changes
 

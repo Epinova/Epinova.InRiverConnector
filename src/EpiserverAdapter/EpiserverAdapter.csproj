@@ -77,7 +77,6 @@
     <Compile Include="Poco\Resources.cs" />
     <Compile Include="Poco\Type.cs" />
     <Compile Include="Utilities\AddUtility.cs" />
-    <Compile Include="Utilities\CvlUtility.cs" />
     <Compile Include="Utilities\DeleteUtility.cs" />
     <Compile Include="Helpers\DocumentFileHelper.cs" />
     <Compile Include="Helpers\EpiMappingHelper.cs" />
