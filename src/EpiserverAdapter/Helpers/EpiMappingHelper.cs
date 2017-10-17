@@ -152,7 +152,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return defaultLength;
         }
 
-        public static string InRiverDataTypeToEpiType(FieldType fieldType, Configuration config)
+        public static string GetEpiserverDataType(FieldType fieldType, Configuration config)
         {
             string type = string.Empty;
 
@@ -338,7 +338,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return returnString;
         }
 
-        public static string GetEPiMetaFieldNameFromField(FieldType fieldType, Configuration config)
+        public static string GetEpiserverFieldName(FieldType fieldType, Configuration config)
         {
             string name = fieldType.Id;
 

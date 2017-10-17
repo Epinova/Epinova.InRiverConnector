@@ -36,10 +36,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new XElement(
                 "MetaField",
                 new XElement("Namespace", "Mediachase.Commerce.Catalog"),
-                new XElement("Name", EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, config)),
-                new XElement("FriendlyName", EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, config)),
+                new XElement("Name", EpiMappingHelper.GetEpiserverFieldName(fieldType, config)),
+                new XElement("FriendlyName", EpiMappingHelper.GetEpiserverFieldName(fieldType, config)),
                 new XElement("Description", "From inRiver"),
-                new XElement("DataType", EpiMappingHelper.InRiverDataTypeToEpiType(fieldType, config)),
+                new XElement("DataType", EpiMappingHelper.GetEpiserverDataType(fieldType, config)),
                 new XElement("Length", EpiMappingHelper.GetMetaFieldLength(fieldType, config)),
                 new XElement("AllowNulls", BusinessHelper.GetAllowsNulls(fieldType, config)),
                 new XElement("AllowSearch", BusinessHelper.GetAllowsSearch(fieldType)),
@@ -144,7 +144,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         GetDisplayXXElement(entity.DisplayDescription, "DisplayDescription", config),
                         from f in entity.Fields
                         where !f.IsEmpty() && !EpiMappingHelper.SkipField(f.FieldType, config)
-                        select InRiverFieldToMetaField(f, config))),
+                        select GetMetaFieldValueElement(f, config))),
                 new XElement(
                     "ParentNode",
                     string.IsNullOrEmpty(parentId) ? null : ChannelPrefixHelper.GetEpiserverCode(parentId, config)),
@@ -203,7 +203,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         GetDisplayXXElement(entity.DisplayDescription, "DisplayDescription", config),
                         from f in entity.Fields
                         where UseField(entity, f) && !EpiMappingHelper.SkipField(f.FieldType, config)
-                        select InRiverFieldToMetaField(f, config))),
+                        select GetMetaFieldValueElement(f, config))),
                         CreateSEOInfoElement(entity, config)
                         );
         }
@@ -214,56 +214,58 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new Guid(concatIds);
         }
 
-        public static XElement InRiverFieldToMetaField(Field field, Configuration config)
+        public static XElement GetMetaFieldValueElement(Field field, Configuration config)
         {
             XElement metaField = new XElement(
                 "MetaField",
-                new XElement("Name", EpiMappingHelper.GetEPiMetaFieldNameFromField(field.FieldType, config)),
-                new XElement("Type", EpiMappingHelper.InRiverDataTypeToEpiType(field.FieldType, config)));
+                new XElement("Name", EpiMappingHelper.GetEpiserverFieldName(field.FieldType, config)),
+                new XElement("Type", EpiMappingHelper.GetEpiserverDataType(field.FieldType, config)));
 
-            if (field.FieldType.DataType.Equals(DataType.CVL))
+           
+            if (field.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                metaField.Add(BusinessHelper.GetCVLValues(field, config));
-            }
-            else
-            {
-                if (field.FieldType.DataType.Equals(DataType.LocaleString))
+                LocaleString ls = field.Data as LocaleString;
+                if (!field.IsEmpty())
                 {
-                    LocaleString ls = field.Data as LocaleString;
-                    if (!field.IsEmpty())
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
                     {
-                        foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
-                        {
-                            if (ls != null)
-                            {
-                                metaField.Add(
-                                    new XElement(
-                                        "Data",
-                                        new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                        new XAttribute("value", ls[culturePair.Value])));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
+                        if (ls != null)
                         {
                             metaField.Add(
                                 new XElement(
                                     "Data",
                                     new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                    new XAttribute("value", string.Empty)));
+                                    new XAttribute("value", ls[culturePair.Value])));
                         }
                     }
                 }
                 else
                 {
-                    metaField.Add(
-                        new XElement(
-                            "Data",
-                            new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
-                            new XAttribute("value", BusinessHelper.GetFieldDataAsString(field, config))));
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
+                    {
+                        metaField.Add(
+                            new XElement(
+                                "Data",
+                                new XAttribute("language", culturePair.Key.Name.ToLower()),
+                                new XAttribute("value", string.Empty)));
+                    }
                 }
+            }
+            else if (field.FieldType.DataType.Equals(DataType.CVL))
+            {
+                metaField.Add(
+                    new XElement(
+                        "Data", 
+                        BusinessHelper.GetCVLValues(field, config)));
+            }
+            else
+            {
+                    
+                    metaField.Add(
+                    new XElement(
+                        "Data",
+                        new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
+                        new XAttribute("value", BusinessHelper.GetFieldDataAsString(field, config))));
             }
 
             if (field.FieldType.Settings.ContainsKey("EPiDataType"))
@@ -492,7 +494,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement(
                     "ResourceFields",
                     resource.Fields.Where(field => !EpiMappingHelper.SkipField(field.FieldType, config))
-                        .Select(field => InRiverFieldToMetaField(field, config))),
+                        .Select(field => GetMetaFieldValueElement(field, config))),
                 Resources.GetInternalPathsInZip(resource, config),
                 new XElement(
                     "ParentEntries",
@@ -509,10 +511,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     fieldtype =>
                     new XElement(
                         "ResourceMetaField",
-                        new XElement("FieldName", EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldtype, config)),
-                        new XElement("FriendlyName", EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldtype, config)),
-                        new XElement("Description", EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldtype, config)),
-                        new XElement("FieldType", EpiMappingHelper.InRiverDataTypeToEpiType(fieldtype, config)),
+                        new XElement("FieldName", EpiMappingHelper.GetEpiserverFieldName(fieldtype, config)),
+                        new XElement("FriendlyName", EpiMappingHelper.GetEpiserverFieldName(fieldtype, config)),
+                        new XElement("Description", EpiMappingHelper.GetEpiserverFieldName(fieldtype, config)),
+                        new XElement("FieldType", EpiMappingHelper.GetEpiserverDataType(fieldtype, config)),
                         new XElement("Format", "Text"),
                         new XElement("MaximumLength", EpiMappingHelper.GetMetaFieldLength(fieldtype, config)),
                         new XElement("AllowNulls", BusinessHelper.GetAllowsNulls(fieldtype, config)),
@@ -595,13 +597,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (metafields.Any(mf =>
                     {
                         XElement nameElement = mf.Element("Name");
-                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, config));
+                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEpiserverFieldName(fieldType, config));
                     }))
                     {
                         XElement existingMetaField = metafields.FirstOrDefault(mf =>
                         {
                             XElement nameElement = mf.Element("Name");
-                            return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, config));
+                            return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEpiserverFieldName(fieldType, config));
                         });
                         if (existingMetaField != null)
                         {
@@ -778,7 +780,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         new XAttribute("value", string.Empty)));
             }
 
-            XElement element = InRiverFieldToMetaField(displayField, config);
+            XElement element = GetMetaFieldValueElement(displayField, config);
             XElement nameElement = element.Element("Name");
             if (nameElement != null)
             {

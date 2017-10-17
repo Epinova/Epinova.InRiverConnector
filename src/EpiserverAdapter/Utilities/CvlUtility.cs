@@ -47,7 +47,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     mf =>
                     {
                         XElement nameElement = mf.Element("Name");
-                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, Config));
+                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEpiserverFieldName(fieldType, Config));
                     }))
                 {
                     XElement existingMetaField =
@@ -55,7 +55,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                             mf =>
                             {
                                 XElement nameElement = mf.Element("Name");
-                                return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEPiMetaFieldNameFromField(fieldType, Config));
+                                return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEpiserverFieldName(fieldType, Config));
                             });
 
                     if (existingMetaField == null)

@@ -274,185 +274,99 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return seoKeywordsField.Data.ToString();
         }
 
-        public static string GetCVLValue(string cvlId, object key)
-        {
-            if (key == null)
-            {
-                return string.Empty;
-            }
-
-            CVLValue cv = CVLValues.FirstOrDefault(cvl => cvl.CVLId.Equals(cvlId) && cvl.Key.Equals(key));
-            if (cv == null)
-            {
-                return string.Empty;
-            }
-
-            return cv.Value.ToString();
-        }
-
         public static List<XElement> GetCVLValues(Field field, Configuration configuration)
         {
-            List<XElement> elemets = new List<XElement>();
+            var dataElements = new List<XElement>();
             if (field == null || field.IsEmpty())
+                return dataElements;
+
+            var cvl = CvLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
+            if (cvl == null)
+                return dataElements;
+
+            if (cvl.DataType == DataType.LocaleString)
             {
-                if (field != null)
+                foreach (var language in configuration.LanguageMapping)
                 {
-                    CVL cvl = CvLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
-                    if (cvl == null)
-                    {
-                        return elemets;
-                    }
-
-                    if (cvl.DataType == DataType.LocaleString)
-                    {
-                        Dictionary<string, XElement> valuesPerLanguage = new Dictionary<string, XElement>
-                                                                     {
-                                                                         {
-                                                                             configuration.ChannelDefaultLanguage.Name,
-                                                                             new XElement("Data", new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()))
-                                                                         }
-                                                                     };
-
-                        foreach (KeyValuePair<CultureInfo, CultureInfo> keyValuePair in configuration.LanguageMapping)
-                        {
-                            if (!valuesPerLanguage.ContainsKey(keyValuePair.Key.Name))
-                            {
-                                valuesPerLanguage.Add(
-                                    keyValuePair.Key.Name,
-                                    new XElement("Data", new XAttribute("language", keyValuePair.Key.Name.ToLower())));
-                            }
-                        }
-
-                        if (valuesPerLanguage.Count > 0)
-                        {
-                            foreach (string key in valuesPerLanguage.Keys)
-                            {
-                                elemets.Add(valuesPerLanguage[key]);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        XElement dataElement = new XElement(
-                            "Data",
-                            new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()));
-
-                        elemets.Add(dataElement);
-                    }
+                    var dataElement = GetCvlDataElement(field, configuration, language.Key);
+                    dataElements.Add(dataElement);
                 }
-
-                return elemets;
-            }
-
-            if (configuration.ActiveCVLDataMode.Equals(CVLDataMode.Keys) ||
-                (field.FieldType.Settings.ContainsKey("EPiMetaFieldName") && field.FieldType.Settings["EPiMetaFieldName"].Equals("_ExcludedCatalogEntryMarkets")))
-            {
-                XElement dataElement = new XElement(
-                    "Data",
-                    new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()));
-                if (field.FieldType.Multivalue)
-                {
-                    foreach (string cvlKey in field.Data.ToString().Split(';'))
-                    {
-                        dataElement.Add(new XElement("Item", new XAttribute("value", cvlKey)));
-                    }
-                }
-                else
-                {
-                    dataElement.Add(new XAttribute("value", field.Data));
-                }
-
-                elemets.Add(dataElement);
             }
             else
             {
-                CVL cvl = CvLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
-                if (cvl == null)
+                var dataElement = GetCvlDataElement(field, configuration, configuration.ChannelDefaultLanguage);
+                dataElements.Add(dataElement);
+            }
+                
+            return dataElements;
+        }
+
+        private static XElement GetCvlDataElement(Field field, Configuration configuration, CultureInfo language)
+        {
+            var dataElement = new XElement(
+                "Data",
+                new XAttribute("language", language.Name.ToLower()),
+                new XAttribute("value", GetCvlFieldValue(field, language, configuration)));
+
+            return dataElement;
+        }
+
+        private static string GetCvlFieldValue(Field field, CultureInfo language, Configuration config)
+        {
+            if (config.ActiveCVLDataMode.Equals(CVLDataMode.Keys) ||
+                FieldIsExcludedCatalogEntryMarkets(field))
+            {
+                return field.Data.ToString();
+            }
+           
+            string[] keys = field.Data.ToString().Split(';');
+            var cvlId = field.FieldType.CVLId;
+
+            var returnValues = new List<string>();
+                
+            foreach (var key in keys)
+            {
+                var cvlValue = CVLValues.FirstOrDefault(cv => cv.CVLId.Equals(cvlId) && cv.Key.Equals(key));
+                if (cvlValue?.Value == null)
+                    continue;
+
+                string finalizedValue;
+
+                if (field.FieldType.DataType.Equals(DataType.LocaleString))
                 {
-                    return elemets;
+                    LocaleString ls = (LocaleString)cvlValue.Value;
+                        
+                    if (!ls.ContainsCulture(language))
+                        return null;
+
+                    var value = ls[language];
+                    finalizedValue = GetFinalizedValue(config, value, key);
+                }
+                else
+                {
+                    var value = cvlValue.Value.ToString();
+                    finalizedValue = GetFinalizedValue(config, value, key);
                 }
 
-                string[] keys = field.FieldType.Multivalue
-                                    ? field.Data.ToString().Split(';')
-                                    : new[] { field.Data.ToString() };
-
-                Dictionary<string, XElement> valuesPerLanguage = new Dictionary<string, XElement>
-                                                                     {
-                                                                         {
-                                                                             configuration.ChannelDefaultLanguage.Name,
-                                                                             new XElement("Data", new XAttribute("language", configuration.ChannelDefaultLanguage.Name.ToLower()))
-                                                                         }
-                                                                     };
-
-                foreach (string key in keys)
-                {
-                    CVLValue cvlValue = CVLValues.FirstOrDefault(cv => cv.CVLId.Equals(cvl.Id) && cv.Key.Equals(key));
-                    if (cvlValue == null || cvlValue.Value == null)
-                    {
-                        continue;
-                    }
-
-                    if (cvl.DataType.Equals(DataType.LocaleString))
-                    {
-                        LocaleString ls = (LocaleString)cvlValue.Value;
-                        foreach (KeyValuePair<CultureInfo, CultureInfo> keyValuePair in configuration.LanguageMapping)
-                        {
-                            if (!valuesPerLanguage.ContainsKey(keyValuePair.Key.Name))
-                            {
-                                valuesPerLanguage.Add(
-                                    keyValuePair.Key.Name,
-                                    new XElement("Data", new XAttribute("language", keyValuePair.Key.Name.ToLower())));
-                            }
-
-                            string value = ls[keyValuePair.Value];
-                            if (configuration.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
-                            {
-                                value = key + Configuration.CVLKeyDelimiter + value;
-                            }
-
-                            // MultiValue uses <Item> elements, SingleValue stores the value in the <Data> element.
-                            if (field.FieldType.Multivalue)
-                            {
-                                valuesPerLanguage[keyValuePair.Key.Name].Add(
-                                    new XElement("Item", new XAttribute("value", value)));
-                            }
-                            else
-                            {
-                                valuesPerLanguage[keyValuePair.Key.Name].Add(new XAttribute("value", value));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        string value = cvlValue.Value.ToString();
-                        if (configuration.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
-                        {
-                            value = key + Configuration.CVLKeyDelimiter + value;
-                        }
-
-                        // MultiValue uses <Item> elements, SingleValue stores the value in the <Data> element.
-                        if (field.FieldType.Multivalue)
-                        {
-                            valuesPerLanguage[configuration.ChannelDefaultLanguage.Name].Add(
-                                new XElement("Item", new XAttribute("value", value)));
-                        }
-                        else
-                        {
-                            valuesPerLanguage[configuration.ChannelDefaultLanguage.Name].Add(new XAttribute("value", value));
-                        }
-                    }
-                }
-
-                if (valuesPerLanguage.Count > 0)
-                {
-                    foreach (string key in valuesPerLanguage.Keys)
-                    {
-                        elemets.Add(valuesPerLanguage[key]);
-                    }
-                }
+                returnValues.Add(finalizedValue);
             }
 
-            return elemets;
+            return string.Join(";", returnValues);
+        }
+
+        private static bool FieldIsExcludedCatalogEntryMarkets(Field field)
+        {
+            return field.FieldType.Settings.ContainsKey("EPiMetaFieldName") &&
+                   field.FieldType.Settings["EPiMetaFieldName"].Equals("_ExcludedCatalogEntryMarkets");
+        }
+
+        private static string GetFinalizedValue(Configuration config, string value, string key)
+        {
+            if (config.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
+            {
+                value = key + Configuration.CVLKeyDelimiter + value;
+            }
+            return value;
         }
 
         public static string GetFieldDataAsString(Field field, Configuration configuration)
@@ -470,8 +384,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else if (field.FieldType.DataType.Equals(DataType.CVL))
             {
-                // This should never happen. CVL should be handled in the method which calls this method.
-                value = GetCVLValue(field.FieldType.CVLId, field.Data);
+                value = GetCVLValues(field, configuration);
             }
             else if (field.FieldType.DataType.Equals(DataType.DateTime))
             {
