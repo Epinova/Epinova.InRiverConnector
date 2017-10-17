@@ -14,10 +14,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class Configuration
     {
-        private static readonly string[] ExportDisabledEntityTypes = { "Channel", "Assortment", "Resource", "Task", "Section", "Publication" };
-
-        private static List<EntityType> _exportEnabledEntityTypes;
-
         private readonly Dictionary<string, string> _settings;
 
         private readonly List<string> _epiFieldsIninRiver;
@@ -51,22 +47,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _settings = RemoteManager.UtilityService.GetConnector(id).Settings;
             var settingsValidator = new SettingsValidator(_settings);
             settingsValidator.ValidateSettings();
-            Endpoints = new EndpointCollection(EpiEndpoint);
+            
             Id = id;
+            Endpoints = new EndpointCollection(EpiEndpoint);
             LinkTypes = new List<LinkType>(RemoteManager.ModelService.GetAllLinkTypes());
-            _epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
+
             ChannelStructureEntities = new List<StructureEntity>();
             ChannelEntities = new Dictionary<int, Entity>();
-        }
 
-        public static List<EntityType> ExportEnabledEntityTypes
-        {
-            get
-            {
-                return _exportEnabledEntityTypes ?? (_exportEnabledEntityTypes = (from entityType in RemoteManager.ModelService.GetAllEntityTypes()
-                                                       where !ExportDisabledEntityTypes.Contains(entityType.Id)
-                                                       select entityType).ToList());
-            }
+            _epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
         }
 
         public int EpiRestTimeout => int.Parse(_settings[ConfigKeys.EpiTimeout]);
@@ -117,6 +106,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
 
                 return _settings["PUBLISH_FOLDER"];
+            }
+        }
+
+        private List<EntityType> _exportEnabledEntityTypes;
+        public List<EntityType> ExportEnabledEntityTypes
+        {
+            get
+            {
+                if (_exportEnabledEntityTypes != null)
+                    return _exportEnabledEntityTypes;
+
+                if (!_settings.ContainsKey(ConfigKeys.ExportEntities))
+                    throw new Exception($"Need to add exportable entities (config value {ConfigKeys.ExportEntities}. Default value is: {ConfigDefaults.ExportEntities}.");
+
+                var list = _settings[ConfigKeys.ExportEntities].Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var allEntityTypes = RemoteManager.ModelService.GetAllEntityTypes();
+                _exportEnabledEntityTypes = allEntityTypes.Where(x => list.Contains(x.Id)).ToList();
+
+                return _exportEnabledEntityTypes;
             }
         }
 
@@ -383,34 +391,34 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (_exportEnabledLinkTypes == null)
-                {
-                    _exportEnabledLinkTypes = new List<LinkType>();
-                    List<LinkType> allLinkTypes = RemoteManager.ModelService.GetAllLinkTypes();
+                if (_exportEnabledLinkTypes != null)
+                    return _exportEnabledLinkTypes.ToArray();
 
-                    LinkType firstProdItemLink = allLinkTypes.Where(
+                _exportEnabledLinkTypes = new List<LinkType>();
+                List<LinkType> allLinkTypes = RemoteManager.ModelService.GetAllLinkTypes();
+
+                LinkType firstProdItemLink = allLinkTypes.Where(
                         lt => lt.SourceEntityTypeId.Equals("Product") && lt.TargetEntityTypeId.Equals("Item"))
-                        .OrderBy(l => l.Index)
-                        .FirstOrDefault();
+                    .OrderBy(l => l.Index)
+                    .FirstOrDefault();
 
-                    foreach (LinkType linkType in allLinkTypes)
+                foreach (LinkType linkType in allLinkTypes)
+                {
+                    // ChannelNode links and  Product to item links are not associations
+                    if (linkType.LinkEntityTypeId == null &&
+                        (linkType.SourceEntityTypeId.Equals("ChannelNode")
+                         || (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !BundleEntityTypes.Contains(linkType.TargetEntityTypeId))
+                         || (PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !PackageEntityTypes.Contains(linkType.TargetEntityTypeId))
+                         || (DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId))
+                         || (linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && firstProdItemLink != null && linkType.Id == firstProdItemLink.Id)))
                     {
-                        // ChannelNode links and  Product to item links are not associations
-                        if (linkType.LinkEntityTypeId == null &&
-                            (linkType.SourceEntityTypeId.Equals("ChannelNode")
-                            || (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !BundleEntityTypes.Contains(linkType.TargetEntityTypeId))
-                            || (PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !PackageEntityTypes.Contains(linkType.TargetEntityTypeId))
-                            || (DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId))
-                            || (linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && firstProdItemLink != null && linkType.Id == firstProdItemLink.Id)))
-                        {
-                            continue;
-                        }
+                        continue;
+                    }
 
-                        if (ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.SourceEntityTypeId))
-                            && ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.TargetEntityTypeId)))
-                        {
-                            _exportEnabledLinkTypes.Add(linkType);
-                        }
+                    if (ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.SourceEntityTypeId))
+                        && ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.TargetEntityTypeId)))
+                    {
+                        _exportEnabledLinkTypes.Add(linkType);
                     }
                 }
 
