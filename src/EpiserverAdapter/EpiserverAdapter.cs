@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
-using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.EpiserverAdapter.Utilities;
@@ -19,7 +18,6 @@ using inRiver.Remoting;
 using inRiver.Remoting.Connect;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
-using inRiver.Remoting.Query;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter
 {
@@ -32,39 +30,49 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public new void Start()
         {
-            _config = new Configuration(Id);
-
-            ConnectorEventHelper.CleanupOngoingEvents(_config);
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
-
-            Entity channel = RemoteManager.DataService.GetEntity(_config.ChannelId, LoadLevel.Shallow);
-            if (channel == null)
+            try
             {
-                _started = false;
-                ConnectorEventHelper.UpdateEvent(connectorEvent, "Channel id is not valid, could not find entity with id. Unable to start", -1, true);
-                return;
-            }
+                _config = new Configuration(Id);
 
-            if (channel.EntityType.Id != "Channel")
+                ConnectorEventHelper.CleanupOngoingEvents(_config);
+
+                Entity channel = RemoteManager.DataService.GetEntity(_config.ChannelId, LoadLevel.Shallow);
+                if (channel == null)
+                {
+                    _started = false;
+                    ConnectorEventHelper.UpdateEvent(connectorEvent,
+                        "Channel id is not valid, could not find entity with id. Unable to start", -1, true);
+                    return;
+                }
+
+                if (channel.EntityType.Id != "Channel")
+                {
+                    _started = false;
+                    ConnectorEventHelper.UpdateEvent(connectorEvent,
+                        "Channel id is not valid, entity with id is no channel. Unable to start", -1, true);
+                    return;
+                }
+
+                _epiApi = new EpiApi(_config);
+                _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi);
+
+                AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
+
+                if (!InitConnector())
+                {
+                    return;
+                }
+
+                base.Start();
+                _started = true;
+                ConnectorEventHelper.UpdateEvent(connectorEvent, "Connector has started", 100);
+            }
+            catch (Exception ex)
             {
-                _started = false;
-                ConnectorEventHelper.UpdateEvent(connectorEvent, "Channel id is not valid, entity with id is no channel. Unable to start", -1, true);
-                return;
+                IntegrationLogger.Write(LogLevel.Error, "Error while starting connector", ex);
+                ConnectorEventHelper.UpdateEvent(connectorEvent, "Issue while starting, see log.", 100, true);
             }
-
-            _epiApi = new EpiApi(_config);
-            _epiDocumentFactory  = new EpiDocumentFactory(_config);
-
-            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
-
-            if (!InitConnector())
-            {
-                return;
-            }
-
-            base.Start();
-            _started = true;
-            ConnectorEventHelper.UpdateEvent(connectorEvent, "Connector has started", 100);
         }
 
         public new void Stop()

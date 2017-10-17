@@ -17,10 +17,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly Configuration _config;
         private readonly EpiApi _epiApi;
 
-        public EpiDocumentFactory(Configuration config)
+        public EpiDocumentFactory(Configuration config, EpiApi epiApi)
         {
             _config = config;
-            _epiApi = new EpiApi(config);
+            _epiApi = epiApi;
         }
 
         public XDocument CreateImportDocument(Entity channelEntity, 

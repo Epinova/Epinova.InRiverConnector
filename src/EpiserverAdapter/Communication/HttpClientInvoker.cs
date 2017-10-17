@@ -11,6 +11,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
     {
         private static readonly HttpClient HttpClient;
         private readonly string _isImportingAction;
+        private readonly bool clientPropsSet = false;
 
         static HttpClientInvoker()
         {
@@ -20,9 +21,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         public HttpClientInvoker(Configuration config)
         {
             _isImportingAction = config.Endpoints.IsImporting;
-            HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            HttpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
-            HttpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
+            
+            // INFO: Allows multiple HttpClientInvoker classes to be created while keeping one static HttpClient.
+            if (!clientPropsSet) 
+            {
+                HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                HttpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
+                HttpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
+            }
         }
 
         public string Post<T>(string url, T message)

@@ -11,14 +11,12 @@ using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
-    internal class EpiApi
+    public class EpiApi
     {
-        private readonly Configuration _config;
-        private HttpClientInvoker _httpClient; 
+        private readonly HttpClientInvoker _httpClient; 
 
         public EpiApi(Configuration config)
         {
-            _config = config;
             _httpClient = new HttpClientInvoker(config);
         }
 
