@@ -73,7 +73,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
 
             XElement metaData = new XElement("MetaDataPlusBackup", new XAttribute("version", "1.0"), metafields.ToArray());
-            XDocument doc = EpiDocumentFactory.CreateDocument(null, metaData, null, Config);
+            XDocument doc = _epiDocumentFactory.CreateDocument(null, metaData, null, Config);
 
             Entity channelEntity = RemoteManager.DataService.GetEntity(Config.ChannelId, LoadLevel.DataOnly);
             if (channelEntity == null)
