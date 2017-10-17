@@ -371,9 +371,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public static string GetFlatFieldData(Field field, Configuration configuration)
         {
-            if (field.IsEmpty())
+            if (field == null || field.IsEmpty())
             {
-                return null;
+                return string.Empty;
             }
 
             if (field.FieldType.DataType.Equals(DataType.Boolean))
@@ -405,7 +405,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return field.Data.ToString();
             }
 
-            return null;
+            return string.Empty;
         }
 
         internal static void CompareAndParseSkuXmls(string oldXml, string newXml, out List<XElement> skusToAdd, out List<XElement> skusToDelete)

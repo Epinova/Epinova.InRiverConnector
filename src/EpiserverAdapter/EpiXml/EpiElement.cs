@@ -235,7 +235,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 new XElement(
                                     "Data",
                                     new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                    new XAttribute("value", ls[culturePair.Value])));
+                                    new XAttribute("value", ls[culturePair.Value] ?? string.Empty)));
                         }
                     }
                 }
