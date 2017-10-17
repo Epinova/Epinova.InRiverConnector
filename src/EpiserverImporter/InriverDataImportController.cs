@@ -19,13 +19,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _catalogImporter = catalogImporter;
             _logger = logger;
         }
-
-        private static readonly ILog Log = LogManager.GetLogger(typeof(InriverDataImportController));
-        
+      
         [HttpGet]
         public string IsImporting()
         {
-            Log.Debug("IsImporting");
+            _logger.Debug("IsImporting");
 
             if (ImportStatusContainer.Instance.IsImporting)
             {
@@ -54,7 +52,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public void DeleteCatalogNode([FromBody] string catalogNodeId)
         {
-            Log.Debug("DeleteCatalogNode");
+            _logger.Debug("DeleteCatalogNode");
 
             _catalogImporter.DeleteCatalogNode(catalogNodeId);
         }
@@ -62,7 +60,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public void CheckAndMoveNodeIfNeeded([FromBody] string catalogNodeId)
         {
-            Log.Debug("CheckAndMoveNodeIfNeeded");
+            _logger.Debug("CheckAndMoveNodeIfNeeded");
 
             _catalogImporter.CheckAndMoveNodeIfNeeded(catalogNodeId);
         }
@@ -70,14 +68,14 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
         {
-            Log.Debug("UpdateLinkEntityData");
+            _logger.Debug("UpdateLinkEntityData");
             _catalogImporter.UpdateLinkEntityData(linkEntityUpdateData);
         }
 
         [HttpPost]
         public void UpdateEntryRelations(UpdateRelationData updateRelationData)
         {
-            Log.Debug("UpdateEntryRelations");
+            _logger.Debug("UpdateEntryRelations");
 
             _catalogImporter.UpdateEntryRelations(updateRelationData);
         }
@@ -85,14 +83,14 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public List<string> GetLinkEntityAssociationsForEntity(GetLinkEntityAssociationsForEntityData data)
         {
-            Log.Debug("GetLinkEntityAssociationsForEntity");
+            _logger.Debug("GetLinkEntityAssociationsForEntity");
 
             return _catalogImporter.GetLinkEntityAssociationsForEntity(data);
         }
 
         public string Get()
         {
-            Log.Debug("Hello from Episerver import controller!");
+            _logger.Debug("Hello from Episerver import controller!");
             return "Hello from Episerver import controller!";
         }
 

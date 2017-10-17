@@ -19,11 +19,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         private EpiDocumentFactory _epiDocumentFactory;
         private Configuration ConnectorConfig { get; }
 
-        public AddUtility(Configuration config)
+        public AddUtility(Configuration config, EpiApi epiApi)
         {
             ConnectorConfig = config;
-            _epiApi = new EpiApi(config);
-            _epiDocumentFactory = new EpiDocumentFactory(config);
+            _epiApi = epiApi;
+            _epiDocumentFactory = new EpiDocumentFactory(config, epiApi);
         }
 
         internal void Add(Entity channelEntity, ConnectorEvent connectorEvent, out bool resourceIncluded)

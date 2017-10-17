@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
+using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
@@ -11,29 +12,34 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
     {
         private static readonly HttpClient HttpClient;
         private readonly string _isImportingAction;
-        private readonly bool clientPropsSet = false;
+        private static bool _clientPropsSet = false;
 
         static HttpClientInvoker()
         {
             HttpClient = new HttpClient();
+            IntegrationLogger.Write(LogLevel.Debug, $"Static constructor running.");
         }
 
         public HttpClientInvoker(Configuration config)
         {
             _isImportingAction = config.Endpoints.IsImporting;
+            IntegrationLogger.Write(LogLevel.Debug, $"Initializing HttpClientInvoker. clientPropsSet: {_clientPropsSet}");
             
             // INFO: Allows multiple HttpClientInvoker classes to be created while keeping one static HttpClient.
-            if (!clientPropsSet) 
+            if (!_clientPropsSet) 
             {
+                IntegrationLogger.Write(LogLevel.Debug, $"Initing clientPropsSet. ApiKey => {config.EpiApiKey}");
+
                 HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 HttpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
                 HttpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
+                _clientPropsSet = true;
             }
         }
 
         public string Post<T>(string url, T message)
         {
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
+            IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
             var response = HttpClient.PostAsJsonAsync(url, message).Result;
             if (response.IsSuccessStatusCode)

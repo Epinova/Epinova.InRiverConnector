@@ -52,14 +52,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return false;
         }
         
-        public static string GetAllowsSearch(FieldType fieldType)
+        public static string GetAllowSearch(FieldType fieldType)
         {
             if (fieldType.Settings.ContainsKey("AllowsSearch"))
             {
                 return fieldType.Settings["AllowsSearch"];
             }
 
-            return "True";
+            return "true";
         }
 
         public static bool GetAllowsNulls(FieldType fieldType, Configuration config)

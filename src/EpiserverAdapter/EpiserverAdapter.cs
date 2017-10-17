@@ -27,35 +27,28 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private Configuration _config;
         private EpiApi _epiApi;
         private EpiDocumentFactory _epiDocumentFactory;
+        private AddUtility _addUtility;
 
         public new void Start()
         {
+            _config = new Configuration(Id);
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
+
             try
             {
-                _config = new Configuration(Id);
-
                 ConnectorEventHelper.CleanupOngoingEvents(_config);
 
                 Entity channel = RemoteManager.DataService.GetEntity(_config.ChannelId, LoadLevel.Shallow);
-                if (channel == null)
+                if (channel == null || channel.EntityType.Id != "Channel")
                 {
                     _started = false;
-                    ConnectorEventHelper.UpdateEvent(connectorEvent,
-                        "Channel id is not valid, could not find entity with id. Unable to start", -1, true);
-                    return;
-                }
-
-                if (channel.EntityType.Id != "Channel")
-                {
-                    _started = false;
-                    ConnectorEventHelper.UpdateEvent(connectorEvent,
-                        "Channel id is not valid, entity with id is no channel. Unable to start", -1, true);
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, "Channel id is not valid: Entity with given ID is not a channel, or doesn't exist. Unable to start", -1, true);
                     return;
                 }
 
                 _epiApi = new EpiApi(_config);
                 _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi);
+                _addUtility = new AddUtility(_config, _epiApi);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 
@@ -72,6 +65,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 IntegrationLogger.Write(LogLevel.Error, "Error while starting connector", ex);
                 ConnectorEventHelper.UpdateEvent(connectorEvent, "Issue while starting, see log.", 100, true);
+                throw;
             }
         }
 
@@ -113,14 +107,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public void Publish(int channelId)
         {
             if (channelId != _config.ChannelId)
-            {
                 return;
-            }
 
-            ConnectorEvent publishConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, 
-                                                                                      ConnectorEventType.Publish,
-                                                                                      $"Publish started for channel: {channelId}",
-                                                                                      0);
+            var publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channelId}",0);
+
             var publishStopWatch = Stopwatch.StartNew();
             var resourceIncluded = false;
 
@@ -129,19 +119,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 var channelEntity = InitiateChannelConfiguration(channelId);
                 if (channelEntity == null)
                 {
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Failed to initial publish. Could not find the channel.", -1, true);
+                    ConnectorEventHelper.UpdateEvent(publishEvent, "Failed to initial publish. Could not find the channel.", -1, true);
                     return;
                 }
 
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Fetching all channel entities...", 1);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
                 var channelEntities = ChannelHelper.GetAllEntitiesInChannel(_config.ChannelId, Configuration.ExportEnabledEntityTypes);
 
                 _config.ChannelStructureEntities = channelEntities;
                 ChannelHelper.BuildEntityIdAndTypeDict(_config);
 
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done fetching all channel entities", 10);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities", 10);
 
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Generating catalog.xml...", 11);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Generating catalog.xml...", 11);
                 var epiElements = _epiDocumentFactory.GetEPiElements(_config);
 
                 var doc = _epiDocumentFactory.CreateImportDocument(channelEntity, 
@@ -162,8 +152,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                               $"Relations: {epiElements["Relations"].Count}" +
                                                               $"Associations: {epiElements["Associations"].Count}");
 
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done generating catalog.xml", 25);
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Generating Resource.xml and saving files to disk...", 26);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Done generating catalog.xml", 25);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Generating Resource.xml and saving files to disk...", 26);
 
                 List<StructureEntity> resources = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channelEntity.Id.ToString(), "Resource");
 
@@ -175,43 +165,43 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 string resourceZipFile = $"resource_{folderDateTime}.zip";
 
                 DocumentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done generating/saving Resource.xml", 50);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Done generating/saving Resource.xml", 50);
                 publishStopWatch.Stop();
                 
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Catalog.xml to EPiServer...", 51);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Sending Catalog.xml to EPiServer...", 51);
                 if (_epiApi.Import(
                         Path.Combine(_config.PublicationsRootPath, folderDateTime, Configuration.ExportFileName),
                         ChannelHelper.GetChannelGuid(channelEntity, _config),
                         _config))
                 {
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Catalog.xml to EPiServer", 75);
+                    ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending Catalog.xml to EPiServer", 75);
                     _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
                 }
                 else
                 {
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Error while sending Catalog.xml to EPiServer", -1, true);
+                    ConnectorEventHelper.UpdateEvent(publishEvent, "Error while sending Catalog.xml to EPiServer", -1, true);
                     return;
                 }
 
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Sending Resources to EPiServer...", 76);
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Sending Resources to EPiServer...", 76);
 
                 if (_epiApi.ImportResources(
                     Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), 
                     Path.Combine(_config.ResourcesRootPath, folderDateTime), _config))
                 {
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Done sending Resources to EPiServer...", 99);
+                    ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending Resources to EPiServer...", 99);
                     _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
                     resourceIncluded = true;
                 }
                 else
                 {
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Error while sending resources to EPiServer", -1, true);
+                    ConnectorEventHelper.UpdateEvent(publishEvent, "Error while sending resources to EPiServer", -1, true);
                 }
                 
-                if (!publishConnectorEvent.IsError)
+                if (!publishEvent.IsError)
                 {
-                    ConnectorEventHelper.UpdateEvent(publishConnectorEvent, "Publish done!", 100);
+                    ConnectorEventHelper.UpdateEvent(publishEvent, "Publish done!", 100);
                     string channelName =
                         EpiMappingHelper.GetNameForEntity(
                             RemoteManager.DataService.GetEntity(channelId, LoadLevel.Shallow),
@@ -227,7 +217,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             catch (Exception exception)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Exception in Publish", exception);
-                ConnectorEventHelper.UpdateEvent(publishConnectorEvent, exception.Message, -1, true);
+                ConnectorEventHelper.UpdateEvent(publishEvent, exception.Message, -1, true);
             }
             finally
             {
@@ -300,7 +290,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 ChannelHelper.BuildEntityIdAndTypeDict(_config);
 
-                new AddUtility(_config).Add(channelEntity, entityAddedConnectorEvent, out resourceIncluded);
+                _addUtility.Add(channelEntity, entityAddedConnectorEvent, out resourceIncluded);
                 entityAddedStopWatch.Stop();
             }
             catch (Exception ex)
@@ -490,10 +480,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (skusToAdd.Count > 0)
             {
-                new AddUtility(_config).Add(
-                    channelEntity,
-                    entityUpdatedConnectorEvent,
-                    out resourceIncluded);
+                _addUtility.Add(channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
             }
         }
 
@@ -504,7 +491,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                              string channelName)
         {
             bool resourceIncluded;
-            new AddUtility(_config).Add(channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
+            _addUtility.Add(channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
 
             entityUpdatedStopWatch.Stop();
             IntegrationLogger.Write(LogLevel.Information, $"Update done for channel {channelId}, took {entityUpdatedStopWatch.GetElapsedTimeFormated()}!");
@@ -685,10 +672,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 ConnectorEventHelper.UpdateEvent(linkAddedConnectorEvent, "Done fetching channel entities", 10);
 
-                new AddUtility(_config).Add(
-                    channelEntity,
-                    linkAddedConnectorEvent,
-                    out resourceIncluded);
+                _addUtility.Add(channelEntity, linkAddedConnectorEvent, out resourceIncluded);
 
                 linkAddedStopWatch.Stop();
             }
@@ -829,7 +813,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         "Done fetching channel entities",
                         10);
 
-                    new AddUtility(_config).Add(channelEntity, connectorEvent, out resourceIncluded);
+                    _addUtility.Add(channelEntity, connectorEvent, out resourceIncluded);
                 }
                 else
                 {

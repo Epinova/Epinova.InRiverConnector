@@ -370,6 +370,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         ImportStatusContainer.Instance.Message = "importing";
                         ImportStatusContainer.Instance.IsImporting = true;
 
+                        _logger.Information($"Importing catalog document from {path}");
                         List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
                         if (catalogImportHandlers.Any() && RunICatalogImportHandlers)
                         {
@@ -535,9 +536,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private void ImportCatalogXmlFromPath(string path)
         {
             _logger.Information("Starting importing the xml into EPiServer Commerce.");
-            CatalogImportExport cie = new CatalogImportExport();
+
+            var cie = new CatalogImportExport();
             cie.ImportExportProgressMessage += ProgressHandler;
-            cie.Import(path, true);
+
+            var directoryName = Path.GetDirectoryName(path);
+            cie.Import(directoryName, true);
+
             _logger.Information("Done importing the xml into EPiServer Commerce.");
         }
 
