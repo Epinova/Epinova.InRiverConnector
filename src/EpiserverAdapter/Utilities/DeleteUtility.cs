@@ -115,7 +115,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 List<string> pars = new List<string>();
                 if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)
                 {
-                    pars = EpiElement.SkuItemIds(parentEnt, _config);
+                    pars = EpiElementFactory.SkuItemIds(parentEnt, _config);
 
                     if (_config.UseThreeLevelsInCommerce)
                     {
@@ -130,7 +130,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 List<string> targets = new List<string>();
                 if (targetEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
                 {
-                    targets = EpiElement.SkuItemIds(targetEntity, _config);
+                    targets = EpiElementFactory.SkuItemIds(targetEntity, _config);
 
                     if (_config.UseThreeLevelsInCommerce)
                     {
@@ -201,7 +201,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                     if (deletedEntity != null)
                     {
-                        List<XElement> skus = EpiElement.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
+                        List<XElement> skus = EpiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
                         foreach (XElement sku in skus)
                         {
                             XElement skuCode = sku.Element("Code");
@@ -229,7 +229,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             {
                 if (_config.ItemsToSkus)
                 {
-                    parents = EpiElement.SkuItemIds(parentEnt, _config);
+                    parents = EpiElementFactory.SkuItemIds(parentEnt, _config);
 
                     if (_config.UseThreeLevelsInCommerce)
                     {
@@ -398,7 +398,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                             if (deletedEntity != null)
                             {
-                                List<XElement> skus = EpiElement.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
+                                List<XElement> skus = EpiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
 
                                 foreach (XElement sku in skus)
                                 {

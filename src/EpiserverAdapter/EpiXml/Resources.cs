@@ -40,7 +40,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
 
                 EntityType reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
-                XElement resourceMetaClasses = EpiElement.CreateResourceMetaFieldsElement(reourceType, config);
+                XElement resourceMetaClasses = EpiElementFactory.CreateResourceMetaFieldsElement(reourceType, config);
                 resourceDocument = CreateResourceDocument(resourceMetaClasses, resources, resources, "added", config);
             }
             catch (Exception ex)
@@ -73,7 +73,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         internal static XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
         {
             Dictionary<int, Entity> parentEntities = config.ChannelEntities;
-            XElement resourceElement = EpiElement.CreateResourceElement(resource, "unlinked", config, parentEntities);
+            XElement resourceElement = EpiElementFactory.CreateResourceElement(resource, "unlinked", config, parentEntities);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
@@ -105,7 +105,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         resourceMetaClasses,
                         new XElement(
                             "ResourceFiles",
-                            resources.Select(res => EpiElement.CreateResourceElement(res, action, config, parentEntities)))));
+                            resources.Select(res => EpiElementFactory.CreateResourceElement(res, action, config, parentEntities)))));
         }
 
         internal static bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)

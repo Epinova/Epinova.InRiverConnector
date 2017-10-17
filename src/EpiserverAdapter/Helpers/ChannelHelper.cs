@@ -324,7 +324,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (parentEntity.EntityType.Id == "Item" && configuration.ItemsToSkus)
             {
-                parents = EpiElement.SkuItemIds(parentEntity, configuration);
+                parents = EpiElementFactory.SkuItemIds(parentEntity, configuration);
             }
             else
             {
@@ -421,14 +421,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                     {
                         if (!structureEntity.LinkEntityId.HasValue)
                         {
-                            associationsElements.Add(EpiElement.CreateCatalogAssociationElement(
+                            associationsElements.Add(EpiElementFactory.CreateCatalogAssociationElement(
                                structureEntity,
                                null,
                                config));
                         }
                         else
                         {
-                            associationsElements.Add(EpiElement.CreateCatalogAssociationElement(
+                            associationsElements.Add(EpiElementFactory.CreateCatalogAssociationElement(
                                structureEntity,
                                link.LinkEntity,
                                config));
@@ -452,7 +452,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
                             relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId,
-                                EpiElement.CreateNodeEntryRelationElement(
+                                EpiElementFactory.CreateNodeEntryRelationElement(
                                     parentNodeId.ToString(CultureInfo.InvariantCulture),
                                     structureEntity.EntityId.ToString(),
                                     structureEntity.SortOrder,
@@ -464,7 +464,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParent))
                         {
                             relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParent,
-                                EpiElement.CreateEntryRelationElement(
+                                EpiElementFactory.CreateEntryRelationElement(
                                 structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
                                 link.LinkType.SourceEntityTypeId,
                                structureEntity.EntityId.ToString(),

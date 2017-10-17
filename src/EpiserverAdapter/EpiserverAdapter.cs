@@ -96,6 +96,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiEndpoint, "https://www.example.com/inriverapi/InriverDataImport/");
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiApiKey, "SomeGreatKey123");
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiTimeout, "1");
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExportEntities, ConfigDefaults.ExportEntities);
             ConfigurationManager.Instance.SetConnectorSetting(Id, "BATCH_SIZE", string.Empty);
         }
 
@@ -135,7 +136,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 var epiElements = _epiDocumentFactory.GetEPiElements(_config);
 
                 var doc = _epiDocumentFactory.CreateImportDocument(channelEntity, 
-                                                           EpiElement.GetMetaClassesFromFieldSets(_config),
+                                                           EpiElementFactory.GetMetaClassesFromFieldSets(_config),
                                                            _epiDocumentFactory.GetAssociationTypes(_config), 
                                                            epiElements, 
                                                            _config);

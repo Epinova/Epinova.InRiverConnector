@@ -53,6 +53,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConfigDefaults.cs" />
     <Compile Include="ConfigKeys.cs" />
     <Compile Include="EndpointCollection.cs" />
     <Compile Include="SettingsValidator.cs" />
@@ -88,7 +89,7 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="Enums\CVLDataMode.cs" />
     <Compile Include="EpiXml\EpiDocumentFactory.cs" />
-    <Compile Include="EpiXml\EpiElement.cs" />
+    <Compile Include="EpiXml\EpiElementFactory.cs" />
     <Compile Include="EpiXml\Resources.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
