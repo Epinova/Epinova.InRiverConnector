@@ -110,7 +110,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new XElement(
                 "Catalog",
                 new XAttribute("name", EpiMappingHelper.GetNameForEntity(channel, config, 100)),
-                new XAttribute("lastmodified", channel.LastModified.ToString(Configuration.DateTimeFormatString)),
+                new XAttribute("lastmodified", channel.LastModified.ToString("O")),
                 new XAttribute("startDate", BusinessHelper.GetStartDateFromEntity(channel)),
                 new XAttribute("endDate", BusinessHelper.GetEndDateFromEntity(channel)),
                 new XAttribute("defaultCurrency", config.ChannelDefaultCurrency),
@@ -260,39 +260,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
             else
             {
-                    
-                    metaField.Add(
-                    new XElement(
-                        "Data",
-                        new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
-                        new XAttribute("value", BusinessHelper.GetFieldDataAsString(field, config))));
-            }
-
-            if (field.FieldType.Settings.ContainsKey("EPiDataType"))
-            {
-                if (field.FieldType.Settings["EPiDataType"] == "ShortString")
-                {
-                    foreach (XElement dataElement in metaField.Descendants().Where(e => e.Attribute("value") != null))
-                    {
-                        int lenght = dataElement.Attribute("value").Value.Length;
-
-                        int defaultLength = 150;
-                        if (field.FieldType.Settings.ContainsKey("MetaFieldLength"))
-                        {
-                            if (!int.TryParse(field.FieldType.Settings["MetaFieldLength"], out defaultLength))
-                            {
-                                defaultLength = 150;
-                            }
-                        }
-
-                        if (lenght > defaultLength)
-                        {
-                            IntegrationLogger.Write(
-                                LogLevel.Error,
-                                string.Format("Field {0} for entity {1} has a longer value [{2}] than defined by MetaFieldLength [{3}]", field.FieldType.Id, field.EntityId, lenght, defaultLength));
-                        }
-                    }
-                }
+                metaField.Add(
+                new XElement(
+                    "Data",
+                    new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
+                    new XAttribute("value", BusinessHelper.GetFlatFieldData(field, config))));
             }
 
             return metaField;

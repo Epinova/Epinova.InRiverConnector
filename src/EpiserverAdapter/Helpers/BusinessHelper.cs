@@ -369,58 +369,43 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return value;
         }
 
-        public static string GetFieldDataAsString(Field field, Configuration configuration)
+        public static string GetFlatFieldData(Field field, Configuration configuration)
         {
-            string value = string.Empty;
-
             if (field.IsEmpty())
             {
-                return value;
+                return null;
             }
 
             if (field.FieldType.DataType.Equals(DataType.Boolean))
             {
-                value = ((bool)field.Data).ToString();
+                return ((bool)field.Data).ToString();
             }
-            else if (field.FieldType.DataType.Equals(DataType.CVL))
+            if (field.FieldType.DataType.Equals(DataType.DateTime))
             {
-                value = GetCVLValues(field, configuration);
+                return ((DateTime)field.Data).ToString("O");
             }
-            else if (field.FieldType.DataType.Equals(DataType.DateTime))
+            if (field.FieldType.DataType.Equals(DataType.Double))
             {
-                value = ((DateTime)field.Data).ToString(Configuration.DateTimeFormatString);
+                return ((double)field.Data).ToString(CultureInfo.InvariantCulture);
             }
-            else if (field.FieldType.DataType.Equals(DataType.Double))
+            if (field.FieldType.DataType.Equals(DataType.File))
             {
-                value = ((double)field.Data).ToString(CultureInfo.InvariantCulture);
+                return field.Data.ToString();
             }
-            else if (field.FieldType.DataType.Equals(DataType.File))
+            if (field.FieldType.DataType.Equals(DataType.Integer))
             {
-                value = field.Data.ToString();
+                return field.Data.ToString();
             }
-            else if (field.FieldType.DataType.Equals(DataType.Integer))
+            if (field.FieldType.DataType.Equals(DataType.String))
             {
-                value = field.Data.ToString();
+                return field.Data.ToString();
             }
-            else if (field.FieldType.DataType.Equals(DataType.LocaleString))
+            if (field.FieldType.DataType.Equals(DataType.Xml))
             {
-                LocaleString ls = (LocaleString)field.Data;
-
-                foreach (KeyValuePair<CultureInfo, CultureInfo> cultureInfoPair in configuration.LanguageMapping)
-                {
-                    value += cultureInfoPair.Key.Name + "||" + ls[cultureInfoPair.Value] + "|;";
-                }
-            }
-            else if (field.FieldType.DataType.Equals(DataType.String))
-            {
-                value = field.Data.ToString();
-            }
-            else if (field.FieldType.DataType.Equals(DataType.Xml))
-            {
-                value = field.Data.ToString();
+                return field.Data.ToString();
             }
 
-            return value;
+            return null;
         }
 
         internal static void CompareAndParseSkuXmls(string oldXml, string newXml, out List<XElement> skusToAdd, out List<XElement> skusToDelete)

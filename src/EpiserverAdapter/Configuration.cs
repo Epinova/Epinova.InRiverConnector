@@ -74,8 +74,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public string EpiEndpoint => _settings[ConfigKeys.EpiEndpoint];
         public EndpointCollection Endpoints { get; set; }
 
-        public static string DateTimeFormatString => "yyyy-MM-dd HH:mm:ss";
-
         public static string ExportFileName => "Catalog.xml";
 
         public static string MimeType => "ResourceMimeType";
