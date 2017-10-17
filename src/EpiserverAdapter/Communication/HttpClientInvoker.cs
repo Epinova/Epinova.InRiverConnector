@@ -9,29 +9,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class HttpClientInvoker
     {
-        // ReSharper disable once StaticMemberInGenericType
-        private static readonly HttpClient _httpClient;
-        private readonly EndpointCollection _endpoints;
+        private static readonly HttpClient HttpClient;
         private readonly string _isImportingAction;
 
         static HttpClientInvoker()
         {
-            _httpClient = new HttpClient();
+            HttpClient = new HttpClient();
         }
 
         public HttpClientInvoker(Configuration config)
         {
-            _isImportingAction = _endpoints.IsImporting;
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
-            _httpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
+            _isImportingAction = config.Endpoints.IsImporting;
+            HttpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            HttpClient.DefaultRequestHeaders.Add("apikey", config.EpiApiKey);
+            HttpClient.Timeout = new TimeSpan(config.EpiRestTimeout, 0, 0);
         }
 
         public string Post<T>(string url, T message)
         {
             inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
-            var response = _httpClient.PostAsJsonAsync(url, message).Result;
+            var response = HttpClient.PostAsJsonAsync(url, message).Result;
             if (response.IsSuccessStatusCode)
             {
                 var parsedResponse = response.Content.ReadAsAsync<string>().Result;
@@ -71,7 +69,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
         private string Get(string uri)
         {
-            HttpResponseMessage response = _httpClient.GetAsync(uri).Result;
+            HttpResponseMessage response = HttpClient.GetAsync(uri).Result;
 
             if (response.IsSuccessStatusCode)
             {
@@ -88,7 +86,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
             var uri = new Uri(url);
-            HttpResponseMessage response = _httpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
+            HttpResponseMessage response = HttpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
 
             if (response.IsSuccessStatusCode)
             {
