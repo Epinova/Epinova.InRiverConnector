@@ -24,6 +24,7 @@ Caution: If updating a value that's already in use, this will no longer be updat
 - `EPI_MAJOR_VERSION` has been removed. It had no purpose.
 - `MODIFY_FILTER_BEHAVIOR` has been removed. Invisible and undocumented, poorly named and probably never ever used.
 - Support for `EPiDataType` field setting has been removed, as it's utterly pointless and can never do anything but create harm.
+- `EXPORT_ENTITIES` is new. It should contain all the entity types you want to export. Defaults to `Product,Item`, but you can add in anything really. These will be created as catalog entities, so adding things like milestones or activites will not make sense. Create your own integration for such things.
 
 ## Possible settings
 
