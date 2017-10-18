@@ -14,10 +14,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     public class EpiElementFactory
     {
         private readonly Configuration _config;
+        private readonly EpiMappingHelper _mappingHelper;
 
-        public EpiElementFactory(Configuration config)
+        public EpiElementFactory(Configuration config, EpiMappingHelper mappingHelper)
         {
             _config = config;
+            _mappingHelper = mappingHelper;
         }
 
         public XElement InRiverEntityTypeToMetaClass(string name, string entityTypeName)
@@ -28,8 +30,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Name", name),
                 new XElement("FriendlyName", name),
                 new XElement("MetaClassType", "User"),
-                new XElement("ParentClass", EpiMappingHelper.GetParentClassForEntityType(entityTypeName)),
-                new XElement("TableName", EpiMappingHelper.GetTableNameForEntityType(entityTypeName, name)),
+                new XElement("ParentClass", _mappingHelper.GetParentClassForEntityType(entityTypeName)),
+                new XElement("TableName", _mappingHelper.GetTableNameForEntityType(entityTypeName, name)),
                 new XElement("Description", "From inRiver"),
                 new XElement("IsSystem", "False"),
                 new XElement("IsAbstract", "False"),
@@ -43,11 +45,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new XElement(
                 "MetaField",
                 new XElement("Namespace", "Mediachase.Commerce.Catalog"),
-                new XElement("Name", EpiMappingHelper.GetEpiserverFieldName(fieldType, config)),
-                new XElement("FriendlyName", EpiMappingHelper.GetEpiserverFieldName(fieldType, config)),
+                new XElement("Name", _mappingHelper.GetEpiserverFieldName(fieldType)),
+                new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldType)),
                 new XElement("Description", "From inRiver"),
-                new XElement("DataType", EpiMappingHelper.GetEpiserverDataType(fieldType, config)),
-                new XElement("Length", EpiMappingHelper.GetMetaFieldLength(fieldType, config)),
+                new XElement("DataType", _mappingHelper.GetEpiserverDataType(fieldType)),
+                new XElement("Length", _mappingHelper.GetMetaFieldLength(fieldType)),
                 new XElement("AllowNulls", !fieldType.Mandatory),
                 new XElement("SaveHistory", "False"),
                 new XElement("AllowSearch", BusinessHelper.GetAllowSearch(fieldType)),
@@ -117,7 +119,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             return new XElement(
                 "Catalog",
-                new XAttribute("name", EpiMappingHelper.GetNameForEntity(channel, config, 100)),
+                new XAttribute("name", _mappingHelper.GetNameForEntity(channel, 100)),
                 new XAttribute("lastmodified", channel.LastModified.ToString("O")),
                 new XAttribute("startDate", BusinessHelper.GetStartDateFromEntity(channel)),
                 new XAttribute("endDate", BusinessHelper.GetEndDateFromEntity(channel)),
@@ -135,7 +137,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             return new XElement(
                 "Node",
-                new XElement("Name", EpiMappingHelper.GetNameForEntity(entity, config, 100)),
+                new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
                 new XElement("StartDate", BusinessHelper.GetStartDateFromEntity(entity)),
                 new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", !entity.EntityType.IsLinkEntityType),
@@ -151,7 +153,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         GetDisplayXXElement(entity.DisplayName, "DisplayName", config),
                         GetDisplayXXElement(entity.DisplayDescription, "DisplayDescription", config),
                         from f in entity.Fields
-                        where !f.IsEmpty() && !EpiMappingHelper.SkipField(f.FieldType, config)
+                        where !f.IsEmpty() && !_mappingHelper.SkipField(f.FieldType)
                         select GetMetaFieldValueElement(f, config))),
                 new XElement(
                     "ParentNode",
@@ -194,7 +196,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             return new XElement(
                 "Entry",
-                new XElement("Name", EpiMappingHelper.GetNameForEntity(entity, config, 100)),
+                new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
                 new XElement("StartDate", BusinessHelper.GetStartDateFromEntity(entity)),
                 new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", "True"),
@@ -210,7 +212,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         GetDisplayXXElement(entity.DisplayName, "DisplayName", config),
                         GetDisplayXXElement(entity.DisplayDescription, "DisplayDescription", config),
                         from f in entity.Fields
-                        where UseField(entity, f) && !EpiMappingHelper.SkipField(f.FieldType, config)
+                        where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
                         select GetMetaFieldValueElement(f, config))),
                         CreateSEOInfoElement(entity, config)
                         );
@@ -226,8 +228,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             XElement metaField = new XElement(
                 "MetaField",
-                new XElement("Name", EpiMappingHelper.GetEpiserverFieldName(field.FieldType, config)),
-                new XElement("Type", EpiMappingHelper.GetEpiserverDataType(field.FieldType, config)));
+                new XElement("Name", _mappingHelper.GetEpiserverFieldName(field.FieldType)),
+                new XElement("Type", _mappingHelper.GetEpiserverDataType(field.FieldType)));
 
            
             if (field.FieldType.DataType.Equals(DataType.LocaleString))
@@ -336,11 +338,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("SortOrder", sortOrder));
         }
 
-        public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Entity linkEntity, Configuration config, Dictionary<int, Entity> channelEntities = null)
+        public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Entity linkEntity, Dictionary<int, Entity> channelEntities = null)
         {
             // Unique Name with no spaces required for EPiServer Commerce
-            string name = EpiMappingHelper.GetAssociationName(structureEntity, linkEntity, config);
-            string description = structureEntity.LinkEntityId == null ? structureEntity.LinkTypeIdFromParent : ChannelPrefixHelper.GetEpiserverCode(structureEntity.LinkEntityId.Value, config);
+            string name = _mappingHelper.GetAssociationName(structureEntity, linkEntity);
+            string description = structureEntity.LinkEntityId == null ? 
+                                        structureEntity.LinkTypeIdFromParent : 
+                                        ChannelPrefixHelper.GetEpiserverCode(structureEntity.LinkEntityId.Value, _config);
+
             description = description ?? string.Empty;
 
             return new XElement(
@@ -348,21 +353,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Name", name),
                 new XElement("Description", description),
                 new XElement("SortOrder", structureEntity.SortOrder),
-                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, config)),
-                CreateAssociationElement(structureEntity, config));
+                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, _config)),
+                CreateAssociationElement(structureEntity));
         }
 
-        public XElement CreateAssociationElement(StructureEntity structureEntity, Configuration config)
+        public XElement CreateAssociationElement(StructureEntity structureEntity)
         {
             return new XElement(
                 "Association",
-                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, config)),
+                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, _config)),
                 new XElement("SortOrder", structureEntity.SortOrder),
                     new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
 
 
-        public XElement CreateResourceMetaFieldsElement(EntityType resourceType, Configuration config)
+        public XElement CreateResourceMetaFieldsElement(EntityType resourceType)
         {
             return new XElement(
                 "ResourceMetaFields",
@@ -370,12 +375,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     fieldtype =>
                     new XElement(
                         "ResourceMetaField",
-                        new XElement("FieldName", EpiMappingHelper.GetEpiserverFieldName(fieldtype, config)),
-                        new XElement("FriendlyName", EpiMappingHelper.GetEpiserverFieldName(fieldtype, config)),
-                        new XElement("Description", EpiMappingHelper.GetEpiserverFieldName(fieldtype, config)),
-                        new XElement("FieldType", EpiMappingHelper.GetEpiserverDataType(fieldtype, config)),
+                        new XElement("FieldName", _mappingHelper.GetEpiserverFieldName(fieldtype)),
+                        new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldtype)),
+                        new XElement("Description", _mappingHelper.GetEpiserverFieldName(fieldtype)),
+                        new XElement("FieldType", _mappingHelper.GetEpiserverDataType(fieldtype)),
                         new XElement("Format", "Text"),
-                        new XElement("MaximumLength", EpiMappingHelper.GetMetaFieldLength(fieldtype, config)),
+                        new XElement("MaximumLength", _mappingHelper.GetMetaFieldLength(fieldtype)),
                         new XElement("AllowNulls", !fieldtype.Mandatory),
                         new XElement("UniqueValue", fieldtype.Unique))));
         }
@@ -430,7 +435,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 displayDescriptionElement.Add(new XElement("OwnerMetaClass", entityType.Id));
                 foreach (FieldType fieldType in entityType.FieldTypes)
                 {
-                    if (EpiMappingHelper.SkipField(fieldType, config))
+                    if (_mappingHelper.SkipField(fieldType))
                     {
                         continue;
                     }
@@ -456,13 +461,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (metafields.Any(mf =>
                     {
                         XElement nameElement = mf.Element("Name");
-                        return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEpiserverFieldName(fieldType, config));
+                        return nameElement != null && nameElement.Value.Equals(_mappingHelper.GetEpiserverFieldName(fieldType));
                     }))
                     {
                         XElement existingMetaField = metafields.FirstOrDefault(mf =>
                         {
                             XElement nameElement = mf.Element("Name");
-                            return nameElement != null && nameElement.Value.Equals(EpiMappingHelper.GetEpiserverFieldName(fieldType, config));
+                            return nameElement != null && nameElement.Value.Equals(_mappingHelper.GetEpiserverFieldName(fieldType));
                         });
                         if (existingMetaField != null)
                         {

@@ -13,10 +13,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class EpiApi
     {
+        private readonly EpiMappingHelper _mappingHelper;
         private readonly HttpClientInvoker _httpClient; 
 
-        public EpiApi(Configuration config)
+        public EpiApi(Configuration config, EpiMappingHelper mappingHelper)
         {
+            _mappingHelper = mappingHelper;
             _httpClient = new HttpClientInvoker(config);
         }
 
@@ -177,7 +179,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
                     string catalogEntryIdString = ChannelPrefixHelper.GetEpiserverCode(catalogEntryId, config);
                     string channelIdEpified = ChannelPrefixHelper.GetEpiserverCode(channelId, config);
-                    bool relation = EpiMappingHelper.IsRelation(linkTypeId, config);
+                    bool relation = _mappingHelper.IsRelation(linkTypeId);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
                     var updateEntryRelationData = new UpdateRelationData

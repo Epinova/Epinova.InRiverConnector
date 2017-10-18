@@ -33,9 +33,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             resourceIncluded = false;
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Generating catalog.xml...", 11);
-            Dictionary<string, List<XElement>> epiElements = _epiDocumentFactory.GetEPiElements(_connectorConfig);
+            Dictionary<string, List<XElement>> epiElements = _epiDocumentFactory.GetEPiElements();
 
-            XDocument doc = _epiDocumentFactory.CreateImportDocument(channelEntity, null, null, epiElements, _connectorConfig);
+            XDocument doc = _epiDocumentFactory.CreateImportDocument(channelEntity, null, null, epiElements);
+
             string channelIdentifier = ChannelHelper.GetChannelIdentifier(channelEntity);
 
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");

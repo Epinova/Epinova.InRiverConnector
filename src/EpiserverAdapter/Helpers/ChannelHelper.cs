@@ -16,10 +16,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     public class ChannelHelper
     {
         private readonly EpiElementFactory _epiElementFactory;
+        private readonly EpiMappingHelper _mappingHelper;
 
-        public ChannelHelper(EpiElementFactory epiElementFactory)
+        public ChannelHelper(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper)
         {
             _epiElementFactory = epiElementFactory;
+            _mappingHelper = mappingHelper;
         }
 
         public static Guid GetChannelGuid(Entity channel, Configuration configuration)
@@ -418,11 +420,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel
                             (channelId, link.Target.Id, link.Source.Id);
 
-                if (!EpiMappingHelper.IsRelation(
-                link.LinkType.SourceEntityTypeId,
-                link.LinkType.TargetEntityTypeId,
-                link.LinkType.Index,
-                config))
+                if (!_mappingHelper.IsRelation(link.LinkType.SourceEntityTypeId, link.LinkType.TargetEntityTypeId, link.LinkType.Index))
                 {
                     foreach (StructureEntity structureEntity in structureEntityList)
                     {
@@ -430,15 +428,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         {
                             associationsElements.Add(_epiElementFactory.CreateCatalogAssociationElement(
                                structureEntity,
-                               null,
-                               config));
+                               null));
                         }
                         else
                         {
                             associationsElements.Add(_epiElementFactory.CreateCatalogAssociationElement(
                                structureEntity,
-                               link.LinkEntity,
-                               config));
+                               link.LinkEntity));
                         }
                     }
                 }

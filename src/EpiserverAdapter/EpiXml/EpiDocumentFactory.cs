@@ -17,43 +17,44 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly Configuration _config;
         private readonly EpiApi _epiApi;
         private readonly EpiElementFactory _epiElementFactory;
+        private readonly EpiMappingHelper _epiMappingHelper;
 
-        public EpiDocumentFactory(Configuration config, EpiApi epiApi, EpiElementFactory epiElementFactory)
+        public EpiDocumentFactory(Configuration config, EpiApi epiApi, EpiElementFactory epiElementFactory, EpiMappingHelper epiMappingHelper)
         {
             _config = config;
             _epiApi = epiApi;
             _epiElementFactory = epiElementFactory;
+            _epiMappingHelper = epiMappingHelper;
         }
 
         public XDocument CreateImportDocument(Entity channelEntity, 
                                                      XElement metaClasses, 
                                                      XElement associationTypes, 
-                                                     Dictionary<string, List<XElement>> epiElementsFromStructure, 
-                                                     Configuration config)
+                                                     Dictionary<string, List<XElement>> epiElements)
         {
-            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, config);
+            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, _config);
             if (catalogElement == null)
             {
                 return null;
             }
 
             catalogElement.Add(
-                new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, config).ToString())),
-                new XElement("Nodes", new XAttribute("totalCount", epiElementsFromStructure["Nodes"].Count), epiElementsFromStructure["Nodes"]),
-                new XElement("Entries", new XAttribute("totalCount", epiElementsFromStructure["Entries"].Count), epiElementsFromStructure["Entries"]),
-                new XElement("Relations", new XAttribute("totalCount", epiElementsFromStructure["Relations"].Count), epiElementsFromStructure["Relations"].OrderByDescending(e => e.Name.LocalName)),
-                new XElement("Associations", new XAttribute("totalCount", epiElementsFromStructure["Associations"].Count), epiElementsFromStructure["Associations"]));
+                new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, _config).ToString())),
+                new XElement("Nodes", new XAttribute("totalCount", epiElements["Nodes"].Count), epiElements["Nodes"]),
+                new XElement("Entries", new XAttribute("totalCount", epiElements["Entries"].Count), epiElements["Entries"]),
+                new XElement("Relations", new XAttribute("totalCount", epiElements["Relations"].Count), epiElements["Relations"].OrderByDescending(e => e.Name.LocalName)),
+                new XElement("Associations", new XAttribute("totalCount", epiElements["Associations"].Count), epiElements["Associations"]));
 
-            return CreateDocument(catalogElement, metaClasses, associationTypes, config);
+            return CreateDocument(catalogElement, metaClasses, associationTypes);
         }
 
-        public XDocument CreateUpdateDocument(Entity channelEntity, Entity updatedEntity, Configuration config)
+        public XDocument CreateUpdateDocument(Entity channelEntity, Entity updatedEntity)
         {
             int count = 0;
             List<XElement> skus = new List<XElement>();
-            if (config.ItemsToSkus && updatedEntity.EntityType.Id == "Item")
+            if (_config.ItemsToSkus && updatedEntity.EntityType.Id == "Item")
             {
-                skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity, config);
+                skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity, _config);
                 count += skus.Count;
             }
 
@@ -70,16 +71,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     sortOrder = nodeLink.Index;
                 }
 
-                updatedNode = _epiElementFactory.CreateNodeElement(updatedEntity, parentId, sortOrder, config);
+                updatedNode = _epiElementFactory.CreateNodeElement(updatedEntity, parentId, sortOrder, _config);
             }
-            else if (!(updatedEntity.EntityType.Id == "Item" && !config.UseThreeLevelsInCommerce && config.ItemsToSkus))
+            else if (!(updatedEntity.EntityType.Id == "Item" && !_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
             {
-                updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity, config);
+                updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity, _config);
                 Link specLink = updatedEntity.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
                 if (specLink != null)
                 {
                     XElement metaField = new XElement("MetaField", new XElement("Name", "SpecificationField"), new XElement("Type", "LongHtmlString"));
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                     {
                         string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, updatedEntity.Id, culturePair.Value);
                         metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", htmlData)));
@@ -95,18 +96,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 count += 1;
             }
 
-            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, config);
+            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, _config);
             catalogElement.Add(
-                new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, config).ToString())),
+                new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, _config).ToString())),
                 new XElement("Nodes", updatedNode),
                 new XElement("Entries", new XAttribute("totalCount", count), updatedEntry, skus),
                 new XElement("Relations"),
                 new XElement("Associations"));
 
-            return CreateDocument(catalogElement, null, null, config);
+            return CreateDocument(catalogElement, null, null);
         }
 
-        public XDocument CreateDocument(XElement catalogElement, XElement metaClasses, XElement associationTypes, Configuration config)
+        public XDocument CreateDocument(XElement catalogElement, XElement metaClasses, XElement associationTypes)
         {
             var result =
                 new XDocument(
@@ -120,31 +121,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return result;
         }
 
-        public Dictionary<string, List<XElement>> GetEPiElements(Configuration config)
+        public Dictionary<string, List<XElement>> GetEPiElements()
         {
-            Dictionary<string, List<XElement>> epiElements = CreateRootNodes();
-            FillElementList(epiElements, config);
+            var epiElements = new Dictionary<string, List<XElement>>
+                              {
+                                  { "Nodes", new List<XElement>() },
+                                  { "Entries", new List<XElement>() },
+                                  { "Relations", new List<XElement>() },
+                                  { "Associations", new List<XElement>() }
+                              };
+
+            FillElementList(epiElements);
             return epiElements;
         }
 
-        public XElement GetAssociationTypes(Configuration config)
+        public XElement GetAssociationTypes()
         {
-            return new XElement("AssociationTypes", from lt in config.ExportEnabledLinkTypes select _epiElementFactory.CreateAssociationTypeElement(lt));
+            var associationTypeElements = _config.ExportEnabledLinkTypes.Select(_epiElementFactory.CreateAssociationTypeElement);
+            return new XElement("AssociationTypes", associationTypeElements);
         }
-
-        private Dictionary<string, List<XElement>> CreateRootNodes()
-        {
-            var result = new Dictionary<string, List<XElement>>
-                             {
-                                 { "Nodes", new List<XElement>() },
-                                 { "Entries", new List<XElement>() },
-                                 { "Relations", new List<XElement>() },
-                                 { "Associations", new List<XElement>() }
-                             };
-            return result;
-        }
-
-        private void FillElementList(Dictionary<string, List<XElement>> epiElements, Configuration config)
+        
+        private void FillElementList(Dictionary<string, List<XElement>> epiElements)
         {
             try
             {
@@ -153,21 +150,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 List<string> addedRelations = new List<string>();
 
                 int totalLoaded = 0;
-                int batchSize = config.BatchSize;
+                int batchSize = _config.BatchSize;
 
                 do
                 {
-                    var batch = config.ChannelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
+                    var batch = _config.ChannelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
-                    config.ChannelEntities = GetEntitiesInStructure(batch);
+                    _config.ChannelEntities = GetEntitiesInStructure(batch);
 
-                    FillElements(batch, config, addedEntities, addedNodes, addedRelations, epiElements);
+                    FillElements(batch, addedEntities, addedNodes, addedRelations, epiElements);
 
                     totalLoaded += batch.Count;
 
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("fetched {0} of {1} total", totalLoaded, config.ChannelStructureEntities.Count));
+                    IntegrationLogger.Write(LogLevel.Debug, string.Format("fetched {0} of {1} total", totalLoaded, _config.ChannelStructureEntities.Count));
                 }
-                while (config.ChannelStructureEntities.Count > totalLoaded);
+                while (_config.ChannelStructureEntities.Count > totalLoaded);
             }
             catch (Exception ex)
             {
@@ -176,18 +173,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         }
 
         private void FillElements(List<StructureEntity> structureEntitiesBatch, 
-                                         Configuration config, 
-                                         List<string> addedEntities, 
-                                         List<string> addedNodes,
-                                         List<string> addedRelations,
-                                         Dictionary<string, 
-                                         List<XElement>> epiElements)
+                                  List<string> addedEntities, 
+                                  List<string> addedNodes,
+                                  List<string> addedRelations,
+                                  Dictionary<string, 
+                                  List<XElement>> epiElements)
         {
             int logCounter = 0;
 
             Dictionary<string, LinkType> linkTypes = new Dictionary<string, LinkType>();
 
-            foreach (LinkType linkType in config.LinkTypes)
+            foreach (LinkType linkType in _config.LinkTypes)
             {
                 if (!linkTypes.ContainsKey(linkType.Id))
                 {
@@ -199,12 +195,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             {
                 try
                 {
-                
-                    if (structureEntity.EntityId == config.ChannelId)
-                    {
+                    if (structureEntity.EntityId == _config.ChannelId)
                         continue;
-                    }
-    
+                        
                     logCounter++;
     
                     if (logCounter == 1000)
@@ -221,9 +214,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                         Entity linkEntity = null;
     
-                        if (config.ChannelEntities.ContainsKey(structureEntity.LinkEntityId.Value))
+                        if (_config.ChannelEntities.ContainsKey(structureEntity.LinkEntityId.Value))
                         {
-                            linkEntity = config.ChannelEntities[structureEntity.LinkEntityId.Value];
+                            linkEntity = _config.ChannelEntities[structureEntity.LinkEntityId.Value];
                         }
     
                         if (linkEntity == null)
@@ -236,7 +229,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             continue;
                         }
     
-                        XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity, config);
+                        XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity, _config);
     
                         XElement codeElement = entryElement.Element("Code");
                         if (codeElement != null && !addedEntities.Contains(codeElement.Value))
@@ -255,22 +248,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                     Entity entity;
     
-                    if (config.ChannelEntities.ContainsKey(id))
+                    if (_config.ChannelEntities.ContainsKey(id))
                     {
-                        entity = config.ChannelEntities[id];
+                        entity = _config.ChannelEntities[id];
                     }
                     else
                     {
                         entity = RemoteManager.DataService.GetEntity(id, LoadLevel.DataOnly);
-                        
-                        config.ChannelEntities.Add(id, entity);
+
+                        _config.ChannelEntities.Add(id, entity);
                     }
     
                     if (entity == null)
-                    {
-                        //missmatch with entity data and ChannelStructure. 
-    
-                        config.ChannelEntities.Remove(id);
+                    {   
+                        _config.ChannelEntities.Remove(id);
                         continue;
                     }
     
@@ -278,9 +269,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     {
                         string parentId = structureEntity.ParentId.ToString(CultureInfo.InvariantCulture);
     
-                        if (config.ChannelId.Equals(structureEntity.ParentId))
+                        if (_config.ChannelId.Equals(structureEntity.ParentId))
                         {
-                            _epiApi.CheckAndMoveNodeIfNeeded(id.ToString(CultureInfo.InvariantCulture), config);
+                            _epiApi.CheckAndMoveNodeIfNeeded(id.ToString(CultureInfo.InvariantCulture), _config);
                         }
     
                         IntegrationLogger.Write(LogLevel.Debug, string.Format("Trying to add channelNode {0} to Nodes", id));
@@ -288,25 +279,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         XElement nodeElement = epiElements["Nodes"].Find(e =>
                         {
                             XElement xElement = e.Element("Code");
-                            return xElement != null && xElement.Value.Equals(ChannelPrefixHelper.GetEpiserverCode(entity.Id, config));
+                            return xElement != null && xElement.Value.Equals(ChannelPrefixHelper.GetEpiserverCode(entity.Id, _config));
                         });
     
                         int linkIndex = structureEntity.SortOrder;
                         
                         if (nodeElement == null)
                         {
-                            epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex, config));
-                            addedNodes.Add(ChannelPrefixHelper.GetEpiserverCode(entity.Id, config));
+                            epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex, _config));
+                            addedNodes.Add(ChannelPrefixHelper.GetEpiserverCode(entity.Id, _config));
     
                             IntegrationLogger.Write(LogLevel.Debug, string.Format("Added channelNode {0} to Nodes", id));
                         }
                         else
                         {
                             XElement parentNode = nodeElement.Element("ParentNode");
-                            if (parentNode != null && (parentNode.Value != config.ChannelId.ToString(CultureInfo.InvariantCulture) && parentId == config.ChannelId.ToString(CultureInfo.InvariantCulture)))
+                            if (parentNode != null && 
+                                parentNode.Value != _config.ChannelId.ToString(CultureInfo.InvariantCulture) && 
+                                parentId == _config.ChannelId.ToString(CultureInfo.InvariantCulture))
                             {
                                 string oldParent = parentNode.Value;
-                                parentNode.Value = config.ChannelId.ToString(CultureInfo.InvariantCulture);
+                                parentNode.Value = _config.ChannelId.ToString(CultureInfo.InvariantCulture);
                                 parentId = oldParent;
     
                                 XElement sortOrderElement = nodeElement.Element("SortOrder");
@@ -317,23 +310,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                     linkIndex = int.Parse(oldSortOrder);
                                 }
                             }
-    
-                            if (!addedRelations.Contains(ChannelPrefixHelper.GetEpiserverCode(
-                                        id.ToString(CultureInfo.InvariantCulture),
-                                        config) + "_" + ChannelPrefixHelper.GetEpiserverCode(parentId, config)))
+
+                            var relationName = ChannelPrefixHelper.GetEpiserverCode(id.ToString(CultureInfo.InvariantCulture), _config) +
+                                "_" + ChannelPrefixHelper.GetEpiserverCode(parentId, _config);
+
+                            if (!addedRelations.Contains(relationName))
                             {
-                                // add relation
-                                epiElements["Relations"].Add(
-                                    _epiElementFactory.CreateNodeRelationElement(
-                                        parentId,
-                                        id.ToString(CultureInfo.InvariantCulture),
-                                        linkIndex,
-                                        config));
-    
-                                addedRelations.Add(
-                                    ChannelPrefixHelper.GetEpiserverCode(
-                                        id.ToString(CultureInfo.InvariantCulture),
-                                        config) + "_" + ChannelPrefixHelper.GetEpiserverCode(parentId, config));
+                                var nodeRelationElement = _epiElementFactory.CreateNodeRelationElement(
+                                    parentId,
+                                    id.ToString(CultureInfo.InvariantCulture),
+                                    linkIndex,
+                                    _config);
+
+                                epiElements["Relations"].Add(nodeRelationElement);
+                                
+                                addedRelations.Add(relationName);
     
                                 IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", id));
                             }
@@ -343,9 +334,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         continue;
                     }
     
-                    if (structureEntity.Type == "Item" && config.ItemsToSkus)
+                    if (structureEntity.Type == "Item" && _config.ItemsToSkus)
                     {
-                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity, config);
+                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity, _config);
                         foreach (XElement sku in skus)
                         {
                             XElement codeElement = sku.Element("Code");
@@ -359,13 +350,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         }
                     }
     
-                    if ((structureEntity.Type == "Item" && config.ItemsToSkus && config.UseThreeLevelsInCommerce)
-                        || !(structureEntity.Type == "Item" && config.ItemsToSkus))
+                    // TODO: SpecificationStructureEntity? Ta bort?
+                    if ((structureEntity.Type == "Item" && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce)
+                        || !(structureEntity.Type == "Item" && _config.ItemsToSkus))
                     {
-                        XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, config);
+                        XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, _config);
     
                         StructureEntity specificationStructureEntity =
-                            config.ChannelStructureEntities.FirstOrDefault(
+                            _config.ChannelStructureEntities.FirstOrDefault(
                                 s => s.ParentId.Equals(id) && s.Type.Equals("Specification"));
     
                         if (specificationStructureEntity != null)
@@ -374,7 +366,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 "MetaField",
                                 new XElement("Name", "SpecificationField"),
                                 new XElement("Type", "LongHtmlString"));
-                            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
+                            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                             {
                                 string htmlData =
                                     RemoteManager.DataService.GetSpecificationAsHtml(
@@ -403,7 +395,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     }
     
                     List<StructureEntity> existingStructureEntities =
-                        config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(id));
+                        _config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(id));
     
                     List<StructureEntity> filteredStructureEntities = new List<StructureEntity>();
     
@@ -445,11 +437,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                         if (linkType.SourceEntityTypeId == "ChannelNode")
                         {
-                            if (!addedRelations.Contains(ChannelPrefixHelper.GetEpiserverCode(id.ToString(CultureInfo.InvariantCulture), config) + "_" + ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), config)))
+                            var addedRelationName = ChannelPrefixHelper.GetEpiserverCode(id, _config) + "_" + ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId, _config);
+                            if (!addedRelations.Contains(addedRelationName))
                             {
-                                epiElements["Relations"].Add(_epiElementFactory.CreateNodeEntryRelationElement(existingStructureEntity.ParentId.ToString(), existingStructureEntity.EntityId.ToString(), existingStructureEntity.SortOrder, config));
-    
-                                addedRelations.Add(ChannelPrefixHelper.GetEpiserverCode(id, config) + "_" + ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId, config));
+                                var nodeEntryRelationElement = _epiElementFactory.CreateNodeEntryRelationElement(existingStructureEntity.ParentId.ToString(), existingStructureEntity.EntityId.ToString(), existingStructureEntity.SortOrder, _config);
+
+                                epiElements["Relations"].Add(nodeEntryRelationElement);
+
+                                addedRelations.Add(addedRelationName);
     
                                 IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for Source {0} and Target {1} for LinkTypeId {2}", existingStructureEntity.ParentId, existingStructureEntity.EntityId, linkType.Id));
                             }
@@ -460,15 +455,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         List<string> skus = new List<string> { id.ToString(CultureInfo.InvariantCulture) };
                         string parent = null;
     
-                        if (structureEntity.Type.Equals("Item") && config.ItemsToSkus)
+                        if (structureEntity.Type.Equals("Item") && _config.ItemsToSkus)
                         {
-                            skus = _epiElementFactory.SkuItemIds(entity, config);
+                            skus = _epiElementFactory.SkuItemIds(entity, _config);
                             for (int i = 0; i < skus.Count; i++)
                             {
-                                skus[i] = ChannelPrefixHelper.GetEpiserverCode(skus[i], config);
+                                skus[i] = ChannelPrefixHelper.GetEpiserverCode(skus[i], _config);
                             }
     
-                            if (config.UseThreeLevelsInCommerce)
+                            if (_config.UseThreeLevelsInCommerce)
                             {
                                 parent = structureEntity.EntityId.ToString(CultureInfo.InvariantCulture);
                                 skus.Add(parent);
@@ -479,34 +474,34 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                         if (existingStructureEntity.LinkEntityId != null)
                         {
-                            if (config.ChannelEntities.ContainsKey(existingStructureEntity.LinkEntityId.Value))
+                            if (_config.ChannelEntities.ContainsKey(existingStructureEntity.LinkEntityId.Value))
                             {
-                                linkEntity = config.ChannelEntities[existingStructureEntity.LinkEntityId.Value];
+                                linkEntity = _config.ChannelEntities[existingStructureEntity.LinkEntityId.Value];
                             }
                             else
                             {
                                 linkEntity = RemoteManager.DataService.GetEntity(
                                 existingStructureEntity.LinkEntityId.Value,
                                 LoadLevel.DataOnly);
-    
-                                config.ChannelEntities.Add(linkEntity.Id, linkEntity);
+
+                                _config.ChannelEntities.Add(linkEntity.Id, linkEntity);
                             }
                         }
     
                         foreach (string skuId in skus)
                         {
-                            string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(skuId, config);
+                            string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(skuId, _config);
     
                             // prod -> item link, bundle, package or dynamic package => Relation
-                            if (EpiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index, config))
+                            if (_epiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index))
                             {
-                                int parentNodeId = ChannelHelper.GetParentChannelNode(structureEntity, config);
+                                int parentNodeId = ChannelHelper.GetParentChannelNode(structureEntity, _config);
                                 if (parentNodeId == 0)
                                 {
                                     continue;
                                 }
     
-                                string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, config);
+                                string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, _config);
     
                                 if (!addedRelations.Contains(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                                 {
@@ -515,7 +510,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                             parentNodeId.ToString(CultureInfo.InvariantCulture),
                                             skuId,
                                             existingStructureEntity.SortOrder,
-                                            config));
+                                            _config));
                                     addedRelations.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId);
     
                                     IntegrationLogger.Write(
@@ -526,59 +521,72 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 string channelPrefixAndParentStructureEntityId =
                                     ChannelPrefixHelper.GetEpiserverCode(
                                         existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
-                                        config);
+                                        _config);
     
                                 if (parent != null && skuId != parent)
                                 {
-                                    string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(parent, config);
-    
-                                    if (!addedRelations.Contains(channelPrefixAndSkuId + "_" + channelPrefixAndParent))
+                                    string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(parent, _config);
+
+                                    var addedRelationsName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
+
+                                    if (!addedRelations.Contains(addedRelationsName))
                                     {
-                                        epiElements["Relations"].Add(_epiElementFactory.CreateEntryRelationElement(parent, linkType.SourceEntityTypeId, skuId, existingStructureEntity.SortOrder, config));
-                                        addedRelations.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParent);
+                                        var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(parent,
+                                            linkType.SourceEntityTypeId, skuId, existingStructureEntity.SortOrder,
+                                            _config);
+
+                                        epiElements["Relations"].Add(entryRelationElement);
+
+                                        addedRelations.Add(addedRelationsName);
     
                                         IntegrationLogger.Write(
                                             LogLevel.Debug,
                                             string.Format("Added Relation for ChildEntryCode {0}", channelPrefixAndSkuId));
                                     }
                                 }
-                                else if (!addedRelations.Contains(string.Format("{0}_{1}", channelPrefixAndSkuId, channelPrefixAndParentStructureEntityId)))
+                                else
                                 {
-                                    epiElements["Relations"].Add(_epiElementFactory.CreateEntryRelationElement(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), linkType.SourceEntityTypeId, skuId, existingStructureEntity.SortOrder, config));
-                                    addedRelations.Add(string.Format("{0}_{1}", channelPrefixAndSkuId, channelPrefixAndParentStructureEntityId));
+                                    var addedRelationsName = $"{channelPrefixAndSkuId}_{channelPrefixAndParentStructureEntityId}";
+                                    if (!addedRelations.Contains(addedRelationsName))
+                                    {
+                                        var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), linkType.SourceEntityTypeId, skuId, existingStructureEntity.SortOrder, _config);
+
+                                        epiElements["Relations"].Add(entryRelationElement);
+                                        addedRelations.Add(addedRelationsName);
     
-                                    IntegrationLogger.Write(
-                                        LogLevel.Debug,
-                                        string.Format("Added Relation for ChildEntryCode {0}", channelPrefixAndSkuId));
+                                        IntegrationLogger.Write(
+                                            LogLevel.Debug,
+                                            string.Format("Added Relation for ChildEntryCode {0}", channelPrefixAndSkuId));
+                                    }
                                 }
                             }
                             else
                             {
-                                if (!config.UseThreeLevelsInCommerce && config.ItemsToSkus && structureEntity.Type == "Item")
+                                if (!_config.UseThreeLevelsInCommerce && _config.ItemsToSkus && structureEntity.Type == "Item")
                                 {
-                                    string channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, config);
-                                    string associationName = EpiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity, config);
+                                    string channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, _config);
+                                    string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
     
                                     Entity source;
     
-                                    if (config.ChannelEntities.ContainsKey(existingStructureEntity.ParentId))
+                                    if (_config.ChannelEntities.ContainsKey(existingStructureEntity.ParentId))
                                     {
-                                        source = config.ChannelEntities[existingStructureEntity.ParentId];
+                                        source = _config.ChannelEntities[existingStructureEntity.ParentId];
                                     }
                                     else
                                     {
                                         source = RemoteManager.DataService.GetEntity(
                                             existingStructureEntity.ParentId,
                                             LoadLevel.DataOnly);
-                                        config.ChannelEntities.Add(source.Id, source);
+                                        _config.ChannelEntities.Add(source.Id, source);
                                     }
     
-                                    List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source, config);
+                                    List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source, _config);
                                     for (int i = 0; i < sourceSkuIds.Count; i++)
                                     {
                                         sourceSkuIds[i] = ChannelPrefixHelper.GetEpiserverCode(
                                             sourceSkuIds[i],
-                                            config);
+                                            _config);
                                     }
     
                                     foreach (string sourceSkuId in sourceSkuIds)
@@ -686,17 +694,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 }
                                 else
                                 {
-                                    string channelPrefixAndEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.EntityId.ToString(CultureInfo.InvariantCulture), config);
-                                    string channelPrefixAndParentEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), config);
+                                    string channelPrefixAndEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.EntityId.ToString(CultureInfo.InvariantCulture), _config);
+                                    string channelPrefixAndParentEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture), _config);
     
                                     string channelPrefixAndLinkEntityId = string.Empty;
     
                                     if (existingStructureEntity.LinkEntityId != null)
                                     {
-                                        channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, config);
+                                        channelPrefixAndLinkEntityId = ChannelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId, _config);
                                     }
     
-                                    string associationName = EpiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity, config);
+                                    string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
     
                                     bool exists;
                                     if (existingStructureEntity.LinkEntityId != null)
@@ -763,7 +771,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                                         if (existingAssociation != null)
                                         {
-                                            XElement newElement = _epiElementFactory.CreateAssociationElement(existingStructureEntity, config);
+                                            XElement newElement = _epiElementFactory.CreateAssociationElement(existingStructureEntity);
     
                                             if (!existingAssociation.Descendants().Any(
                                                          e =>
@@ -778,8 +786,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                             epiElements["Associations"].Add(
                                                 _epiElementFactory.CreateCatalogAssociationElement(
                                                     existingStructureEntity,
-                                                    linkEntity,
-                                                    config));
+                                                    linkEntity));
                                         }
                                     }
                                 }

@@ -22,11 +22,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         private readonly EpiElementFactory _epiElementFactory;
         private readonly ChannelHelper _channelHelper;
 
-        public DeleteUtility(Configuration config, ResourceElementFactory resourceElementFactory, EpiElementFactory epiElementFactory, ChannelHelper channelHelper)
+        public DeleteUtility(Configuration config, ResourceElementFactory resourceElementFactory, EpiElementFactory epiElementFactory, ChannelHelper channelHelper, EpiApi epiApi)
         {
             _config = config;
             _resourceElementFactory = resourceElementFactory;
-            _epiApi = new EpiApi(config);
+            _epiApi = epiApi;
             _epiElementFactory = epiElementFactory;
             _channelHelper = channelHelper;
         }

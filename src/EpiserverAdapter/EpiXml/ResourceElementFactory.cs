@@ -16,10 +16,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     public class ResourceElementFactory
     {
         private readonly EpiElementFactory _epiElementFactory;
+        private readonly EpiMappingHelper _mappingHelper;
 
-        public ResourceElementFactory(EpiElementFactory epiElementFactory)
+        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper)
         {
             _epiElementFactory = epiElementFactory;
+            _mappingHelper = mappingHelper;
         }
 
         public XElement CreateResourceElement(Entity resource, string action, Configuration config, Dictionary<int, Entity> parentEntities = null)
@@ -134,7 +136,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XAttribute("action", action),
                 new XElement(
                     "ResourceFields",
-                    resource.Fields.Where(field => !EpiMappingHelper.SkipField(field.FieldType, config))
+                    resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
                         .Select(field => _epiElementFactory.GetMetaFieldValueElement(field, config))),
                 GetInternalPathsInZip(resource, config),
                 new XElement(
@@ -171,7 +173,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
 
                 EntityType reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
-                XElement resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType, config);
+                XElement resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType);
                 resourceDocument = CreateResourceDocument(resourceMetaClasses, resources, resources, "added", config);
             }
             catch (Exception ex)
