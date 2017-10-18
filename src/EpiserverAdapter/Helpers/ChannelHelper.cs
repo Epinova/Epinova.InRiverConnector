@@ -15,16 +15,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ChannelHelper
     {
+        private readonly Configuration _config;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
 
-        public ChannelHelper(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper)
+        public ChannelHelper(Configuration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper)
         {
+            _config = config;
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
         }
 
-        public static Guid GetChannelGuid(Entity channel, Configuration configuration)
+        public Guid GetChannelGuid(Entity channel)
         {
             string value = channel.Id.ToString(CultureInfo.InvariantCulture);
 
@@ -32,8 +34,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 if (channel.DisplayName.FieldType.DataType.Equals(DataType.LocaleString))
                 {
-                    value =
-                        ((LocaleString)channel.DisplayName.Data)[configuration.LanguageMapping[configuration.ChannelDefaultLanguage]];
+                    var cultureInfo = _config.LanguageMapping[_config.ChannelDefaultLanguage];
+                    value = ((LocaleString)channel.DisplayName.Data)[cultureInfo];
                 }
                 else
                 {
@@ -51,7 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new Guid(data);
         }
 
-        public static int GetParentChannelNode(StructureEntity structureEntity, Configuration config)
+        public int GetParentChannelNode(StructureEntity structureEntity)
         {
             int entityId = 0;
             List<string> entities = structureEntity.Path.Split(new[] { "/" }, StringSplitOptions.RemoveEmptyEntries).ToList();
@@ -66,7 +68,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 int tempEntityId = int.Parse(entities[index]);
 
-                StructureEntity foundStructureEntity = config.ChannelStructureEntities.Find(i => i.EntityId.Equals(tempEntityId));
+                StructureEntity foundStructureEntity = _config.ChannelStructureEntities.Find(i => i.EntityId.Equals(tempEntityId));
 
                 if (foundStructureEntity != null && foundStructureEntity.Type == "ChannelNode")
                 {
@@ -78,7 +80,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return entityId;
         }
 
-        internal static int GetParentChannelNode(StructureEntity structureEntity, int channelId)
+        internal int GetParentChannelNode(StructureEntity structureEntity, int channelId)
         {
             int parentNodeId = 0;
 
@@ -115,7 +117,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return parentNodeId;
         }
 
-        internal static List<StructureEntity> FindEntitiesElementInStructure(List<StructureEntity> channelEntities, int sourceEntityId, int targetEntityId, string linktype)
+        internal List<StructureEntity> FindEntitiesElementInStructure(List<StructureEntity> channelEntities, int sourceEntityId, int targetEntityId, string linktype)
         {
             List<StructureEntity> structureEntities = new List<StructureEntity>();
 
@@ -127,7 +129,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return structureEntities;
         }
 
-        internal static bool LinkTypeHasLinkEntity(string linkTypeId)
+        internal bool LinkTypeHasLinkEntity(string linkTypeId)
         {
             LinkType linktype = RemoteManager.ModelService.GetLinkType(linkTypeId);
             if (linktype.LinkEntityTypeId != null)
@@ -138,7 +140,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return false;
         }
 
-        public static string GetChannelIdentifier(Entity channelEntity)
+        public string GetChannelIdentifier(Entity channelEntity)
         {
             string channelIdentifier = channelEntity.Id.ToString(CultureInfo.InvariantCulture);
             if (channelEntity.DisplayName != null && !channelEntity.DisplayName.IsEmpty())
@@ -149,7 +151,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return channelIdentifier;
         }
 
-        public static List<StructureEntity> GetAllEntitiesInChannel(int channelId, List<EntityType> entityTypes)
+        public List<StructureEntity> GetAllEntitiesInChannel(int channelId, List<EntityType> entityTypes)
         {
             List<StructureEntity> result = new List<StructureEntity>();
             foreach (EntityType entityType in entityTypes)
@@ -161,7 +163,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return result;
         }
 
-        public static List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId)
+        public List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId)
         {
             var result = new List<StructureEntity>();
             var response = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channelId, entityId, parentId);
@@ -173,7 +175,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return result;
         }
 
-        public static string GetTargetEntityPath(int targetEntityId, List<StructureEntity> channelEntities, int? parentId = null)
+        public string GetTargetEntityPath(int targetEntityId, List<StructureEntity> channelEntities, int? parentId = null)
         {
             StructureEntity targetStructureEntity = new StructureEntity();
 
@@ -197,7 +199,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return path;
         }
 
-        public static List<StructureEntity> GetChildrenEntitiesInChannel(int entityId, string path)
+        public List<StructureEntity> GetChildrenEntitiesInChannel(int entityId, string path)
         {
             var result = new List<StructureEntity>();
             if (!string.IsNullOrEmpty(path))
@@ -212,18 +214,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return result;
         }
 
-        public static List<StructureEntity> GetStructureEntitiesForEntityInChannel(int channelId, int entityId)
+        public List<StructureEntity> GetStructureEntitiesForEntityInChannel(int channelId, int entityId)
         {
             return RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, entityId);
         }
 
-        public static StructureEntity GetParentStructureEntity(int channelId, int sourceEntityId, int targetEntityId, List<StructureEntity> channelEntities)
+        public StructureEntity GetParentStructureEntity(int channelId, int sourceEntityId, int targetEntityId, List<StructureEntity> channelEntities)
         {
-            StructureEntity targetStructureEntity =
-                channelEntities.Find(i => i.EntityId.Equals(targetEntityId) && i.ParentId.Equals(sourceEntityId));
-
-            List<StructureEntity> structureEntities =
-                RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, sourceEntityId);
+            var targetStructureEntity = channelEntities.Find(i => i.EntityId.Equals(targetEntityId) && i.ParentId.Equals(sourceEntityId));
+            var structureEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, sourceEntityId);
 
             if (targetStructureEntity == null || !structureEntities.Any())
             {
@@ -237,16 +236,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return structureEntities.Find(i => i.Path.Equals(parentPath) && i.EntityId.Equals(sourceEntityId));
         }
 
-        public static void UpdateChannelSettings(Entity channel, Configuration configuration)
+        // TODO: What, why? Kan fjernes? Den oppdaterer _config med settings fra kanalnoden DERSOM FELTENE FINNES...?
+        public void UpdateChannelSettings(Entity channel)
         {
-            configuration.ChannelDefaultLanguage = GetChannelDefaultLanguage(channel);
-            configuration.ChannelDefaultCurrency = GetChannelDefaultCurrency(channel);
-            configuration.ChannelDefaultWeightBase = GetChannelDefaultWeightBase(channel);
-            configuration.ChannelIdPrefix = GetChannelPrefix(channel);
-            configuration.ChannelMimeTypeMappings = GetChannelMimeTypeMappings(channel);
+            _config.ChannelDefaultLanguage = GetChannelDefaultLanguage(channel);
+            _config.ChannelDefaultCurrency = GetChannelDefaultCurrency(channel);
+            _config.ChannelDefaultWeightBase = GetChannelDefaultWeightBase(channel);
+            _config.ChannelIdPrefix = GetChannelPrefix(channel);
+            _config.ChannelMimeTypeMappings = GetChannelMimeTypeMappings(channel);
         }
 
-        public static string GetChannelPrefix(Entity channel)
+        public string GetChannelPrefix(Entity channel)
         {
             Field channelPrefixField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelprefix"));
             if (channelPrefixField == null || channelPrefixField.IsEmpty())
@@ -257,7 +257,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return channelPrefixField.Data.ToString();
         }
 
-        public static Dictionary<string, string> GetChannelMimeTypeMappings(Entity channel)
+        public Dictionary<string, string> GetChannelMimeTypeMappings(Entity channel)
         {
             Dictionary<string, string> channelMimeTypeMappings = new Dictionary<string, string>();
             Field channelMimeTypeField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelmimetypemappings"));
@@ -289,7 +289,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return channelMimeTypeMappings;
         }
 
-        public static CultureInfo GetChannelDefaultLanguage(Entity channel)
+        public CultureInfo GetChannelDefaultLanguage(Entity channel)
         {
             Field defaultLanguageField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultlanguage"));
             if (defaultLanguageField == null || defaultLanguageField.IsEmpty())
@@ -300,7 +300,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new CultureInfo(defaultLanguageField.Data.ToString());
         }
 
-        public static string GetChannelDefaultCurrency(Entity channel)
+        public string GetChannelDefaultCurrency(Entity channel)
         {
             Field defaultCurrencyField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultcurrency"));
             if (defaultCurrencyField == null || defaultCurrencyField.IsEmpty())
@@ -311,7 +311,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return defaultCurrencyField.Data.ToString();
         }
 
-        public static string GetChannelDefaultWeightBase(Entity channel)
+        public string GetChannelDefaultWeightBase(Entity channel)
         {
             Field defaultWeightBaseField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultweightbase"));
             if (defaultWeightBaseField == null || defaultWeightBaseField.IsEmpty())
@@ -322,7 +322,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return defaultWeightBaseField.Data.ToString();
         }
 
-        public List<XElement> GetParentXElements(Entity parentEntity, Configuration configuration)
+        public List<XElement> GetParentXElements(Entity parentEntity)
         {
             List<XElement> elements = new List<XElement>();
             List<string> parents = new List<string>();
@@ -331,9 +331,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return elements;
             }
 
-            if (parentEntity.EntityType.Id == "Item" && configuration.ItemsToSkus)
+            if (parentEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
             {
-                parents = _epiElementFactory.SkuItemIds(parentEntity, configuration);
+                parents = _epiElementFactory.SkuItemIds(parentEntity, _config);
             }
             else
             {
@@ -342,27 +342,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (var parent in parents)
             {
-                XElement parentElement = new XElement("parent", ChannelPrefixHelper.GetEpiserverCode(parent, configuration));
+                XElement parentElement = new XElement("parent", ChannelPrefixHelper.GetEpiserverCode(parent, _config));
                 elements.Add(parentElement);
             }
 
             return elements;
         }
 
-        internal static List<string> GetResourceIds(XElement deletedElement, Configuration configuration)
+        internal List<string> GetResourceIds(XElement deletedElement)
         {
             List<string> foundResources = new List<string>();
             foreach (
                 XElement resourceElement in
                     deletedElement.Descendants().Where(e => e.Name.LocalName.Contains("Resource_")))
             {
-                foundResources.Add(configuration.ChannelIdPrefix + resourceElement.Name.LocalName.Split('_')[1]);
+                foundResources.Add(_config.ChannelIdPrefix + resourceElement.Name.LocalName.Split('_')[1]);
             }
 
             return foundResources;
         }
 
-        public static Dictionary<string, bool> ShouldEntityExistInChannelNodes(int entityId, List<StructureEntity> channelNodes, int channelId)
+        public Dictionary<string, bool> ShouldEntityExistInChannelNodes(int entityId, List<StructureEntity> channelNodes, int channelId)
         {
             Dictionary<string, bool> dictionary = new Dictionary<string, bool>();
             var entities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, entityId);
@@ -383,11 +383,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return dictionary;
         }
 
-        public static void BuildEntityIdAndTypeDict(Configuration config)
+        public void BuildEntityIdAndTypeDict()
         {
             Dictionary<int, string> entityIdAndType = new Dictionary<int, string>();
 
-            foreach (StructureEntity structureEntity in config.ChannelStructureEntities)
+            foreach (StructureEntity structureEntity in _config.ChannelStructureEntities)
             {
                 if (!entityIdAndType.ContainsKey(structureEntity.EntityId))
                 {
@@ -395,10 +395,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 }
             }
 
-            config.EntityIdAndType = entityIdAndType;
+            _config.EntityIdAndType = entityIdAndType;
         }
 
-        public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Configuration config, int channelId)
+        // TODO: Hvafaen er det her slags navn? Fiks, for pokker.
+        public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, int channelId)
         {
             List<Link> links = new List<Link>();
 
@@ -449,8 +450,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                             continue;
                         }
 
-                        string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, config);
-                        string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, config);
+                        string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, _config);
+                        string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, _config);
 
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
@@ -459,19 +460,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                                     parentNodeId.ToString(CultureInfo.InvariantCulture),
                                     structureEntity.EntityId.ToString(),
                                     structureEntity.SortOrder,
-                                    config));
+                                    _config));
                         }
 
-                        string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, config);
+                        string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, _config);
 
-                        if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParent))
+                        var relationName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
+
+                        if (!relationsElements.ContainsKey(relationName))
                         {
-                            relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParent,
-                                _epiElementFactory.CreateEntryRelationElement(
-                                        structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
-                                        link.LinkType.SourceEntityTypeId,
-                                       structureEntity.EntityId.ToString(),
-                                        structureEntity.SortOrder, config));
+                            var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(
+                                structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
+                                link.LinkType.SourceEntityTypeId,
+                                structureEntity.EntityId.ToString(),
+                                structureEntity.SortOrder, _config);
+                            relationsElements.Add(relationName, entryRelationElement);
                         }
                     }
                 }

@@ -18,13 +18,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly EpiApi _epiApi;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _epiMappingHelper;
+        private readonly ChannelHelper _channelHelper;
 
-        public EpiDocumentFactory(Configuration config, EpiApi epiApi, EpiElementFactory epiElementFactory, EpiMappingHelper epiMappingHelper)
+        public EpiDocumentFactory(Configuration config, EpiApi epiApi, EpiElementFactory epiElementFactory, EpiMappingHelper epiMappingHelper, ChannelHelper channelHelper)
         {
             _config = config;
             _epiApi = epiApi;
             _epiElementFactory = epiElementFactory;
             _epiMappingHelper = epiMappingHelper;
+            _channelHelper = channelHelper;
         }
 
         public XDocument CreateImportDocument(Entity channelEntity, 
@@ -39,7 +41,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
 
             catalogElement.Add(
-                new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, _config).ToString())),
+                new XElement("Sites", new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
                 new XElement("Nodes", new XAttribute("totalCount", epiElements["Nodes"].Count), epiElements["Nodes"]),
                 new XElement("Entries", new XAttribute("totalCount", epiElements["Entries"].Count), epiElements["Entries"]),
                 new XElement("Relations", new XAttribute("totalCount", epiElements["Relations"].Count), epiElements["Relations"].OrderByDescending(e => e.Name.LocalName)),
@@ -98,7 +100,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, _config);
             catalogElement.Add(
-                new XElement("Sites", new XElement("Site", ChannelHelper.GetChannelGuid(channelEntity, _config).ToString())),
+                new XElement("Sites", new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
                 new XElement("Nodes", updatedNode),
                 new XElement("Entries", new XAttribute("totalCount", count), updatedEntry, skus),
                 new XElement("Relations"),
@@ -495,7 +497,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             // prod -> item link, bundle, package or dynamic package => Relation
                             if (_epiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index))
                             {
-                                int parentNodeId = ChannelHelper.GetParentChannelNode(structureEntity, _config);
+                                int parentNodeId = _channelHelper.GetParentChannelNode(structureEntity);
                                 if (parentNodeId == 0)
                                 {
                                     continue;
