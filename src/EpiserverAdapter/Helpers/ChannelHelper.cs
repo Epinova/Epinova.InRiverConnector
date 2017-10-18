@@ -399,11 +399,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return dictionary;
         }
 
-        public void BuildEntityIdAndTypeDict()
+        public void BuildEntityIdAndTypeDict(List<StructureEntity> channelStructureEntities)
         {
             Dictionary<int, string> entityIdAndType = new Dictionary<int, string>();
 
-            foreach (StructureEntity structureEntity in _config.ChannelStructureEntities)
+            foreach (StructureEntity structureEntity in channelStructureEntities)
             {
                 if (!entityIdAndType.ContainsKey(structureEntity.EntityId))
                 {

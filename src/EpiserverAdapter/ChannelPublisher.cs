@@ -70,23 +70,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
 
                 ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
-                var channelEntities = _channelHelper.GetAllEntitiesInChannel(_config.ChannelId, _config.ExportEnabledEntityTypes);
 
-                // TODO: Pass this into GetEPiElements?
-                _config.ChannelStructureEntities = channelEntities;
-                _channelHelper.BuildEntityIdAndTypeDict();
+                List<StructureEntity> channelStructureEntities = _channelHelper.GetAllEntitiesInChannel(_config.ChannelId, _config.ExportEnabledEntityTypes);
 
-                ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities", 10);
+                _channelHelper.BuildEntityIdAndTypeDict(channelStructureEntities);
 
-                ConnectorEventHelper.UpdateEvent(publishEvent, "Generating catalog.xml...", 11);
-                var epiElements = _epiDocumentFactory.GetEPiElements();
+                ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities. Generating catalog.xml...", 10);
+
+                var epiElements = _epiDocumentFactory.GetEPiElements(channelStructureEntities);
                 var metaClasses = _epiElementFactory.GetMetaClassesFromFieldSets(_config);
                 var associationTypes = _epiDocumentFactory.GetAssociationTypes();
 
-                var doc = _epiDocumentFactory.CreateImportDocument(channelEntity,
-                    metaClasses,
-                    associationTypes,
-                    epiElements);
+                var doc = _epiDocumentFactory.CreateImportDocument(channelEntity, metaClasses, associationTypes, epiElements);
 
                 var channelIdentifier = _channelHelper.GetChannelIdentifier(channelEntity);
 
@@ -105,7 +100,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 List<StructureEntity> resources = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channelEntity.Id.ToString(), "Resource");
 
-                _config.ChannelStructureEntities.AddRange(resources);
+                channelStructureEntities.AddRange(resources);
 
                 var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(resources, _config, folderDateTime);
 
@@ -164,15 +159,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             finally
             {
                 _config.EntityIdAndType = new Dictionary<int, string>();
-                _config.ChannelStructureEntities = new List<StructureEntity>();
                 _config.ChannelEntities = new Dictionary<int, Entity>();
             }
         }
 
         public void ChannelEntityAdded(int channelId, int entityId)
         {
-            _config.ChannelStructureEntities = new List<StructureEntity>();
-
             IntegrationLogger.Write(LogLevel.Debug, string.Format("Received entity added for entity {0} in channel {1}", entityId, channelId));
             ConnectorEvent entityAddedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityAdded, string.Format("Received entity added for entity {0} in channel {1}", entityId, channelId), 0);
 
@@ -190,31 +182,30 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return;
                 }
 
+                var structureEntities = new List<StructureEntity>();
                 var addedStructureEntities = _channelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
-                foreach (StructureEntity addedStructureEntity in addedStructureEntities)
+                foreach (var addedEntity in addedStructureEntities)
                 {
-                    _config.ChannelStructureEntities.Add(
-                        _channelHelper.GetParentStructureEntity(_config.ChannelId, addedStructureEntity.ParentId, addedStructureEntity.EntityId, addedStructureEntities));
+                    var parentEntity = _channelHelper.GetParentStructureEntity(_config.ChannelId, addedEntity.ParentId, addedEntity.EntityId, addedStructureEntities);
+                    structureEntities.Add(parentEntity);
                 }
 
-                _config.ChannelStructureEntities.AddRange(addedStructureEntities);
+                structureEntities.AddRange(addedStructureEntities);
 
-                string targetEntityPath = _channelHelper.GetTargetEntityPath(entityId, addedStructureEntities);
+                var targetEntityPath = _channelHelper.GetTargetEntityPath(entityId, addedStructureEntities);
                 var childLinkEntities = _channelHelper.GetChildrenEntitiesInChannel(entityId, targetEntityPath);
 
                 foreach (var linkEntity in childLinkEntities)
                 {
                     var childLinkedEntities = _channelHelper.GetChildrenEntitiesInChannel(linkEntity.EntityId, linkEntity.Path);
-                    _config.ChannelStructureEntities.AddRange(childLinkedEntities);
+                    structureEntities.AddRange(childLinkedEntities);
                 }
 
-                _config.ChannelStructureEntities.AddRange(childLinkEntities);
+                structureEntities.AddRange(childLinkEntities);
 
-                _channelHelper.BuildEntityIdAndTypeDict();
-
-                _addUtility.Add(channelEntity, entityAddedConnectorEvent, out resourceIncluded);
-                entityAddedStopWatch.Stop();
+                _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
+                _addUtility.Add(channelEntity, entityAddedConnectorEvent, structureEntities, out resourceIncluded);
             }
             catch (Exception ex)
             {
@@ -242,14 +233,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public void ChannelEntityUpdated(int channelId, int entityId, string data)
         {
             _config.ChannelEntities = new Dictionary<int, Entity>();
-            _config.ChannelStructureEntities = new List<StructureEntity>();
 
             IntegrationLogger.Write(LogLevel.Debug, $"Received entity update for entity {entityId} in channel {channelId}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated,
                 $"Received entity update for entity {entityId} in channel {channelId}", 0);
 
-            Stopwatch entityUpdatedStopWatch = new Stopwatch();
-            entityUpdatedStopWatch.Start();
+            var stopwatch = Stopwatch.StartNew();
 
             try
             {
@@ -282,9 +271,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 bool resourceIncluded = false;
                 string channelName = _mappingHelper.GetNameForEntity(channelEntity, 100);
 
-                _config.ChannelStructureEntities = _channelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
+                var structureEntities = _channelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
-                _channelHelper.BuildEntityIdAndTypeDict();
+                _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
 
                 if (updatedEntity.EntityType.Id.Equals("Resource"))
                 {
@@ -296,11 +285,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                     if (updatedEntity.EntityType.Id.Equals("Item") && data != null && data.Split(',').Contains("SKUs"))
                     {
-                        HandleItemUpdate(entityId, channelEntity, connectorEvent, out resourceIncluded);
+                        HandleItemUpdate(entityId, channelEntity, connectorEvent, structureEntities, out resourceIncluded);
                     }
                     else if (updatedEntity.EntityType.Id.Equals("ChannelNode"))
                     {
-                        HandleChannelNodeUpdate(channelId, channelEntity, connectorEvent, entityUpdatedStopWatch, channelName);
+                        HandleChannelNodeUpdate(channelId, channelEntity, connectorEvent, stopwatch, channelName);
                         return;
                     }
 
@@ -344,7 +333,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
 
                 _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded, _config);
-                entityUpdatedStopWatch.Stop();
+                stopwatch.Stop();
 
             }
             catch (Exception ex)
@@ -354,12 +343,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
             finally
             {
-                _config.ChannelStructureEntities = new List<StructureEntity>();
                 _config.EntityIdAndType = new Dictionary<int, string>();
                 _config.ChannelEntities = new Dictionary<int, Entity>();
             }
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("Update done for channel {0}, took {1}!", channelId, entityUpdatedStopWatch.GetElapsedTimeFormated()));
+            IntegrationLogger.Write(LogLevel.Information, $"Update done for channel {channelId}, took {stopwatch.GetElapsedTimeFormated()}!");
             ConnectorEventHelper.UpdateEvent(connectorEvent, "ChannelEntityUpdated complete", 100);
         }
 
@@ -407,8 +395,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelLinkAdded(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            _config.ChannelStructureEntities = new List<StructureEntity>();
-
             IntegrationLogger.Write(LogLevel.Debug, string.Format("Received link added for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId));
             ConnectorEvent linkAddedConnectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded, string.Format("Received link added for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId), 0);
 
@@ -430,8 +416,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 var existingEntitiesInChannel = _channelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, targetEntityId);
 
-                //Get Parents EntityStructure from Path
-                List<StructureEntity> parents = new List<StructureEntity>();
+                List<StructureEntity> structureEntities = new List<StructureEntity>();
 
                 foreach (StructureEntity existingEntity in existingEntitiesInChannel)
                 {
@@ -444,7 +429,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         int entityId = int.Parse(parentIds[i]);
                         int parentId = int.Parse(parentIds[i + 1]);
 
-                        parents.AddRange(RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channelId, entityId, parentId));
+                        structureEntities.AddRange(RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channelId, entityId, parentId));
                     }
                 }
 
@@ -453,24 +438,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 foreach (StructureEntity existingEntity in existingEntitiesInChannel)
                 {
                     string targetEntityPath = _channelHelper.GetTargetEntityPath(existingEntity.EntityId, existingEntitiesInChannel, existingEntity.ParentId);
-                    children.AddRange(RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
+                    structureEntities.AddRange(RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
                 }
 
-                _config.ChannelStructureEntities.AddRange(parents);
-                _config.ChannelStructureEntities.AddRange(children);
-
                 // Remove duplicates
-                _config.ChannelStructureEntities =
-                    _config.ChannelStructureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
+                structureEntities = structureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
 
                 //Adding existing Entities. If it occurs more than one time in channel. We can not remove duplicates.
-                _config.ChannelStructureEntities.AddRange(existingEntitiesInChannel);
+                structureEntities.AddRange(existingEntitiesInChannel);
 
-                _channelHelper.BuildEntityIdAndTypeDict();
+                _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
 
                 ConnectorEventHelper.UpdateEvent(linkAddedConnectorEvent, "Done fetching channel entities", 10);
 
-                _addUtility.Add(channelEntity, linkAddedConnectorEvent, out resourceIncluded);
+                _addUtility.Add(channelEntity, linkAddedConnectorEvent, structureEntities, out resourceIncluded);
 
                 linkAddedStopWatch.Stop();
             }
@@ -488,8 +469,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             linkAddedStopWatch.Stop();
 
-            IntegrationLogger.Write(LogLevel.Information,
-                $"ChannelLinkAdded done for channel {channelId}, took {linkAddedStopWatch.GetElapsedTimeFormated()}!");
+            IntegrationLogger.Write(LogLevel.Information, $"ChannelLinkAdded done for channel {channelId}, took {linkAddedStopWatch.GetElapsedTimeFormated()}!");
             ConnectorEventHelper.UpdateEvent(linkAddedConnectorEvent, "ChannelLinkAdded complete", 100);
 
             if (!linkAddedConnectorEvent.IsError)
@@ -501,7 +481,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelLinkDeleted(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            _config.ChannelStructureEntities = new List<StructureEntity>();
             _config.ChannelEntities = new Dictionary<int, Entity>();
 
             IntegrationLogger.Write(LogLevel.Debug, $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}");
@@ -547,7 +526,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (!c.IsError)
             {
-                string channelName = _epiMappingHelper.GetNameForEntity(RemoteManager.DataService.GetEntity(channelId, LoadLevel.Shallow), 100);
+                string channelName = _mappingHelper.GetNameForEntity(RemoteManager.DataService.GetEntity(channelId, LoadLevel.Shallow), 100);
                 _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted, _config);
             }
         }
@@ -633,7 +612,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         }
 
 
-        private void HandleItemUpdate(int entityId, Entity channelEntity, ConnectorEvent entityUpdatedConnectorEvent, out bool resourceIncluded)
+        private void HandleItemUpdate(int entityId, 
+                                      Entity channelEntity,
+                                      ConnectorEvent entityUpdatedConnectorEvent, 
+                                      List<StructureEntity> structureEntities, 
+                                      out bool resourceIncluded)
         {
             resourceIncluded = false;
             Field currentField = RemoteManager.DataService.GetField(entityId, "SKUs");
@@ -664,7 +647,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (skusToAdd.Count > 0)
             {
-                _addUtility.Add(channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
+                _addUtility.Add(channelEntity, entityUpdatedConnectorEvent, structureEntities, out resourceIncluded);
             }
         }
 

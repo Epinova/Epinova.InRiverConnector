@@ -140,7 +140,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return result;
         }
 
-        public Dictionary<string, List<XElement>> GetEPiElements()
+        public Dictionary<string, List<XElement>> GetEPiElements(List<StructureEntity> channelStructureEntities)
         {
             var epiElements = new Dictionary<string, List<XElement>>
                               {
@@ -150,7 +150,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                   { "Associations", new List<XElement>() }
                               };
 
-            FillElementList(epiElements);
+            FillElementList(epiElements, channelStructureEntities);
             return epiElements;
         }
 
@@ -160,7 +160,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new XElement("AssociationTypes", associationTypeElements);
         }
         
-        private void FillElementList(Dictionary<string, List<XElement>> epiElements)
+        private void FillElementList(Dictionary<string, List<XElement>> epiElements, List<StructureEntity> channelStructureEntities)
         {
             try
             {
@@ -173,17 +173,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 do
                 {
-                    var batch = _config.ChannelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
+                    var batch = channelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
                     _config.ChannelEntities = GetEntitiesInStructure(batch);
 
-                    FillElements(batch, addedEntities, addedNodes, addedRelations, epiElements);
+                    FillElements(batch, addedEntities, addedNodes, addedRelations, epiElements, channelStructureEntities);
 
                     totalLoaded += batch.Count;
 
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("fetched {0} of {1} total", totalLoaded, _config.ChannelStructureEntities.Count));
+                    IntegrationLogger.Write(LogLevel.Debug, $"fetched {totalLoaded} of {channelStructureEntities.Count} total");
                 }
-                while (_config.ChannelStructureEntities.Count > totalLoaded);
+                while (channelStructureEntities.Count > totalLoaded);
             }
             catch (Exception ex)
             {
@@ -196,7 +196,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                   List<string> addedNodes,
                                   List<string> addedRelations,
                                   Dictionary<string, 
-                                  List<XElement>> epiElements)
+                                  List<XElement>> epiElements,
+                                  List<StructureEntity> channelStructureEntities)
         {
             int logCounter = 0;
 
@@ -374,7 +375,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     {
                         XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, _config);
     
-                        var specificationEntry =_config.ChannelStructureEntities.FirstOrDefault(s => s.ParentId.Equals(id) && s.Type.Equals("Specification"));
+                        var specificationEntry = channelStructureEntities.FirstOrDefault(s => s.ParentId.Equals(id) && s.Type.Equals("Specification"));
     
                         if (specificationEntry != null)
                         {
@@ -405,8 +406,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         }
                     }
     
-                    List<StructureEntity> existingStructureEntities = _config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(id));
-    
+                    List<StructureEntity> existingStructureEntities = channelStructureEntities.FindAll(i => i.EntityId.Equals(id));
                     List<StructureEntity> filteredStructureEntities = new List<StructureEntity>();
     
                     foreach (StructureEntity se in existingStructureEntities)

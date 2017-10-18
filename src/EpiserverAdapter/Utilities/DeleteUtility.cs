@@ -43,7 +43,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             string channelIdentifier = _channelHelper.GetChannelIdentifier(channelEntity);
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
-            _channelHelper.BuildEntityIdAndTypeDict();
+            _channelHelper.BuildEntityIdAndTypeDict(new List<StructureEntity>());
 
             if (!_config.ChannelEntities.ContainsKey(targetEntity.Id))
             {
@@ -85,9 +85,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                         linkTypeId,
                         existingEntities,
                         channelIdentifier,
-                        folderDateTime,
-                        resourceZipFile);
-
+                        folderDateTime);
                 }
             }
             else
@@ -104,7 +102,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
         }
 
-        private void DeleteEntityThatStillExistInChannel(Entity channelEntity, Entity targetEntity, Entity parentEnt, string linkTypeId, List<StructureEntity> existingEntities, string channelIdentifier, string folderDateTime, string resourceZipFile)
+        private void DeleteEntityThatStillExistInChannel(Entity channelEntity,
+            Entity targetEntity, 
+            Entity parentEnt, 
+            string linkTypeId, 
+            List<StructureEntity> existingEntities, 
+            string channelIdentifier,
+            string folderDateTime)
         {
             Dictionary<string, Dictionary<string, bool>> entitiesToUpdate = new Dictionary<string, Dictionary<string, bool>>();
 
@@ -118,11 +122,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             List<string> linkEntityIds = new List<string>();
             if (_channelHelper.LinkTypeHasLinkEntity(linkTypeId))
             {
-                _config.ChannelStructureEntities = _channelHelper.GetAllEntitiesInChannel(
-                                                                    channelEntity.Id,
-                                                                    _config.ExportEnabledEntityTypes);
+                var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel(channelEntity.Id, _config.ExportEnabledEntityTypes);
 
-                List<StructureEntity> newEntityNodes = _channelHelper.FindEntitiesElementInStructure(_config.ChannelStructureEntities, parentEnt.Id, targetEntity.Id, linkTypeId);
+                List<StructureEntity> newEntityNodes = _channelHelper.FindEntitiesElementInStructure(allEntitiesInChannel, parentEnt.Id, targetEntity.Id, linkTypeId);
 
                 List<string> pars = new List<string>();
                 if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)

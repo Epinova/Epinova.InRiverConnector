@@ -34,12 +34,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _channelHelper = channelHelper;
         }
 
-        internal void Add(Entity channelEntity, ConnectorEvent connectorEvent, out bool resourceIncluded)
+        internal void Add(Entity channelEntity, ConnectorEvent connectorEvent, List<StructureEntity> structureEntities, out bool resourceIncluded)
         {
             resourceIncluded = false;
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Generating catalog.xml...", 11);
-            Dictionary<string, List<XElement>> epiElements = _epiDocumentFactory.GetEPiElements();
+            Dictionary<string, List<XElement>> epiElements = _epiDocumentFactory.GetEPiElements(structureEntities);
 
             XDocument doc = _epiDocumentFactory.CreateImportDocument(channelEntity, null, null, epiElements);
 
@@ -58,7 +58,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating catalog.xml", 25);
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Generating Resource.xml and saving files to disk...", 26);
 
-            var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(_connectorConfig.ChannelStructureEntities, _connectorConfig, folderDateTime);
+            var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(structureEntities, _connectorConfig, folderDateTime);
             DocumentFileHelper.SaveDocument(channelIdentifier, resourceDocument, _connectorConfig, folderDateTime);
 
             string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);

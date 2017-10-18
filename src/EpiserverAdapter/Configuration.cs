@@ -53,7 +53,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             Endpoints = new EndpointCollection(EpiEndpoint);
             LinkTypes = new List<LinkType>(RemoteManager.ModelService.GetAllLinkTypes());
 
-            ChannelStructureEntities = new List<StructureEntity>();
             ChannelEntities = new Dictionary<int, Entity>();
 
             _epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
@@ -338,8 +337,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return _epiCodeMapping;
             }
         }
-
-        public List<StructureEntity> ChannelStructureEntities { get; set; }
 
         public Dictionary<int, Entity> ChannelEntities { get; set; }
 
