@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
-using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using inRiver.Integration.Logging;
@@ -19,11 +18,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
     {
         private readonly EpiApi _epiApi;
         private readonly Configuration _config;
+        private readonly ResourceElementFactory _resourceElementFactory;
+        private readonly EpiElementFactory _epiElementFactory;
+        private readonly ChannelHelper _channelHelper;
 
-        public DeleteUtility(Configuration config)
+        public DeleteUtility(Configuration config, ResourceElementFactory resourceElementFactory, EpiElementFactory epiElementFactory, ChannelHelper channelHelper)
         {
             _config = config;
+            _resourceElementFactory = resourceElementFactory;
             _epiApi = new EpiApi(config);
+            _epiElementFactory = epiElementFactory;
+            _channelHelper = channelHelper;
         }
 
         public void Delete(Entity channelEntity, int parentEntityId, Entity targetEntity, string linkTypeId, List<int> productParentIds = null)
@@ -108,14 +113,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             {
                 _config.ChannelStructureEntities = ChannelHelper.GetAllEntitiesInChannel(
                                                                     channelEntity.Id,
-                                                                    Configuration.ExportEnabledEntityTypes);
+                                                                    _config.ExportEnabledEntityTypes);
 
                 List<StructureEntity> newEntityNodes = ChannelHelper.FindEntitiesElementInStructure(_config.ChannelStructureEntities, parentEnt.Id, targetEntity.Id, linkTypeId);
 
                 List<string> pars = new List<string>();
                 if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)
                 {
-                    pars = EpiElementFactory.SkuItemIds(parentEnt, _config);
+                    pars = _epiElementFactory.SkuItemIds(parentEnt, _config);
 
                     if (_config.UseThreeLevelsInCommerce)
                     {
@@ -130,7 +135,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 List<string> targets = new List<string>();
                 if (targetEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
                 {
-                    targets = EpiElementFactory.SkuItemIds(targetEntity, _config);
+                    targets = _epiElementFactory.SkuItemIds(targetEntity, _config);
 
                     if (_config.UseThreeLevelsInCommerce)
                     {
@@ -201,7 +206,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                     if (deletedEntity != null)
                     {
-                        List<XElement> skus = EpiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
+                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
                         foreach (XElement sku in skus)
                         {
                             XElement skuCode = sku.Element("Code");
@@ -229,7 +234,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             {
                 if (_config.ItemsToSkus)
                 {
-                    parents = EpiElementFactory.SkuItemIds(parentEnt, _config);
+                    parents = _epiElementFactory.SkuItemIds(parentEnt, _config);
 
                     if (_config.UseThreeLevelsInCommerce)
                     {
@@ -241,7 +246,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             XDocument updateXml = new XDocument(new XElement("xml", new XAttribute("action", "updated")));
             if (updateXml.Root != null)
             {
-                List<XElement> parentElements = ChannelHelper.GetParentXElements(parentEnt, _config);
+                List<XElement> parentElements = _channelHelper.GetParentXElements(parentEnt, _config);
                 foreach (var parentElement in parentElements)
                 {
                     updateXml.Root.Add(parentElement);
@@ -265,7 +270,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
         private void DeleteResource(Entity targetEntity, Entity parentEnt, string channelIdentifier, string folderDateTime, string resourceZipFile)
         {
-            XDocument doc = Resources.HandleResourceUnlink(targetEntity, parentEnt, _config);
+            XDocument doc = _resourceElementFactory.HandleResourceUnlink(targetEntity, parentEnt, _config);
 
             DocumentFileHelper.SaveDocument(channelIdentifier, doc, _config, folderDateTime);
             IntegrationLogger.Write(LogLevel.Debug, "Resource update-xml saved!");
@@ -296,7 +301,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 _config.ChannelEntities.Add(parentEntity.Id, parentEntity);
             }
 
-            List<XElement> parentElements = ChannelHelper.GetParentXElements(parentEntity, _config);
+            List<XElement> parentElements = _channelHelper.GetParentXElements(parentEntity, _config);
             foreach (var parentElement in parentElements)
             {
                 deleteXml.Root?.Add(parentElement);
@@ -398,7 +403,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                             if (deletedEntity != null)
                             {
-                                List<XElement> skus = EpiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
+                                List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
 
                                 foreach (XElement sku in skus)
                                 {
@@ -529,7 +534,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 
                 if (deletedResources != null && deletedResources.Count != 0)
                 {
-                    XDocument resDoc = Resources.HandleResourceDelete(deletedResources);
+                    XDocument resDoc = _resourceElementFactory.HandleResourceDelete(deletedResources);
                     string folderDateTime2 = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
                     DocumentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime2);
@@ -552,7 +557,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                         {
                             // Only do this when removing an link (unlink)
                             Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
-                            var unlinkDoc = Resources.HandleResourceUnlink(resource, parentEnt, _config);
+                            var unlinkDoc = _resourceElementFactory.HandleResourceUnlink(resource, parentEnt, _config);
 
                             DocumentFileHelper.SaveDocument(channelIdentifier, unlinkDoc, _config, folderDateTime);
                             zipFileUnlink = string.Format("resource_{0}{1}.zip", folderDateTime, deletedElementEntityId);

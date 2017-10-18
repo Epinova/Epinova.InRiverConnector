@@ -15,6 +15,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ChannelHelper
     {
+        private readonly EpiElementFactory _epiElementFactory;
+
+        public ChannelHelper(EpiElementFactory epiElementFactory)
+        {
+            _epiElementFactory = epiElementFactory;
+        }
+
         public static Guid GetChannelGuid(Entity channel, Configuration configuration)
         {
             string value = channel.Id.ToString(CultureInfo.InvariantCulture);
@@ -313,7 +320,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return defaultWeightBaseField.Data.ToString();
         }
 
-        public static List<XElement> GetParentXElements(Entity parentEntity, Configuration configuration)
+        public List<XElement> GetParentXElements(Entity parentEntity, Configuration configuration)
         {
             List<XElement> elements = new List<XElement>();
             List<string> parents = new List<string>();
@@ -324,7 +331,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (parentEntity.EntityType.Id == "Item" && configuration.ItemsToSkus)
             {
-                parents = EpiElementFactory.SkuItemIds(parentEntity, configuration);
+                parents = _epiElementFactory.SkuItemIds(parentEntity, configuration);
             }
             else
             {
@@ -389,7 +396,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             config.EntityIdAndType = entityIdAndType;
         }
 
-        public static void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Configuration config, int channelId)
+        public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Configuration config, int channelId)
         {
             List<Link> links = new List<Link>();
 
@@ -421,14 +428,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                     {
                         if (!structureEntity.LinkEntityId.HasValue)
                         {
-                            associationsElements.Add(EpiElementFactory.CreateCatalogAssociationElement(
+                            associationsElements.Add(_epiElementFactory.CreateCatalogAssociationElement(
                                structureEntity,
                                null,
                                config));
                         }
                         else
                         {
-                            associationsElements.Add(EpiElementFactory.CreateCatalogAssociationElement(
+                            associationsElements.Add(_epiElementFactory.CreateCatalogAssociationElement(
                                structureEntity,
                                link.LinkEntity,
                                config));
@@ -452,7 +459,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
                             relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId,
-                                EpiElementFactory.CreateNodeEntryRelationElement(
+                                _epiElementFactory.CreateNodeEntryRelationElement(
                                     parentNodeId.ToString(CultureInfo.InvariantCulture),
                                     structureEntity.EntityId.ToString(),
                                     structureEntity.SortOrder,
@@ -464,11 +471,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParent))
                         {
                             relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParent,
-                                EpiElementFactory.CreateEntryRelationElement(
-                                structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
-                                link.LinkType.SourceEntityTypeId,
-                               structureEntity.EntityId.ToString(),
-                                structureEntity.SortOrder, config));
+                                _epiElementFactory.CreateEntryRelationElement(
+                                        structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
+                                        link.LinkType.SourceEntityTypeId,
+                                       structureEntity.EntityId.ToString(),
+                                        structureEntity.SortOrder, config));
                         }
                     }
                 }

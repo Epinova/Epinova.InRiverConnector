@@ -361,127 +361,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
 
-        public XElement CreateResourceElement(Entity resource, string action, Configuration config, Dictionary<int, Entity> parentEntities = null)
-        {
-            string resourceFileId = "-1";
-            Field resourceFileIdField = resource.GetField("ResourceFileId");
-            if (resourceFileIdField != null && !resourceFileIdField.IsEmpty())
-            {
-                resourceFileId = resource.GetField("ResourceFileId").Data.ToString();
-            }
-
-            Dictionary<string, int?> parents = new Dictionary<string, int?>();
-
-            string resourceId = ChannelPrefixHelper.GetEpiserverCode(resource.Id, config);
-            resourceId = resourceId.Replace("_", string.Empty);
-
-            if (action == "unlinked")
-            {
-                var resourceParents = config.ChannelEntities.Where(i => !i.Key.Equals(resource.Id));
-
-                foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
-                {
-                    List<string> ids = new List<string> { resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture) };
-
-                    if (config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
-                    {
-                        List<string> skuIds = SkuItemIds(resourceParent.Value, config);
-
-                        foreach (string skuId in skuIds)
-                        {
-                            ids.Add(skuId);
-                        }
-
-                        if (config.UseThreeLevelsInCommerce == false)
-                        {
-                            ids.Remove(resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture));
-                        }
-                    }
-
-                    foreach (string id in ids)
-                    {
-                        if (!parents.ContainsKey(id))
-                        {
-                            parents.Add(id, resourceParent.Value.MainPictureId);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                List<StructureEntity> allResourceLocations = config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
-
-                List<Link> links = new List<Link>();
-
-                foreach (Link inboundLink in resource.InboundLinks)
-                {
-                    if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
-                    {
-                        links.Add(inboundLink);
-                    }
-                }
-
-                foreach (Link link in links)
-                {
-                    Entity linkedEntity = link.Source;
-                    List<string> ids = new List<string> { linkedEntity.Id.ToString(CultureInfo.InvariantCulture) };
-                    if (config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
-                    {
-                        List<string> skuIds = SkuItemIds(linkedEntity, config);
-                        foreach (string skuId in skuIds)
-                        {
-                            ids.Add(skuId);
-                        }
-
-                        if (config.UseThreeLevelsInCommerce == false)
-                        {
-                            ids.Remove(linkedEntity.Id.ToString(CultureInfo.InvariantCulture));
-                        }
-                    }
-
-                    foreach (string id in ids)
-                    {
-                        if (!parents.ContainsKey(id))
-                        {
-                            parents.Add(id, linkedEntity.MainPictureId);
-                        }
-                    }
-                }
-
-                if (parents.Any() && parentEntities != null)
-                {
-                    List<int> nonExistingIds =
-                        (from id in parents.Keys where !parentEntities.ContainsKey(int.Parse(id)) select int.Parse(id))
-                            .ToList();
-
-                    if (nonExistingIds.Any())
-                    {
-                        foreach (Entity entity in RemoteManager.DataService.GetEntities(nonExistingIds, LoadLevel.DataOnly))
-                        {
-                            if (!parentEntities.ContainsKey(entity.Id))
-                            {
-                                parentEntities.Add(entity.Id, entity);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return new XElement(
-                "Resource",
-                new XAttribute("id", resourceId),
-                new XAttribute("action", action),
-                new XElement(
-                    "ResourceFields",
-                    resource.Fields.Where(field => !EpiMappingHelper.SkipField(field.FieldType, config))
-                        .Select(field => GetMetaFieldValueElement(field, config))),
-                Resources.GetInternalPathsInZip(resource, config),
-                new XElement(
-                    "ParentEntries",
-                    parents.Select(
-                        parent =>
-                        new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(parent.Key, config), new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
-        }
 
         public XElement CreateResourceMetaFieldsElement(EntityType resourceType, Configuration config)
         {
@@ -511,7 +390,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             XElement specification = EPiSpecificationField("SpecificationField");
             bool addSpec = false;
 
-            foreach (EntityType entityType in Configuration.ExportEnabledEntityTypes)
+            foreach (EntityType entityType in config.ExportEnabledEntityTypes)
             {
                 if (entityType.LinkTypes.Find(a => a.TargetEntityTypeId == "Specification") != null && entityType.Id != "Specification")
                 {

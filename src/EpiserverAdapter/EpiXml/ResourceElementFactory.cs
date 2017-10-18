@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -12,9 +13,139 @@ using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 {
-    public static class Resources
+    public class ResourceElementFactory
     {
-        public static XDocument GetDocumentAndSaveFilesToDisk(List<StructureEntity> channelEntities, Configuration config, string folderDateTime)
+        private readonly EpiElementFactory _epiElementFactory;
+
+        public ResourceElementFactory(EpiElementFactory epiElementFactory)
+        {
+            _epiElementFactory = epiElementFactory;
+        }
+
+        public XElement CreateResourceElement(Entity resource, string action, Configuration config, Dictionary<int, Entity> parentEntities = null)
+        {
+            string resourceFileId = "-1";
+            Field resourceFileIdField = resource.GetField("ResourceFileId");
+            if (resourceFileIdField != null && !resourceFileIdField.IsEmpty())
+            {
+                resourceFileId = resource.GetField("ResourceFileId").Data.ToString();
+            }
+
+            Dictionary<string, int?> parents = new Dictionary<string, int?>();
+
+            string resourceId = ChannelPrefixHelper.GetEpiserverCode(resource.Id, config);
+            resourceId = resourceId.Replace("_", string.Empty);
+
+            if (action == "unlinked")
+            {
+                var resourceParents = config.ChannelEntities.Where(i => !i.Key.Equals(resource.Id));
+
+                foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
+                {
+                    List<string> ids = new List<string> { resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture) };
+
+                    if (config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
+                    {
+                        List<string> skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value, config);
+
+                        foreach (string skuId in skuIds)
+                        {
+                            ids.Add(skuId);
+                        }
+
+                        if (config.UseThreeLevelsInCommerce == false)
+                        {
+                            ids.Remove(resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture));
+                        }
+                    }
+
+                    foreach (string id in ids)
+                    {
+                        if (!parents.ContainsKey(id))
+                        {
+                            parents.Add(id, resourceParent.Value.MainPictureId);
+                        }
+                    }
+                }
+            }
+            else
+            {
+                List<StructureEntity> allResourceLocations = config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
+
+                List<Link> links = new List<Link>();
+
+                foreach (Link inboundLink in resource.InboundLinks)
+                {
+                    if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
+                    {
+                        links.Add(inboundLink);
+                    }
+                }
+
+                foreach (Link link in links)
+                {
+                    Entity linkedEntity = link.Source;
+                    List<string> ids = new List<string> { linkedEntity.Id.ToString(CultureInfo.InvariantCulture) };
+                    if (config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
+                    {
+                        List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity, config);
+                        foreach (string skuId in skuIds)
+                        {
+                            ids.Add(skuId);
+                        }
+
+                        if (config.UseThreeLevelsInCommerce == false)
+                        {
+                            ids.Remove(linkedEntity.Id.ToString(CultureInfo.InvariantCulture));
+                        }
+                    }
+
+                    foreach (string id in ids)
+                    {
+                        if (!parents.ContainsKey(id))
+                        {
+                            parents.Add(id, linkedEntity.MainPictureId);
+                        }
+                    }
+                }
+
+                if (parents.Any() && parentEntities != null)
+                {
+                    List<int> nonExistingIds =
+                        (from id in parents.Keys where !parentEntities.ContainsKey(int.Parse(id)) select int.Parse(id))
+                        .ToList();
+
+                    if (nonExistingIds.Any())
+                    {
+                        foreach (Entity entity in RemoteManager.DataService.GetEntities(nonExistingIds, LoadLevel.DataOnly))
+                        {
+                            if (!parentEntities.ContainsKey(entity.Id))
+                            {
+                                parentEntities.Add(entity.Id, entity);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return new XElement(
+                "Resource",
+                new XAttribute("id", resourceId),
+                new XAttribute("action", action),
+                new XElement(
+                    "ResourceFields",
+                    resource.Fields.Where(field => !EpiMappingHelper.SkipField(field.FieldType, config))
+                        .Select(field => _epiElementFactory.GetMetaFieldValueElement(field, config))),
+                GetInternalPathsInZip(resource, config),
+                new XElement(
+                    "ParentEntries",
+                    parents.Select(
+                        parent =>
+                            new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(parent.Key, config), new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
+        }
+
+
+        public XDocument GetDocumentAndSaveFilesToDisk(List<StructureEntity> channelEntities, Configuration config, string folderDateTime)
         {
             XDocument resourceDocument = new XDocument();
             try
@@ -40,7 +171,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
 
                 EntityType reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
-                XElement resourceMetaClasses = EpiElementFactory.CreateResourceMetaFieldsElement(reourceType, config);
+                XElement resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType, config);
                 resourceDocument = CreateResourceDocument(resourceMetaClasses, resources, resources, "added", config);
             }
             catch (Exception ex)
@@ -51,7 +182,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return resourceDocument;
         }
         
-        internal static XDocument HandleResourceUpdate(Entity updatedResource, Configuration config, string folderDateTime)
+        internal XDocument HandleResourceUpdate(Entity updatedResource, Configuration config, string folderDateTime)
         {
             SaveFileToDisk(updatedResource, config, folderDateTime);
             List<Entity> channelResources = new List<Entity>();
@@ -59,7 +190,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return CreateResourceDocument(null, channelResources, new List<Entity> { updatedResource }, "updated", config);
         }
 
-        internal static XDocument HandleResourceDelete(List<string> deletedResources)
+        internal XDocument HandleResourceDelete(List<string> deletedResources)
         {
             return
                 new XDocument(
@@ -70,10 +201,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             from id in deletedResources select new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
         }
 
-        internal static XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
+        internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
         {
             Dictionary<int, Entity> parentEntities = config.ChannelEntities;
-            XElement resourceElement = EpiElementFactory.CreateResourceElement(resource, "unlinked", config, parentEntities);
+            XElement resourceElement = CreateResourceElement(resource, "unlinked", config, parentEntities);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
@@ -93,7 +224,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         new XElement("ResourceFiles", resourceElement)));
         }
 
-        internal static XDocument CreateResourceDocument(XElement resourceMetaClasses, List<Entity> channelResources, List<Entity> resources, string action, Configuration config)
+        internal XDocument CreateResourceDocument(XElement resourceMetaClasses, List<Entity> channelResources, List<Entity> resources, string action, Configuration config)
         {
 
             Dictionary<int, Entity> parentEntities = config.ChannelEntities;
@@ -105,10 +236,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         resourceMetaClasses,
                         new XElement(
                             "ResourceFiles",
-                            resources.Select(res => EpiElementFactory.CreateResourceElement(res, action, config, parentEntities)))));
+                            resources.Select(res => CreateResourceElement(res, action, config, parentEntities)))));
         }
 
-        internal static bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)
+        internal bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)
         {
             string fileName = string.Empty;
             try
@@ -159,7 +290,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return true;
         }
 
-        internal static XElement GetInternalPathsInZip(Entity resource, Configuration config)
+        internal XElement GetInternalPathsInZip(Entity resource, Configuration config)
         {
             int id = GetResourceFileId(resource);
 
@@ -180,7 +311,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return paths;
         }
 
-        private static int GetResourceFileId(Entity resource)
+        private int GetResourceFileId(Entity resource)
         {
             Field resourceFileIdField = resource.GetField("ResourceFileId");
             if (resourceFileIdField == null || resourceFileIdField.IsEmpty())
@@ -191,7 +322,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return (int)resourceFileIdField.Data;
         }
 
-        private static string GetResourceFileName(Entity resource, int resourceFileId, string displayConfiguration, Configuration config)
+        private string GetResourceFileName(Entity resource, int resourceFileId, string displayConfiguration, Configuration config)
         {
             Field resourceFileNameField = resource.GetField("ResourceFilename");
             string fileName = $"[{resourceFileId}].jpg";
@@ -223,7 +354,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return fileName;
         }
 
-        private static IEnumerable<string> GetDisplayConfigurations(Entity resource, Configuration config)
+        private IEnumerable<string> GetDisplayConfigurations(Entity resource, Configuration config)
         {
             if (IsImage(resource))
             {
@@ -234,7 +365,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new[] { Configuration.OriginalDisplayConfiguration };
         }
 
-        private static bool IsImage(Entity resource)
+        private bool IsImage(Entity resource)
         {
             var fileEnding = resource.GetField("ResourceFilename")?.Data?.ToString().Split('.').Last();
             var imageServiceConfigs = RemoteManager.UtilityService.GetAllImageServiceConfigurations();
@@ -243,7 +374,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return !string.IsNullOrWhiteSpace(fileEnding) && configsHasExtension;
         }
 
-        private static string GetFolderName(string displayConfiguration, Entity resource, Configuration config)
+        private string GetFolderName(string displayConfiguration, Entity resource, Configuration config)
         {
             if (!string.IsNullOrEmpty(displayConfiguration) && config.ChannelMimeTypeMappings.ContainsKey(displayConfiguration))
             {
