@@ -28,6 +28,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _channelPrefixHelper = channelPrefixHelper;
         }
 
+
+        public Entity InitiateChannelConfiguration(int channelId)
+        {
+            Entity channel = RemoteManager.DataService.GetEntity(channelId, LoadLevel.DataOnly);
+            if (channel == null)
+            {
+                IntegrationLogger.Write(LogLevel.Error, "Could not find channel");
+                return null;
+            }
+
+            UpdateChannelSettings(channel);
+            return channel;
+        }
+
         public Guid GetChannelGuid(Entity channel)
         {
             string value = channel.Id.ToString(CultureInfo.InvariantCulture);
@@ -414,14 +428,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 links = RemoteManager.DataService.GetLinksForEntity(updatedEntity.Id);
             }
 
-            List<XElement> associationsElements = new List<XElement>();
-
-            Dictionary<string, XElement> relationsElements = new Dictionary<string, XElement>();
+            var associationsElements = new List<XElement>();
+            var relationsElements = new Dictionary<string, XElement>();
 
             foreach (Link link in links)
             {
-                var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel
-                            (channelId, link.Target.Id, link.Source.Id);
+                var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channelId, link.Target.Id, link.Source.Id);
 
                 if (!_mappingHelper.IsRelation(link.LinkType.SourceEntityTypeId, link.LinkType.TargetEntityTypeId, link.LinkType.Index))
                 {

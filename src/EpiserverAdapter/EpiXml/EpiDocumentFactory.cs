@@ -88,11 +88,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 Link specLink = updatedEntity.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
                 if (specLink != null)
                 {
-                    XElement metaField = new XElement("MetaField", new XElement("Name", "SpecificationField"), new XElement("Type", "LongHtmlString"));
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                    XElement metaField = new XElement("MetaField", 
+                        new XElement("Name", "SpecificationField"), 
+                        new XElement("Type", "LongHtmlString"));
+
+                    foreach (var languageMap in _config.LanguageMapping)
                     {
-                        string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, updatedEntity.Id, culturePair.Value);
-                        metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", htmlData)));
+                        var htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, updatedEntity.Id, languageMap.Value);
+                        metaField.Add(new XElement("Data", 
+                            new XAttribute("language", languageMap.Key.Name.ToLower()), 
+                            new XAttribute("value", htmlData)));
                     }
 
                     XElement element = updatedEntry.Descendants().FirstOrDefault(f => f.Name == "MetaFields");
@@ -106,10 +111,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
 
             XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, _config);
+
             catalogElement.Add(
-                new XElement("Sites", new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
+                new XElement("Sites", 
+                    new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
                 new XElement("Nodes", updatedNode),
-                new XElement("Entries", new XAttribute("totalCount", count), updatedEntry, skus),
+                new XElement("Entries", 
+                    new XAttribute("totalCount", count), 
+                    updatedEntry, 
+                    skus),
                 new XElement("Relations"),
                 new XElement("Associations"));
 
@@ -359,17 +369,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         }
                     }
     
-                    // TODO: SpecificationStructureEntity? Ta bort?
                     if ((structureEntity.Type == "Item" && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce)
                         || !(structureEntity.Type == "Item" && _config.ItemsToSkus))
                     {
                         XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, _config);
     
-                        StructureEntity specificationStructureEntity =
-                            _config.ChannelStructureEntities.FirstOrDefault(
-                                s => s.ParentId.Equals(id) && s.Type.Equals("Specification"));
+                        var specificationEntry =_config.ChannelStructureEntities.FirstOrDefault(s => s.ParentId.Equals(id) && s.Type.Equals("Specification"));
     
-                        if (specificationStructureEntity != null)
+                        if (specificationEntry != null)
                         {
                             XElement metaField = new XElement(
                                 "MetaField",
@@ -377,14 +384,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 new XElement("Type", "LongHtmlString"));
                             foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                             {
-                                string htmlData =
-                                    RemoteManager.DataService.GetSpecificationAsHtml(
-                                        specificationStructureEntity.EntityId,
-                                        entity.Id,
-                                        culturePair.Value);
+                                string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entity.Id, culturePair.Value);
                                 metaField.Add(
-                                    new XElement(
-                                        "Data",
+                                    new XElement("Data",
                                         new XAttribute("language", culturePair.Key.Name.ToLower()),
                                         new XAttribute("value", htmlData)));
                             }
@@ -403,8 +405,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         }
                     }
     
-                    List<StructureEntity> existingStructureEntities =
-                        _config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(id));
+                    List<StructureEntity> existingStructureEntities = _config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(id));
     
                     List<StructureEntity> filteredStructureEntities = new List<StructureEntity>();
     

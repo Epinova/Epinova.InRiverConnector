@@ -5,6 +5,7 @@ using System.Linq;
 using System.Xml;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Enums;
+using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
