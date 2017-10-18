@@ -77,8 +77,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public static string SKUData => "Data";
 
-        public XDocument MappingDocument { get; set; }
-
         public string Id { get; private set; }
 
         public List<LinkType> LinkTypes { get; set; }

@@ -113,31 +113,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             int defaultLength = 150;
 
-            if (config.MappingDocument != null)
+            if (fieldType.Settings.ContainsKey("MetaFieldLength"))
             {
-                XElement fieldElement = config.MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
-                if (fieldElement != null)
+                if (!int.TryParse(fieldType.Settings["MetaFieldLength"], out defaultLength))
                 {
-                    XAttribute allowNullsAttribute = fieldElement.Attribute("MetaFieldLength");
-                    if (allowNullsAttribute != null)
-                    {
-                        if (!int.TryParse(allowNullsAttribute.Value, out defaultLength))
-                        {
-                            return 150;
-                        }
-
-                        return defaultLength;
-                    }
-                }
-            }
-            else
-            {
-                if (fieldType.Settings.ContainsKey("MetaFieldLength"))
-                {
-                    if (!int.TryParse(fieldType.Settings["MetaFieldLength"], out defaultLength))
-                    {
-                        return 150;
-                    }
+                    return 150;
                 }
             }
 
@@ -198,18 +178,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         type = "LongString";
                     }
                 }
-                else if (config.MappingDocument != null)
-                {
-                    XElement fieldElement = config.MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
-                    if (fieldElement != null)
-                    {
-                        XAttribute attribute = fieldElement.Attribute("EPiDataType");
-                        if (attribute != null)
-                        {
-                            type = attribute.Value;
-                        }
-                    }
-                }
                 else if (fieldType.Settings.ContainsKey("EPiDataType"))
                 {
                     if (fieldType.Settings["EPiDataType"] == "ShortString")
@@ -228,20 +196,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else if (fieldType.DataType.Equals(DataType.String))
             {
-                if (config.MappingDocument != null)
-                {
-                    XElement fieldElement = config.
-                        MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
-                    if (fieldElement != null)
-                    {
-                        XAttribute attribute = fieldElement.Attribute("EPiDataType");
-                        if (attribute != null)
-                        {
-                            type = attribute.Value;
-                        }
-                    }
-                }
-                else if (fieldType.Settings.ContainsKey("EPiDataType"))
+                if (fieldType.Settings.ContainsKey("EPiDataType"))
                 {
                     if (fieldType.Settings["EPiDataType"] == "ShortString")
                     {
@@ -343,22 +298,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             string name = fieldType.Id;
 
-            if (config.MappingDocument != null)
-            {
-                XElement fieldElement = config.MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
-                if (fieldElement != null)
-                {
-                    XAttribute attribute = fieldElement.Attribute("EPiMetaFieldName");
-                    if (attribute != null)
-                    {
-                        name = attribute.Value;
-
-                        return name;
-                    }
-                }
-            }
-            else if (fieldType.Settings != null && fieldType.Settings.ContainsKey(Configuration.EPiCommonField)
-                && !string.IsNullOrEmpty(fieldType.Settings[Configuration.EPiCommonField]))
+            if (fieldType.Settings != null && 
+                fieldType.Settings.ContainsKey(Configuration.EPiCommonField) &&
+                !string.IsNullOrEmpty(fieldType.Settings[Configuration.EPiCommonField]))
             {
                 name = fieldType.Settings[Configuration.EPiCommonField];
             }

@@ -62,35 +62,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return "true";
         }
 
-        public static bool GetAllowsNulls(FieldType fieldType, Configuration config)
-        {
-            bool result = false;
-
-            if (config.MappingDocument != null)
-            {
-                XElement fieldElement = config.MappingDocument.Descendants().FirstOrDefault(e => e.Name.LocalName == fieldType.Id);
-                if (fieldElement != null)
-                {
-                    XAttribute allowNullsAttribute = fieldElement.Attribute("AllowNulls");
-                    if (allowNullsAttribute != null)
-                    {
-                        if (!bool.TryParse(allowNullsAttribute.Value, out result))
-                        {
-                            return false;
-                        }
-
-                        return result;
-                    }
-                }
-            }
-            else
-            {
-                result = !fieldType.Mandatory;
-            }
-
-            return result;
-        }
-
         public static string GetDisplayTemplateEntity(Entity entity)
         {
             Field displayTemplateField =

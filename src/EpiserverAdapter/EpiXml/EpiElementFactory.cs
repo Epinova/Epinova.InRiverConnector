@@ -48,7 +48,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Description", "From inRiver"),
                 new XElement("DataType", EpiMappingHelper.GetEpiserverDataType(fieldType, config)),
                 new XElement("Length", EpiMappingHelper.GetMetaFieldLength(fieldType, config)),
-                new XElement("AllowNulls", BusinessHelper.GetAllowsNulls(fieldType, config)),
+                new XElement("AllowNulls", !fieldType.Mandatory),
                 new XElement("SaveHistory", "False"),
                 new XElement("AllowSearch", BusinessHelper.GetAllowSearch(fieldType)),
                 new XElement("MultiLanguageValue", BusinessHelper.FieldTypeIsMultiLanguage(fieldType)),
@@ -376,7 +376,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         new XElement("FieldType", EpiMappingHelper.GetEpiserverDataType(fieldtype, config)),
                         new XElement("Format", "Text"),
                         new XElement("MaximumLength", EpiMappingHelper.GetMetaFieldLength(fieldtype, config)),
-                        new XElement("AllowNulls", BusinessHelper.GetAllowsNulls(fieldtype, config)),
+                        new XElement("AllowNulls", !fieldtype.Mandatory),
                         new XElement("UniqueValue", fieldtype.Unique))));
         }
 
