@@ -18,12 +18,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         private readonly Configuration _config;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
+        private readonly ChannelPrefixHelper _channelPrefixHelper;
 
-        public ChannelHelper(Configuration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper)
+        public ChannelHelper(Configuration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
         {
             _config = config;
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
+            _channelPrefixHelper = channelPrefixHelper;
         }
 
         public Guid GetChannelGuid(Entity channel)
@@ -342,7 +344,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (var parent in parents)
             {
-                XElement parentElement = new XElement("parent", ChannelPrefixHelper.GetEpiserverCode(parent, _config));
+                XElement parentElement = new XElement("parent", _channelPrefixHelper.GetEpiserverCode(parent));
                 elements.Add(parentElement);
             }
 
@@ -450,8 +452,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                             continue;
                         }
 
-                        string channelPrefixAndSkuId = ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, _config);
-                        string channelPrefixAndParentNodeId = ChannelPrefixHelper.GetEpiserverCode(parentNodeId, _config);
+                        string channelPrefixAndSkuId = _channelPrefixHelper.GetEpiserverCode(structureEntity.EntityId);
+                        string channelPrefixAndParentNodeId = _channelPrefixHelper.GetEpiserverCode(parentNodeId);
 
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
@@ -463,7 +465,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                                     _config));
                         }
 
-                        string channelPrefixAndParent = ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, _config);
+                        string channelPrefixAndParent = _channelPrefixHelper.GetEpiserverCode(structureEntity.ParentId);
 
                         var relationName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
 

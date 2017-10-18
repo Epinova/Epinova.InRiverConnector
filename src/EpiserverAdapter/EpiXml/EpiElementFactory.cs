@@ -15,11 +15,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     {
         private readonly Configuration _config;
         private readonly EpiMappingHelper _mappingHelper;
+        private readonly ChannelPrefixHelper _channelPrefixHelper;
 
-        public EpiElementFactory(Configuration config, EpiMappingHelper mappingHelper)
+        public EpiElementFactory(Configuration config, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
         {
             _config = config;
             _mappingHelper = mappingHelper;
+            _channelPrefixHelper = channelPrefixHelper;
         }
 
         public XElement InRiverEntityTypeToMetaClass(string name, string entityTypeName)
@@ -144,7 +146,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("SortOrder", sortOrder),
                 new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
                 new XElement("Guid", GetChannelEntityGuid(config.ChannelId, entity.Id)),
-                new XElement("Code", ChannelPrefixHelper.GetEpiserverCode(entity.Id, config)),
+                new XElement("Code", _channelPrefixHelper.GetEpiserverCode(entity.Id)),
                 new XElement(
                     "MetaData",
                     new XElement("MetaClass", new XElement("Name", GetMetaClassForEntity(entity))),
@@ -157,7 +159,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         select GetMetaFieldValueElement(f, config))),
                 new XElement(
                     "ParentNode",
-                    string.IsNullOrEmpty(parentId) ? null : ChannelPrefixHelper.GetEpiserverCode(parentId, config)),
+                    string.IsNullOrEmpty(parentId) ? null : _channelPrefixHelper.GetEpiserverCode(parentId)),
                 CreateSEOInfoElement(entity, config));
         }
 
@@ -201,7 +203,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", "True"),
                 new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
-                new XElement("Code", ChannelPrefixHelper.GetEpiserverCode(entity.Id, config)),
+                new XElement("Code", _channelPrefixHelper.GetEpiserverCode(entity.Id)),
                 new XElement("EntryType", EpiMappingHelper.GetEntryType(entity.EntityType.Id, config)),
                 new XElement("Guid", GetChannelEntityGuid(config.ChannelId, entity.Id)),
                 new XElement(
@@ -294,16 +296,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         public XElement CreateNodeEntryRelationElement(string sourceId, string targetId, int sortOrder, Configuration config, Dictionary<int, Entity> channelEntities = null)
         {
             return new XElement("NodeEntryRelation",
-                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
-                new XElement("NodeCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
+                new XElement("EntryCode", _channelPrefixHelper.GetEpiserverCode(targetId)),
+                new XElement("NodeCode", _channelPrefixHelper.GetEpiserverCode(sourceId)),
                 new XElement("SortOrder", sortOrder));
         }
 
         public XElement CreateNodeRelationElement(string sourceId, string targetId, int sortOrder, Configuration config)
         {
             return new XElement("NodeRelation",
-                new XElement("ChildNodeCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
-                new XElement("ParentNodeCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
+                new XElement("ChildNodeCode", _channelPrefixHelper.GetEpiserverCode(targetId)),
+                new XElement("ParentNodeCode", _channelPrefixHelper.GetEpiserverCode(sourceId)),
                 new XElement("SortOrder", sortOrder));
         }
 
@@ -330,8 +332,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             return new XElement(
                 "EntryRelation",
-                new XElement("ParentEntryCode", ChannelPrefixHelper.GetEpiserverCode(sourceId, config)),
-                new XElement("ChildEntryCode", ChannelPrefixHelper.GetEpiserverCode(targetId, config)),
+                new XElement("ParentEntryCode", _channelPrefixHelper.GetEpiserverCode(sourceId)),
+                new XElement("ChildEntryCode", _channelPrefixHelper.GetEpiserverCode(targetId)),
                 new XElement("RelationType", relationType),
                 new XElement("Quantity", 0),
                 new XElement("GroupName", "default"),
@@ -343,8 +345,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             // Unique Name with no spaces required for EPiServer Commerce
             string name = _mappingHelper.GetAssociationName(structureEntity, linkEntity);
             string description = structureEntity.LinkEntityId == null ? 
-                                        structureEntity.LinkTypeIdFromParent : 
-                                        ChannelPrefixHelper.GetEpiserverCode(structureEntity.LinkEntityId.Value, _config);
+                                        structureEntity.LinkTypeIdFromParent :
+                                        _channelPrefixHelper.GetEpiserverCode(structureEntity.LinkEntityId.Value);
 
             description = description ?? string.Empty;
 
@@ -353,7 +355,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Name", name),
                 new XElement("Description", description),
                 new XElement("SortOrder", structureEntity.SortOrder),
-                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.ParentId, _config)),
+                new XElement("EntryCode", _channelPrefixHelper.GetEpiserverCode(structureEntity.ParentId)),
                 CreateAssociationElement(structureEntity));
         }
 
@@ -361,7 +363,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             return new XElement(
                 "Association",
-                new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(structureEntity.EntityId, _config)),
+                new XElement("EntryCode", _channelPrefixHelper.GetEpiserverCode(structureEntity.EntityId)),
                 new XElement("SortOrder", structureEntity.SortOrder),
                     new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
@@ -552,7 +554,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     XElement codeElement = itemElement.Element("Code");
                     if (codeElement != null)
                     {
-                        codeElement.Value = ChannelPrefixHelper.GetEpiserverCode(id, configuration);
+                        codeElement.Value = _channelPrefixHelper.GetEpiserverCode(id);
                     }
 
                     XElement entryTypeElement = itemElement.Element("EntryType");

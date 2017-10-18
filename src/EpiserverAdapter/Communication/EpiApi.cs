@@ -14,11 +14,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
     public class EpiApi
     {
         private readonly EpiMappingHelper _mappingHelper;
+        private readonly ChannelPrefixHelper _channelPrefixHelper;
         private readonly HttpClientInvoker _httpClient; 
 
-        public EpiApi(Configuration config, EpiMappingHelper mappingHelper)
+        public EpiApi(Configuration config, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
         {
             _mappingHelper = mappingHelper;
+            _channelPrefixHelper = channelPrefixHelper;
             _httpClient = new HttpClientInvoker(config);
         }
 
@@ -43,7 +45,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogNode = ChannelPrefixHelper.GetEpiserverCode(catalogNodeId, config);
+                    string catalogNode = _channelPrefixHelper.GetEpiserverCode(catalogNodeId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogNode, catalogNode);
                 }
                 catch (Exception ex)
@@ -59,7 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogEntryId = ChannelPrefixHelper.GetEpiserverCode(entityId, config);
+                    string catalogEntryId = _channelPrefixHelper.GetEpiserverCode(entityId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogEntry, catalogEntryId);
                 }
                 catch (Exception exception)
@@ -77,8 +79,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 {
                     string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
 
-                    string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
-                    string linkEntityIdString = ChannelPrefixHelper.GetEpiserverCode(linkEntity.Id, config);
+                    string parentEntryId = _channelPrefixHelper.GetEpiserverCode(parentId);
+                    string linkEntityIdString = _channelPrefixHelper.GetEpiserverCode(linkEntity.Id);
 
                     string dispName = linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, config, -1).Replace(' ', '_');
 
@@ -110,12 +112,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                     for (int i = 0; i < targetIds.Count; i++)
                     {
-                        targetIds[i] = ChannelPrefixHelper.GetEpiserverCode(targetIds[i], config);
+                        targetIds[i] = _channelPrefixHelper.GetEpiserverCode(targetIds[i]);
                     }
 
                     for (int i = 0; i < parentIds.Count; i++)
                     {
-                        parentIds[i] = ChannelPrefixHelper.GetEpiserverCode(parentIds[i], config);
+                        parentIds[i] = _channelPrefixHelper.GetEpiserverCode(parentIds[i]);
                     }
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
@@ -143,7 +145,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string entryNodeId = ChannelPrefixHelper.GetEpiserverCode(nodeId, config);
+                    string entryNodeId = _channelPrefixHelper.GetEpiserverCode(nodeId);
                     _httpClient.Post(config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
                 }
                 catch (Exception exception)
@@ -172,13 +174,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     {
                         if (!shouldExistInChannelNode.Value)
                         {
-                            removeFromChannelNodes.Add(ChannelPrefixHelper.GetEpiserverCode(shouldExistInChannelNode.Key, config));
+                            removeFromChannelNodes.Add(_channelPrefixHelper.GetEpiserverCode(shouldExistInChannelNode.Key));
                         }
                     }
 
-                    string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
-                    string catalogEntryIdString = ChannelPrefixHelper.GetEpiserverCode(catalogEntryId, config);
-                    string channelIdEpified = ChannelPrefixHelper.GetEpiserverCode(channelId, config);
+                    string parentEntryId = _channelPrefixHelper.GetEpiserverCode(parentId);
+                    string catalogEntryIdString = _channelPrefixHelper.GetEpiserverCode(catalogEntryId);
+                    string channelIdEpified = _channelPrefixHelper.GetEpiserverCode(channelId);
                     bool relation = _mappingHelper.IsRelation(linkTypeId);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
@@ -199,8 +201,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 }
                 catch (Exception exception)
                 {
-                    string parentEntryId = ChannelPrefixHelper.GetEpiserverCode(parentId, config);
-                    string childEntryId = ChannelPrefixHelper.GetEpiserverCode(catalogEntryId, config);
+                    string parentEntryId = _channelPrefixHelper.GetEpiserverCode(parentId);
+                    string childEntryId = _channelPrefixHelper.GetEpiserverCode(catalogEntryId);
                     IntegrationLogger.Write(
                         LogLevel.Error,
                         $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {childEntryId} in catalog with id {catalogEntryId}",

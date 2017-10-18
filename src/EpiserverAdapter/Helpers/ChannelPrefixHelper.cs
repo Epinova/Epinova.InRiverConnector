@@ -18,19 +18,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _config = config;
         }
 
-        internal string GetEpiserverCode(int entityId)
-        {
-            //_config.EPiFieldsIninRiver
-            return "";
-        }
-
-        internal static string GetEpiserverCode(object code, Configuration configuration)
+        internal string GetEpiserverCode(object code)
         {
             int entityId;
             string codeValue = code.ToString();
             if (!string.IsNullOrEmpty(codeValue))
             {
-                if (!string.IsNullOrEmpty(configuration.ChannelIdPrefix) && codeValue.StartsWith(configuration.ChannelIdPrefix))
+                if (!string.IsNullOrEmpty(_config.ChannelIdPrefix) && codeValue.StartsWith(_config.ChannelIdPrefix))
                 {
                     // If the code is an entity id we should move on
                     // otherwise we should assume the code is what should be returned.
@@ -39,7 +33,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         return codeValue;
                     }
 
-                    if (!configuration.EntityIdAndType.ContainsKey(entityId))
+                    if (!_config.EntityIdAndType.ContainsKey(entityId))
                     {
                         if (RemoteManager.DataService.GetEntity(entityId, LoadLevel.Shallow) == null)
                         {
@@ -52,39 +46,39 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             // Check if code is int
             if (!int.TryParse(codeValue, out entityId))
             {
-                return configuration.ChannelIdPrefix + codeValue;
+                return _config.ChannelIdPrefix + codeValue;
             }
 
             int? existingEntityId = null;
             string type = string.Empty;
 
-            if (!configuration.EntityIdAndType.ContainsKey(entityId))
+            if (!_config.EntityIdAndType.ContainsKey(entityId))
             {
                 //GetAllStructureEntities if its not a LinkEntity.
-                if (!configuration.ChannelStructureEntities.Exists(i => i.LinkEntityId != null && i.LinkEntityId.Value.Equals(entityId)))
+                if (!_config.ChannelStructureEntities.Exists(i => i.LinkEntityId != null && i.LinkEntityId.Value.Equals(entityId)))
                 {
-                    List<StructureEntity> entities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(configuration.ChannelId, entityId);
+                    List<StructureEntity> entities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
                     if (entities.Any())
                     {
-                        configuration.ChannelStructureEntities.AddRange(entities);
-                        configuration.EntityIdAndType.Add(entities[0].EntityId, entities[0].Type);
+                        _config.ChannelStructureEntities.AddRange(entities);
+                        _config.EntityIdAndType.Add(entities[0].EntityId, entities[0].Type);
 
                         existingEntityId = entities[0].EntityId;
                         type = entities[0].Type;
                     }
-                    else if(configuration.ChannelEntities.ContainsKey(entityId))
+                    else if(_config.ChannelEntities.ContainsKey(entityId))
                     {
-                        Entity channelEntity = configuration.ChannelEntities[entityId];
+                        Entity channelEntity = _config.ChannelEntities[entityId];
                         existingEntityId = channelEntity.Id;
                         type = channelEntity.EntityType.Id;
                     }
                 }
                 else
                 {
-                    if (configuration.ChannelEntities.ContainsKey(entityId))
+                    if (_config.ChannelEntities.ContainsKey(entityId))
                     {
-                        Entity channelEntity = configuration.ChannelEntities[entityId];
+                        Entity channelEntity = _config.ChannelEntities[entityId];
                         existingEntityId = channelEntity.Id;
                         type = channelEntity.EntityType.Id;
                     } 
@@ -92,48 +86,48 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else
             {
-                type = configuration.EntityIdAndType[entityId];
+                type = _config.EntityIdAndType[entityId];
                 existingEntityId = entityId;
             }
 
             if (existingEntityId == null)
             {
-                return configuration.ChannelIdPrefix + code;
+                return _config.ChannelIdPrefix + code;
             }
 
             // Check if entity type is mapped
-            if (!configuration.EpiCodeMapping.ContainsKey(type))
+            if (!_config.EpiCodeMapping.ContainsKey(type))
             {
-                return configuration.ChannelIdPrefix + existingEntityId;
+                return _config.ChannelIdPrefix + existingEntityId;
             }
 
             Entity entity;
 
-            if (configuration.ChannelEntities != null && configuration.ChannelEntities.ContainsKey(entityId))
+            if (_config.ChannelEntities != null && _config.ChannelEntities.ContainsKey(entityId))
             {
-                entity = configuration.ChannelEntities[entityId];
+                entity = _config.ChannelEntities[entityId];
             }
             else
             {
                 entity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataOnly);
-                configuration.ChannelEntities?.Add(entity.Id, entity);
+                _config.ChannelEntities?.Add(entity.Id, entity);
             }
 
-            Field codeField = entity.GetField(configuration.EpiCodeMapping[type]);
+            Field codeField = entity.GetField(_config.EpiCodeMapping[type]);
 
             // Check if code field exists
             if (codeField == null)
             {
-                return configuration.ChannelIdPrefix + entity.Id;
+                return _config.ChannelIdPrefix + entity.Id;
             }
 
             // Check if code data is null
             if (codeField.Data == null || codeField.IsEmpty())
             {
-                return configuration.ChannelIdPrefix + entity.Id;
+                return _config.ChannelIdPrefix + entity.Id;
             }
 
-            return configuration.ChannelIdPrefix + codeField.Data;
+            return _config.ChannelIdPrefix + codeField.Data;
         }
     }
 }

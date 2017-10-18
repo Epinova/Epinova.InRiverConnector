@@ -33,6 +33,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private ResourceElementFactory _resourceElementFactory;
         private DeleteUtility _deleteUtility;
         private EpiMappingHelper _epiMappingHelper;
+        private ChannelPrefixHelper _channelPrefixHelper;
 
         public new void Start()
         {
@@ -51,16 +52,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return;
                 }
 
+                _channelPrefixHelper = new ChannelPrefixHelper(_config);
                 _epiMappingHelper = new EpiMappingHelper(_config);
-                _epiApi = new EpiApi(_config, _epiMappingHelper);
-                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper);
-                _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper);
-
-                _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper);
-                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper);
+                _epiApi = new EpiApi(_config, _epiMappingHelper, _channelPrefixHelper);
+                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _channelPrefixHelper);
+                _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _channelPrefixHelper);
+                _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _channelPrefixHelper);
+                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _channelPrefixHelper);
                 _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper);
-                
-                _deleteUtility = new DeleteUtility(_config, _resourceElementFactory, _epiElementFactory, _channelHelper, _epiApi);
+                _deleteUtility = new DeleteUtility(_config, _resourceElementFactory, _epiElementFactory, _channelHelper, _epiApi, _channelPrefixHelper);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 
@@ -419,7 +419,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
                         if (links.Count > 0)
                         {
-                            string parentId = ChannelPrefixHelper.GetEpiserverCode(links.First().Source.Id, _config);
+                            string parentId = _channelPrefixHelper.GetEpiserverCode(links.First().Source.Id);
 
                             _epiApi.UpdateLinkEntityData(updatedEntity, channelId, channelEntity, _config, parentId);
                         }

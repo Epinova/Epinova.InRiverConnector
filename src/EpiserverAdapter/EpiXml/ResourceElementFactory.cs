@@ -17,11 +17,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     {
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
+        private readonly ChannelPrefixHelper _channelPrefixHelper;
 
-        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper)
+        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
         {
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
+            _channelPrefixHelper = channelPrefixHelper;
         }
 
         public XElement CreateResourceElement(Entity resource, string action, Configuration config, Dictionary<int, Entity> parentEntities = null)
@@ -35,7 +37,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
 
-            string resourceId = ChannelPrefixHelper.GetEpiserverCode(resource.Id, config);
+            string resourceId = _channelPrefixHelper.GetEpiserverCode(resource.Id);
             resourceId = resourceId.Replace("_", string.Empty);
 
             if (action == "unlinked")
@@ -141,9 +143,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 GetInternalPathsInZip(resource, config),
                 new XElement(
                     "ParentEntries",
-                    parents.Select(
-                        parent =>
-                            new XElement("EntryCode", ChannelPrefixHelper.GetEpiserverCode(parent.Key, config), new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
+                    parents.Select(parent =>
+                            new XElement("EntryCode", _channelPrefixHelper.GetEpiserverCode(parent.Key), 
+                                new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
         }
 
 
