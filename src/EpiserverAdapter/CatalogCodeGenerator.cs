@@ -22,6 +22,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public string GetEpiserverCode(int entityId)
         {
+            if (entityId == 0)
+                return null;
+
             var entity = _entityService.GetEntity(entityId, LoadLevel.Shallow);
             return GetEpiserverCode(entity);
         }
@@ -46,7 +49,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return $"{_config.ChannelIdPrefix}{data}";
         }
 
-        [Obsolete("Get this piece of shit out of here. Let it die, ungracefully.", false)]
+        [Obsolete("Get this piece of shit out of here. Let it die, ungracefully.", true)]
         internal string GetEpiserverCodeLEGACYDAMNIT(object code)
         {
             int entityId;

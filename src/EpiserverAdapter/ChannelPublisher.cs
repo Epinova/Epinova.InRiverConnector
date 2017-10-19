@@ -315,11 +315,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     {
                         List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
                         if (links.Count > 0)
-                        {
-                            string parentId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(links.First().Source.Id);
-
-                            _epiApi.UpdateLinkEntityData(updatedEntity, channelId, channelEntity, _config, parentId);
-                        }
+                            _epiApi.UpdateLinkEntityData(updatedEntity, channelId, channelEntity, _config, links.First().Source.Id);
                     }
 
                     string zippedName = DocumentFileHelper.SaveAndZipDocument(channelIdentifier, doc, folderDateTime, _config);
@@ -633,7 +629,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             foreach (XElement skuToDelete in skusToDelete)
             {
-                _epiApi.DeleteCatalogEntry(skuToDelete.Attribute("id").Value, _config);
+                var skuId = skuToDelete.Attribute("id").Value;
+                _epiApi.DeleteSku(skuId, _config);
             }
 
             if (skusToAdd.Count > 0)

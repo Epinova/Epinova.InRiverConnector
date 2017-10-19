@@ -22,6 +22,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         }
 
         [Fact]
+        public void GetEpiserverCodeWithEntityId_EntityIdIsZero_Null()
+        {
+            var episerverCode = _catalogCodeGenerator.GetEpiserverCode(0);
+            Assert.Null(episerverCode);
+        }
+
+        [Fact]
         public void GetEpiserverCodeWithEntity_NoMappingsExist_EntityId()
         {
             var id = 123;

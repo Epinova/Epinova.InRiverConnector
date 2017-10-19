@@ -156,7 +156,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                 linkEntityIds = _epiApi.GetLinkEntityAssociationsForEntity(linkTypeId, channelEntity.Id, channelEntity, _config, pars, targets);
 
-                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(n.ParentId)));
+                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == _catalogCodeGenerator.GetEpiserverCode(n.ParentId)));
             }
 
             // Add the removed entity element together with all the underlying entity elements
@@ -296,7 +296,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
         }
 
-        private void DeleteEntity(Entity channelEntity, int parentEntityId, Entity targetEntity, string linkTypeId, string channelIdentifier, string folderDateTime, List<int> productParentIds = null)
+        private void DeleteEntity(Entity channelEntity, 
+            int parentEntityId, 
+            Entity targetEntity, 
+            string linkTypeId, 
+            string channelIdentifier, 
+            string folderDateTime,
+            List<int> productParentIds = null)
         {
             XElement removedElement = new XElement(targetEntity.EntityType.Id + "_" + targetEntity.Id);
 

@@ -135,7 +135,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     string.Join(",", BusinessHelper.CultureInfosToStringArray(config.LanguageMapping.Keys.ToArray()))));
         }
 
-        public XElement CreateNodeElement(Entity entity, string parentId, int sortOrder, Configuration config)
+        public XElement CreateNodeElement(Entity entity, int parentId, int sortOrder, Configuration config)
         {
             return new XElement(
                 "Node",
@@ -146,7 +146,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("SortOrder", sortOrder),
                 new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
                 new XElement("Guid", GetChannelEntityGuid(config.ChannelId, entity.Id)),
-                new XElement("Code", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(entity.Id)),
+                new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
                 new XElement(
                     "MetaData",
                     new XElement("MetaClass", new XElement("Name", GetMetaClassForEntity(entity))),
@@ -157,9 +157,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         from f in entity.Fields
                         where !f.IsEmpty() && !_mappingHelper.SkipField(f.FieldType)
                         select GetMetaFieldValueElement(f, config))),
-                new XElement(
-                    "ParentNode",
-                    string.IsNullOrEmpty(parentId) ? null : _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId)),
+                new XElement("ParentNode", _catalogCodeGenerator.GetEpiserverCode(parentId)),
                 CreateSEOInfoElement(entity, config));
         }
 
@@ -203,7 +201,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", "True"),
                 new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
-                new XElement("Code", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(entity.Id)),
+                new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
                 new XElement("EntryType", EpiMappingHelper.GetEntryType(entity.EntityType.Id, config)),
                 new XElement("Guid", GetChannelEntityGuid(config.ChannelId, entity.Id)),
                 new XElement(
@@ -293,10 +291,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     new XAttribute("value", value)));
         }
 
-        public XElement CreateNodeEntryRelationElement(string sourceId, string targetId, int sortOrder, Configuration config, Dictionary<int, Entity> channelEntities = null)
+        public XElement CreateNodeEntryRelationElement(string sourceId, int targetId, int sortOrder, Configuration config, Dictionary<int, Entity> channelEntities = null)
         {
             return new XElement("NodeEntryRelation",
-                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(targetId)),
+                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(targetId)),
                 new XElement("NodeCode", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(sourceId)),
                 new XElement("SortOrder", sortOrder));
         }
@@ -533,9 +531,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     string id = sku.Attribute("id").Value;
                     if (string.IsNullOrEmpty(id))
                     {
-                        IntegrationLogger.Write(
-                            LogLevel.Information,
-                            string.Format("Could not find the id for the SKU data for item: {0}", item.Id));
+                        IntegrationLogger.Write(LogLevel.Information, string.Format("Could not find the id for the SKU data for item: {0}", item.Id));
                         continue;
                     }
 

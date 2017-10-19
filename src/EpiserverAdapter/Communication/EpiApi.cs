@@ -55,6 +55,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
+        internal void DeleteSku(string skuId, Configuration config)
+        {
+            lock (EpiLockObject.Instance)
+            {
+                try
+                {
+                    _httpClient.Post(config.Endpoints.DeleteCatalogEntry, skuId);
+                }
+                catch (Exception exception)
+                {
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on entity id: {entityId}", exception);
+                }
+            }
+        }
+
         internal void DeleteCatalogEntry(string entityId, Configuration config)
         {
             lock (EpiLockObject.Instance)
@@ -71,7 +86,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void UpdateLinkEntityData(Entity linkEntity, int channelId, Entity channelEntity, Configuration config, string parentId)
+        internal void UpdateLinkEntityData(Entity linkEntity, int channelId, Entity channelEntity, Configuration config, int parentId)
         {
             lock (EpiLockObject.Instance)
             {
@@ -79,8 +94,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 {
                     string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
 
-                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId);
-                    string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(linkEntity.Id);
+                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCode(parentId);
+                    string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCode(linkEntity);
 
                     string dispName = linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, config, -1).Replace(' ', '_');
 
