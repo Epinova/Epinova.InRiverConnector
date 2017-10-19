@@ -28,7 +28,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private ResourceElementFactory _resourceElementFactory;
         private DeleteUtility _deleteUtility;
         private EpiMappingHelper _epiMappingHelper;
-        private ChannelPrefixHelper _channelPrefixHelper;
+        private CatalogCodeGenerator _catalogCodeGenerator;
         private ChannelPublisher _publisher;
 
         public new void Start()
@@ -48,15 +48,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return;
                 }
 
-                _channelPrefixHelper = new ChannelPrefixHelper(_config);
+                var entityService = new EntityService();
+
+                _catalogCodeGenerator = new CatalogCodeGenerator(_config, entityService);
                 _epiMappingHelper = new EpiMappingHelper(_config);
-                _epiApi = new EpiApi(_config, _epiMappingHelper, _channelPrefixHelper);
-                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _channelPrefixHelper);
-                _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _channelPrefixHelper);
-                _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _channelPrefixHelper);
-                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _channelPrefixHelper, _channelHelper);
+                _epiApi = new EpiApi(_config, _epiMappingHelper, _catalogCodeGenerator);
+                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator);
+                _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _catalogCodeGenerator);
+                _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
+                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _channelHelper);
                 _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper);
-                _deleteUtility = new DeleteUtility(_config, _resourceElementFactory, _epiElementFactory, _channelHelper, _epiApi, _channelPrefixHelper);
+                _deleteUtility = new DeleteUtility(_config, _resourceElementFactory, _epiElementFactory, _channelHelper, _epiApi, _catalogCodeGenerator);
                 
                 _publisher = new ChannelPublisher(_config, 
                                                   _channelHelper, 
@@ -67,7 +69,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _epiMappingHelper, 
                                                   _addUtility,
                                                   _deleteUtility,
-                                                  _channelPrefixHelper);
+                                                  _catalogCodeGenerator);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 

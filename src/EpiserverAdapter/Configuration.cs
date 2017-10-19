@@ -13,7 +13,7 @@ using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter
 {
-    public class Configuration
+    public class Configuration : IConfiguration
     {
         private readonly Dictionary<string, string> _settings;
 

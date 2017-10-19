@@ -28,7 +28,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly EpiMappingHelper _mappingHelper;
         private readonly AddUtility _addUtility;
         private readonly DeleteUtility _deleteUtility;
-        private readonly ChannelPrefixHelper _channelPrefixHelper;
+        private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
         public ChannelPublisher(Configuration config, 
                                 ChannelHelper channelHelper, 
@@ -39,7 +39,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                 EpiMappingHelper mappingHelper,
                                 AddUtility addUtility,
                                 DeleteUtility deleteUtility,
-                                ChannelPrefixHelper channelPrefixHelper)
+                                CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _channelHelper = channelHelper;
@@ -50,7 +50,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _mappingHelper = mappingHelper;
             _addUtility = addUtility;
             _deleteUtility = deleteUtility;
-            _channelPrefixHelper = channelPrefixHelper;
+            _catalogCodeGenerator = catalogCodeGenerator;
         }
 
         public void Publish(int channelId)
@@ -316,7 +316,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
                         if (links.Count > 0)
                         {
-                            string parentId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(links.First().Source.Id);
+                            string parentId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(links.First().Source.Id);
 
                             _epiApi.UpdateLinkEntityData(updatedEntity, channelId, channelEntity, _config, parentId);
                         }

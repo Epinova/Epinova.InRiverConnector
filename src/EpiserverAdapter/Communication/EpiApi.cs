@@ -14,13 +14,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
     public class EpiApi
     {
         private readonly EpiMappingHelper _mappingHelper;
-        private readonly ChannelPrefixHelper _channelPrefixHelper;
+        private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly HttpClientInvoker _httpClient; 
 
-        public EpiApi(Configuration config, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
+        public EpiApi(Configuration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
         {
             _mappingHelper = mappingHelper;
-            _channelPrefixHelper = channelPrefixHelper;
+            _catalogCodeGenerator = catalogCodeGenerator;
             _httpClient = new HttpClientInvoker(config);
         }
 
@@ -45,7 +45,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogNode = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(catalogNodeId);
+                    string catalogNode = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(catalogNodeId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogNode, catalogNode);
                 }
                 catch (Exception ex)
@@ -61,7 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(entityId);
+                    string catalogEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(entityId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogEntry, catalogEntryId);
                 }
                 catch (Exception exception)
@@ -79,8 +79,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 {
                     string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
 
-                    string parentEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
-                    string linkEntityIdString = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(linkEntity.Id);
+                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId);
+                    string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(linkEntity.Id);
 
                     string dispName = linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, config, -1).Replace(' ', '_');
 
@@ -117,12 +117,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                     for (int i = 0; i < targetIds.Count; i++)
                     {
-                        targetIds[i] = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(targetIds[i]);
+                        targetIds[i] = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(targetIds[i]);
                     }
 
                     for (int i = 0; i < parentIds.Count; i++)
                     {
-                        parentIds[i] = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentIds[i]);
+                        parentIds[i] = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentIds[i]);
                     }
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
@@ -150,7 +150,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string entryNodeId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(nodeId);
+                    string entryNodeId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(nodeId);
                     _httpClient.Post(config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
                 }
                 catch (Exception exception)
@@ -179,13 +179,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     {
                         if (!shouldExistInChannelNode.Value)
                         {
-                            removeFromChannelNodes.Add(_channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(shouldExistInChannelNode.Key));
+                            removeFromChannelNodes.Add(_catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(shouldExistInChannelNode.Key));
                         }
                     }
 
-                    string parentEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
-                    string catalogEntryIdString = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
-                    string channelIdEpified = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(channelId);
+                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId);
+                    string catalogEntryIdString = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
+                    string channelIdEpified = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(channelId);
                     bool relation = _mappingHelper.IsRelation(linkTypeId);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
@@ -206,8 +206,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 }
                 catch (Exception exception)
                 {
-                    string parentEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
-                    string childEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
+                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId);
+                    string childEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
                     IntegrationLogger.Write(
                         LogLevel.Error,
                         $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {childEntryId} in catalog with id {catalogEntryId}",

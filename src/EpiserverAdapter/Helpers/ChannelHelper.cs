@@ -18,14 +18,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         private readonly Configuration _config;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
-        private readonly ChannelPrefixHelper _channelPrefixHelper;
+        private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
-        public ChannelHelper(Configuration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
+        public ChannelHelper(Configuration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
-            _channelPrefixHelper = channelPrefixHelper;
+            _catalogCodeGenerator = catalogCodeGenerator;
         }
 
 
@@ -308,7 +308,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (var parent in parents)
             {
-                XElement parentElement = new XElement("parent", _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parent));
+                XElement parentElement = new XElement("parent", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parent));
                 elements.Add(parentElement);
             }
 
@@ -414,8 +414,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                             continue;
                         }
 
-                        string channelPrefixAndSkuId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(structureEntity.EntityId);
-                        string channelPrefixAndParentNodeId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentNodeId);
+                        string channelPrefixAndSkuId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.EntityId);
+                        string channelPrefixAndParentNodeId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentNodeId);
 
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
@@ -427,7 +427,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                                     _config));
                         }
 
-                        string channelPrefixAndParent = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(structureEntity.ParentId);
+                        string channelPrefixAndParent = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.ParentId);
 
                         var relationName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
 

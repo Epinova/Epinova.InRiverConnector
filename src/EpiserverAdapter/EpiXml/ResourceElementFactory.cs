@@ -17,14 +17,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     {
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
-        private readonly ChannelPrefixHelper _channelPrefixHelper;
+        private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly ChannelHelper _channelHelper;
 
-        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper, ChannelHelper channelHelper)
+        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, ChannelHelper channelHelper)
         {
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
-            _channelPrefixHelper = channelPrefixHelper;
+            _catalogCodeGenerator = catalogCodeGenerator;
             _channelHelper = channelHelper;
         }
 
@@ -43,7 +43,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
 
-            string resourceId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(resource.Id);
+            string resourceId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(resource.Id);
             resourceId = resourceId.Replace("_", string.Empty);
 
             if (action == "unlinked")
@@ -151,7 +151,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement(
                     "ParentEntries",
                     parents.Select(parent =>
-                            new XElement("EntryCode", _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parent.Key), 
+                            new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parent.Key), 
                                 new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
         }
 
