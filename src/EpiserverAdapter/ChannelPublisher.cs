@@ -316,7 +316,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
                         if (links.Count > 0)
                         {
-                            string parentId = _channelPrefixHelper.GetEpiserverCode(links.First().Source.Id);
+                            string parentId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(links.First().Source.Id);
 
                             _epiApi.UpdateLinkEntityData(updatedEntity, channelId, channelEntity, _config, parentId);
                         }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using inRiver.Remoting;
 using inRiver.Remoting.Objects;
@@ -18,7 +19,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _config = config;
         }
 
-        internal string GetEpiserverCode(object code)
+        internal string GetEpiserverCode(Entity entity)
+        {
+            
+        }
+
+        internal string GetEpiserverCode(int entityId)
+        {
+            
+        }
+
+        [Obsolete("Get this piece of shit out of here. Let it die, ungracefully.", true)]
+        internal string GetEpiserverCodeLEGACYDAMNIT(object code)
         {
             int entityId;
             string codeValue = code.ToString();

@@ -45,7 +45,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogNode = _channelPrefixHelper.GetEpiserverCode(catalogNodeId);
+                    string catalogNode = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(catalogNodeId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogNode, catalogNode);
                 }
                 catch (Exception ex)
@@ -61,7 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogEntryId = _channelPrefixHelper.GetEpiserverCode(entityId);
+                    string catalogEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(entityId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogEntry, catalogEntryId);
                 }
                 catch (Exception exception)
@@ -79,8 +79,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 {
                     string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
 
-                    string parentEntryId = _channelPrefixHelper.GetEpiserverCode(parentId);
-                    string linkEntityIdString = _channelPrefixHelper.GetEpiserverCode(linkEntity.Id);
+                    string parentEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
+                    string linkEntityIdString = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(linkEntity.Id);
 
                     string dispName = linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, config, -1).Replace(' ', '_');
 
@@ -101,7 +101,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal List<string> GetLinkEntityAssociationsForEntity(string linkType, int channelId, Entity channelEntity, Configuration config, List<string> parentIds, List<string> targetIds)
+        internal List<string> GetLinkEntityAssociationsForEntity(string linkType, 
+                                                                 int channelId, 
+                                                                 Entity channelEntity, 
+                                                                 Configuration config, 
+                                                                 List<string> parentIds, 
+                                                                 List<string> targetIds)
         {
             lock (EpiLockObject.Instance)
             {
@@ -112,12 +117,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                     for (int i = 0; i < targetIds.Count; i++)
                     {
-                        targetIds[i] = _channelPrefixHelper.GetEpiserverCode(targetIds[i]);
+                        targetIds[i] = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(targetIds[i]);
                     }
 
                     for (int i = 0; i < parentIds.Count; i++)
                     {
-                        parentIds[i] = _channelPrefixHelper.GetEpiserverCode(parentIds[i]);
+                        parentIds[i] = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentIds[i]);
                     }
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
@@ -145,7 +150,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string entryNodeId = _channelPrefixHelper.GetEpiserverCode(nodeId);
+                    string entryNodeId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(nodeId);
                     _httpClient.Post(config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
                 }
                 catch (Exception exception)
@@ -174,13 +179,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     {
                         if (!shouldExistInChannelNode.Value)
                         {
-                            removeFromChannelNodes.Add(_channelPrefixHelper.GetEpiserverCode(shouldExistInChannelNode.Key));
+                            removeFromChannelNodes.Add(_channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(shouldExistInChannelNode.Key));
                         }
                     }
 
-                    string parentEntryId = _channelPrefixHelper.GetEpiserverCode(parentId);
-                    string catalogEntryIdString = _channelPrefixHelper.GetEpiserverCode(catalogEntryId);
-                    string channelIdEpified = _channelPrefixHelper.GetEpiserverCode(channelId);
+                    string parentEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
+                    string catalogEntryIdString = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
+                    string channelIdEpified = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(channelId);
                     bool relation = _mappingHelper.IsRelation(linkTypeId);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
@@ -201,8 +206,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 }
                 catch (Exception exception)
                 {
-                    string parentEntryId = _channelPrefixHelper.GetEpiserverCode(parentId);
-                    string childEntryId = _channelPrefixHelper.GetEpiserverCode(catalogEntryId);
+                    string parentEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
+                    string childEntryId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
                     IntegrationLogger.Write(
                         LogLevel.Error,
                         $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {childEntryId} in catalog with id {catalogEntryId}",

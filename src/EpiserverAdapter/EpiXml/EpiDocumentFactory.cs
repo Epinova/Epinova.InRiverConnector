@@ -299,7 +299,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         XElement nodeElement = epiElements["Nodes"].Find(e =>
                         {
                             XElement xElement = e.Element("Code");
-                            return xElement != null && xElement.Value.Equals(_channelPrefixHelper.GetEpiserverCode(entity.Id));
+                            return xElement != null && xElement.Value.Equals(_channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(entity.Id));
                         });
     
                         int linkIndex = structureEntity.SortOrder;
@@ -307,7 +307,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         if (nodeElement == null)
                         {
                             epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex, _config));
-                            addedNodes.Add(_channelPrefixHelper.GetEpiserverCode(entity.Id));
+                            addedNodes.Add(_channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(entity.Id));
     
                             IntegrationLogger.Write(LogLevel.Debug, string.Format("Added channelNode {0} to Nodes", id));
                         }
@@ -331,8 +331,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 }
                             }
 
-                            var relationName = _channelPrefixHelper.GetEpiserverCode(id.ToString(CultureInfo.InvariantCulture)) +
-                                "_" + _channelPrefixHelper.GetEpiserverCode(parentId);
+                            var relationName = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(id.ToString(CultureInfo.InvariantCulture)) +
+                                "_" + _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentId);
 
                             if (!addedRelations.Contains(relationName))
                             {
@@ -447,7 +447,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                         if (linkType.SourceEntityTypeId == "ChannelNode")
                         {
-                            var addedRelationName = _channelPrefixHelper.GetEpiserverCode(id) + "_" + _channelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId);
+                            var addedRelationName = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(id) + "_" + _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(existingStructureEntity.ParentId);
                             if (!addedRelations.Contains(addedRelationName))
                             {
                                 var nodeEntryRelationElement = _epiElementFactory.CreateNodeEntryRelationElement(existingStructureEntity.ParentId.ToString(), existingStructureEntity.EntityId.ToString(), existingStructureEntity.SortOrder, _config);
@@ -470,7 +470,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             skus = _epiElementFactory.SkuItemIds(entity, _config);
                             for (int i = 0; i < skus.Count; i++)
                             {
-                                skus[i] = _channelPrefixHelper.GetEpiserverCode(skus[i]);
+                                skus[i] = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(skus[i]);
                             }
     
                             if (_config.UseThreeLevelsInCommerce)
@@ -500,7 +500,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                         foreach (string skuId in skus)
                         {
-                            string channelPrefixAndSkuId = _channelPrefixHelper.GetEpiserverCode(skuId);
+                            string channelPrefixAndSkuId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(skuId);
     
                             // prod -> item link, bundle, package or dynamic package => Relation
                             if (_epiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index))
@@ -511,7 +511,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                     continue;
                                 }
     
-                                string channelPrefixAndParentNodeId = _channelPrefixHelper.GetEpiserverCode(parentNodeId);
+                                string channelPrefixAndParentNodeId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentNodeId);
     
                                 if (!addedRelations.Contains(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                                 {
@@ -528,11 +528,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                         string.Format("Added Relation for EntryCode {0}", channelPrefixAndSkuId));
                                 }
     
-                                string parentCode =_channelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture));
+                                string parentCode =_channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture));
     
                                 if (parent != null && skuId != parent)
                                 {
-                                    string channelPrefixAndParent = _channelPrefixHelper.GetEpiserverCode(parent);
+                                    string channelPrefixAndParent = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parent);
 
                                     var addedRelationsName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
 
@@ -571,7 +571,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             {
                                 if (!_config.UseThreeLevelsInCommerce && _config.ItemsToSkus && structureEntity.Type == "Item")
                                 {
-                                    string channelPrefixAndLinkEntityId = _channelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId);
+                                    string channelPrefixAndLinkEntityId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(existingStructureEntity.LinkEntityId);
                                     string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
     
                                     Entity source;
@@ -591,7 +591,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                     List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source, _config);
                                     for (int i = 0; i < sourceSkuIds.Count; i++)
                                     {
-                                        sourceSkuIds[i] = _channelPrefixHelper.GetEpiserverCode(sourceSkuIds[i]);
+                                        sourceSkuIds[i] = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(sourceSkuIds[i]);
                                     }
     
                                     foreach (string sourceSkuId in sourceSkuIds)
@@ -699,14 +699,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                 }
                                 else
                                 {
-                                    var entityCode = _channelPrefixHelper.GetEpiserverCode(existingStructureEntity.EntityId.ToString(CultureInfo.InvariantCulture));
-                                    var parentCode = _channelPrefixHelper.GetEpiserverCode(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture));
+                                    var entityCode = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(existingStructureEntity.EntityId.ToString(CultureInfo.InvariantCulture));
+                                    var parentCode = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(existingStructureEntity.ParentId.ToString(CultureInfo.InvariantCulture));
     
                                     string channelPrefixAndLinkEntityId = string.Empty;
     
                                     if (existingStructureEntity.LinkEntityId != null)
                                     {
-                                        channelPrefixAndLinkEntityId = _channelPrefixHelper.GetEpiserverCode(existingStructureEntity.LinkEntityId);
+                                        channelPrefixAndLinkEntityId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(existingStructureEntity.LinkEntityId);
                                     }
     
                                     string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);

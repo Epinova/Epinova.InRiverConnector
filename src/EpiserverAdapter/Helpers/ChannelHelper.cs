@@ -308,7 +308,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (var parent in parents)
             {
-                XElement parentElement = new XElement("parent", _channelPrefixHelper.GetEpiserverCode(parent));
+                XElement parentElement = new XElement("parent", _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parent));
                 elements.Add(parentElement);
             }
 
@@ -414,8 +414,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                             continue;
                         }
 
-                        string channelPrefixAndSkuId = _channelPrefixHelper.GetEpiserverCode(structureEntity.EntityId);
-                        string channelPrefixAndParentNodeId = _channelPrefixHelper.GetEpiserverCode(parentNodeId);
+                        string channelPrefixAndSkuId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(structureEntity.EntityId);
+                        string channelPrefixAndParentNodeId = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(parentNodeId);
 
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
@@ -427,7 +427,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                                     _config));
                         }
 
-                        string channelPrefixAndParent = _channelPrefixHelper.GetEpiserverCode(structureEntity.ParentId);
+                        string channelPrefixAndParent = _channelPrefixHelper.GetEpiserverCodeLEGACYDAMNIT(structureEntity.ParentId);
 
                         var relationName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
 
