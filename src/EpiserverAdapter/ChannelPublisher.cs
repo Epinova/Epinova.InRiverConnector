@@ -71,7 +71,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
 
-                List<StructureEntity> channelStructureEntities = _channelHelper.GetAllEntitiesInChannel(_config.ChannelId, _config.ExportEnabledEntityTypes);
+                List<StructureEntity> channelStructureEntities = _channelHelper.GetAllEntitiesInChannel(_config.ExportEnabledEntityTypes);
 
                 _channelHelper.BuildEntityIdAndTypeDict(channelStructureEntities);
 
@@ -289,7 +289,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     }
                     else if (updatedEntity.EntityType.Id.Equals("ChannelNode"))
                     {
-                        HandleChannelNodeUpdate(channelId, channelEntity, connectorEvent, stopwatch, channelName);
+                        HandleChannelNodeUpdate(channelId, channelEntity, structureEntities, connectorEvent, stopwatch, channelName);
                         return;
                     }
 
@@ -533,59 +533,51 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            _config.ChannelStructureEntities = new List<StructureEntity>();
+            
 
-            IntegrationLogger.Write(LogLevel.Debug,
-                $"Received link update for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}");
-            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded, string.Format("Received link update for sourceEntityId {0} and targetEntityId {1} in channel {2}", sourceEntityId, targetEntityId, channelId), 0);
+            IntegrationLogger.Write(LogLevel.Debug, $"Received link update for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}");
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded,
+                $"Received link update for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channelId}", 0);
 
             bool resourceIncluded;
 
-            Stopwatch linkAddedStopWatch = new Stopwatch();
+            Stopwatch stopwatch = Stopwatch.StartNew();
             try
             {
-                linkAddedStopWatch.Start();
-
                 Entity channelEntity = _channelHelper.InitiateChannelConfiguration(channelId);
                 if (channelEntity == null)
                 {
-                    ConnectorEventHelper.UpdateEvent(
-                        connectorEvent,
-                        "Failed to initial ChannelLinkUpdated. Could not find the channel.",
-                        -1,
-                        true);
+                    ConnectorEventHelper.UpdateEvent(connectorEvent, "Failed to initial ChannelLinkUpdated. Could not find the channel.", -1, true);
                     return;
                 }
 
                 ConnectorEventHelper.UpdateEvent(connectorEvent, "Fetching channel entities...", 1);
 
                 var targetEntityStructure = _channelHelper.GetEntityInChannelWithParent(_config.ChannelId, targetEntityId, sourceEntityId);
-
                 var parentStructureEntity = _channelHelper.GetParentStructureEntity(_config.ChannelId, sourceEntityId, targetEntityId, targetEntityStructure);
 
                 if (parentStructureEntity != null)
                 {
-                    _config.ChannelStructureEntities.Add(parentStructureEntity);
+                    var structureEntities = new List<StructureEntity>
+                    {
+                        parentStructureEntity
+                    };
 
                     var entities = _channelHelper.GetChildrenEntitiesInChannel(parentStructureEntity.EntityId, parentStructureEntity.Path);
-                    _config.ChannelStructureEntities.AddRange(entities);
+                    structureEntities.AddRange(entities);
 
-                    _channelHelper.BuildEntityIdAndTypeDict();
+                    _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
 
                     ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
-                    _addUtility.Add(channelEntity, connectorEvent, out resourceIncluded);
+                    _addUtility.Add(channelEntity, connectorEvent, structureEntities, out resourceIncluded);
                 }
                 else
                 {
-                    linkAddedStopWatch.Stop();
-                    resourceIncluded = false;
                     IntegrationLogger.Write(LogLevel.Error, $"Not possible to located source entity {sourceEntityId} in channel structure for target entity {targetEntityId}");
                     ConnectorEventHelper.UpdateEvent(connectorEvent, $"Not possible to located source entity {sourceEntityId} in channel structure for target entity {targetEntityId}", -1, true);
                     return;
                 }
-
-                linkAddedStopWatch.Stop();
             }
             catch (Exception ex)
             {
@@ -598,10 +590,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _config.EntityIdAndType = new Dictionary<int, string>();
             }
 
-            linkAddedStopWatch.Stop();
+            stopwatch.Stop();
 
-            IntegrationLogger.Write(LogLevel.Information,
-                $"ChannelLinkUpdated done for channel {channelId}, took {linkAddedStopWatch.GetElapsedTimeFormated()}!");
+            IntegrationLogger.Write(LogLevel.Information, $"ChannelLinkUpdated done for channel {channelId}, took {stopwatch.GetElapsedTimeFormated()}!");
             ConnectorEventHelper.UpdateEvent(connectorEvent, "ChannelLinkUpdated complete", 100);
 
             if (!connectorEvent.IsError)
@@ -651,10 +642,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
-        private void HandleChannelNodeUpdate(int channelId, Entity channelEntity, ConnectorEvent entityUpdatedConnectorEvent, Stopwatch entityUpdatedStopWatch, string channelName)
+        private void HandleChannelNodeUpdate(int channelId, Entity channelEntity, List<StructureEntity> structureEntities, ConnectorEvent entityUpdatedConnectorEvent, Stopwatch entityUpdatedStopWatch, string channelName)
         {
             bool resourceIncluded;
-            _addUtility.Add(channelEntity, entityUpdatedConnectorEvent, out resourceIncluded);
+            _addUtility.Add(channelEntity, entityUpdatedConnectorEvent, structureEntities, out resourceIncluded);
 
             entityUpdatedStopWatch.Stop();
             IntegrationLogger.Write(LogLevel.Information, $"Update done for channel {channelId}, took {entityUpdatedStopWatch.GetElapsedTimeFormated()}!");

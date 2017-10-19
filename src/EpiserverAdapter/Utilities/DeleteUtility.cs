@@ -38,25 +38,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _channelHelper = channelHelper;
         }
 
-        public void Delete(Entity channelEntity, int parentEntityId, Entity targetEntity, string linkTypeId, List<int> productParentIds = null)
+        public void Delete(Entity channelEntity, int parentEntityId, Entity deletedEntity, string linkTypeId, List<int> productParentIds = null)
         {
             string channelIdentifier = _channelHelper.GetChannelIdentifier(channelEntity);
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
             _channelHelper.BuildEntityIdAndTypeDict(new List<StructureEntity>());
 
-            if (!_config.ChannelEntities.ContainsKey(targetEntity.Id))
+            if (!_config.ChannelEntities.ContainsKey(deletedEntity.Id))
             {
-                _config.ChannelEntities.Add(targetEntity.Id, targetEntity);
+                _config.ChannelEntities.Add(deletedEntity.Id, deletedEntity);
             }
 
             string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);
 
-            if (RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, targetEntity.Id))
+            if (RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, deletedEntity.Id))
             {
-                var existingEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(
-                                                                            channelEntity.Id,
-                                                                            targetEntity.Id);
+                var structureEntitiesToDelete = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelEntity.Id, deletedEntity.Id);
 
                 Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
 
@@ -65,11 +63,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     _config.ChannelEntities.Add(parentEnt.Id, parentEnt);
                 }
 
-                if (targetEntity.EntityType.Id == "Resource")
+                if (deletedEntity.EntityType.Id == "Resource")
                 {
                     //DeleteResource
                     DeleteResource(
-                        targetEntity,
+                        deletedEntity,
                         parentEnt,
                         channelIdentifier,
                         folderDateTime,
@@ -80,10 +78,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     //DeleteEntityThatExistInChannel
                     DeleteEntityThatStillExistInChannel(
                         channelEntity,
-                        targetEntity,
+                        deletedEntity,
                         parentEnt,
                         linkTypeId,
-                        existingEntities,
+                        structureEntitiesToDelete,
                         channelIdentifier,
                         folderDateTime);
                 }
@@ -94,7 +92,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 DeleteEntity(
                     channelEntity,
                     parentEntityId,
-                    targetEntity,
+                    deletedEntity,
                     linkTypeId,
                     channelIdentifier,
                     folderDateTime,
@@ -110,7 +108,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             string channelIdentifier,
             string folderDateTime)
         {
-            Dictionary<string, Dictionary<string, bool>> entitiesToUpdate = new Dictionary<string, Dictionary<string, bool>>();
+            var entitiesToUpdate = new Dictionary<string, Dictionary<string, bool>>();
 
             var channelNodes = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(channelEntity.Id, "ChannelNode").ToList();
 
@@ -122,7 +120,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             List<string> linkEntityIds = new List<string>();
             if (_channelHelper.LinkTypeHasLinkEntity(linkTypeId))
             {
-                var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel(channelEntity.Id, _config.ExportEnabledEntityTypes);
+                var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel(_config.ExportEnabledEntityTypes);
 
                 List<StructureEntity> newEntityNodes = _channelHelper.FindEntitiesElementInStructure(allEntitiesInChannel, parentEnt.Id, targetEntity.Id, linkTypeId);
 
@@ -277,7 +275,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
         }
 
-        private void DeleteResource(Entity targetEntity, Entity parentEnt, string channelIdentifier, string folderDateTime, string resourceZipFile)
+        private void DeleteResource(Entity targetEntity, 
+                                    Entity parentEnt, 
+                                    string channelIdentifier, 
+                                    string folderDateTime, 
+                                    string resourceZipFile)
         {
             XDocument doc = _resourceElementFactory.HandleResourceUnlink(targetEntity, parentEnt, _config);
 

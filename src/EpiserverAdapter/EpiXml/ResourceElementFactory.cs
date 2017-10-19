@@ -18,15 +18,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly ChannelPrefixHelper _channelPrefixHelper;
+        private readonly ChannelHelper _channelHelper;
 
-        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper)
+        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, ChannelPrefixHelper channelPrefixHelper, ChannelHelper channelHelper)
         {
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
             _channelPrefixHelper = channelPrefixHelper;
+            _channelHelper = channelHelper;
         }
 
-        public XElement CreateResourceElement(Entity resource, string action, Configuration config, Dictionary<int, Entity> parentEntities = null)
+        public XElement CreateResourceElement(Entity resource, 
+                                              string action, 
+                                              Configuration config, 
+                                              List<StructureEntity> allResourceStructureEntities,
+                                              Dictionary<int, Entity> parentEntities = null)
         {
             string resourceFileId = "-1";
             Field resourceFileIdField = resource.GetField("ResourceFileId");
@@ -74,8 +80,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
             else
             {
-                List<StructureEntity> allResourceLocations = config.ChannelStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
 
+                var allResourceLocations = allResourceStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
+                
                 List<Link> links = new List<Link>();
 
                 foreach (Link inboundLink in resource.InboundLinks)
@@ -191,6 +198,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             SaveFileToDisk(updatedResource, config, folderDateTime);
             List<Entity> channelResources = new List<Entity>();
             channelResources.Add(updatedResource);
+
+            var allResourcesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
+
             return CreateResourceDocument(null, channelResources, new List<Entity> { updatedResource }, "updated", config);
         }
 
@@ -208,7 +218,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
         {
             Dictionary<int, Entity> parentEntities = config.ChannelEntities;
-            XElement resourceElement = CreateResourceElement(resource, "unlinked", config, parentEntities);
+            var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
+            XElement resourceElement = CreateResourceElement(resource, "unlinked", config, allEntitiesInChannel, parentEntities);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
@@ -230,17 +241,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         internal XDocument CreateResourceDocument(XElement resourceMetaClasses, List<Entity> channelResources, List<Entity> resources, string action, Configuration config)
         {
+            var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
 
             Dictionary<int, Entity> parentEntities = config.ChannelEntities;
 
             return
                 new XDocument(
-                    new XElement(
-                        "Resources",
+                    new XElement("Resources",
                         resourceMetaClasses,
-                        new XElement(
-                            "ResourceFiles",
-                            resources.Select(res => CreateResourceElement(res, action, config, parentEntities)))));
+                        new XElement("ResourceFiles",
+                            resources.Select(res => CreateResourceElement(res, action, config, allEntitiesInChannel, parentEntities)))));
         }
 
         internal bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)

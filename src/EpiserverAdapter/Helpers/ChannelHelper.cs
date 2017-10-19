@@ -71,66 +71,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public int GetParentChannelNode(StructureEntity structureEntity)
         {
-            int entityId = 0;
-            List<string> entities = structureEntity.Path.Split(new[] { "/" }, StringSplitOptions.RemoveEmptyEntries).ToList();
-            entities.RemoveAt(entities.Count - 1);
-            entities.RemoveAt(0);
-            if (entities.Count == 0)
-            {
-                return entityId;
-            }
+            var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "ChannelNode");
+            var entity = channelNodesInPath.LastOrDefault();
 
-            for (int index = entities.Count - 1; index > -1; index--)
-            {
-                int tempEntityId = int.Parse(entities[index]);
-
-                StructureEntity foundStructureEntity = _config.ChannelStructureEntities.Find(i => i.EntityId.Equals(tempEntityId));
-
-                if (foundStructureEntity != null && foundStructureEntity.Type == "ChannelNode")
-                {
-                    entityId = tempEntityId;
-                    break;
-                }
-            }
-
-            return entityId;
-        }
-
-        internal int GetParentChannelNode(StructureEntity structureEntity, int channelId)
-        {
-            int parentNodeId = 0;
-
-            List<string> parentIds = structureEntity.Path.Split('/').ToList();
-            parentIds.Reverse();
-            parentIds.RemoveAt(0);
-
-            for (int i = 0; i < parentIds.Count - 1; i++)
-            {
-                int entityId = int.Parse(parentIds[i]);
-                int parentId = int.Parse(parentIds[i + 1]);
-
-                var structureEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(
-                    channelId,
-                    entityId,
-                    parentId);
-
-                foreach (var se in structureEntities)
-                {
-                    if (se.Type == "ChannelNode")
-                    {
-                        parentNodeId = se.EntityId;
-                        break;
-                    }
-                }
-
-                if (parentNodeId != 0)
-                {
-                    break;
-                }
-
-            }
-
-            return parentNodeId;
+            return entity?.EntityId ?? 0;
         }
 
         internal List<StructureEntity> FindEntitiesElementInStructure(List<StructureEntity> channelEntities, int sourceEntityId, int targetEntityId, string linktype)
@@ -167,16 +111,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return channelIdentifier;
         }
 
-        public List<StructureEntity> GetAllEntitiesInChannel(int channelId, List<EntityType> entityTypes)
+        public List<StructureEntity> GetAllEntitiesInChannel(List<EntityType> entityTypes)
         {
             List<StructureEntity> result = new List<StructureEntity>();
             foreach (EntityType entityType in entityTypes)
             {
-                List<StructureEntity> response = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(channelId, entityType.Id);
+                List<StructureEntity> response = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, entityType.Id);
                 result.AddRange(response);
             }
 
             return result;
+        }
+
+        public List<StructureEntity> GetAllEntitiesInChannel(string type)
+        {
+            
+            return RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, type);
         }
 
         public List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId)
@@ -457,7 +407,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 {
                     foreach (StructureEntity structureEntity in structureEntityList)
                     {
-                        int parentNodeId = GetParentChannelNode(structureEntity, channelId);
+                        int parentNodeId = GetParentChannelNode(structureEntity);
 
                         if (parentNodeId == 0)
                         {
