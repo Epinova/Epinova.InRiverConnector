@@ -314,7 +314,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             return name;
         }
-
+        // TODO: Fjerne config-avhengigheten her
         public static string GetEntryType(string entityTypeId, Configuration configuration)
         {
             if (entityTypeId.Equals("Item"))

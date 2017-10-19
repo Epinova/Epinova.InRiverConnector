@@ -420,7 +420,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
                         {
                             relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId,
-                                _epiElementFactory.CreateNodeEntryRelationElement(
+                                _epiElementFactory.CreateNodeEntryRelation(
                                     parentNodeId.ToString(CultureInfo.InvariantCulture),
                                     structureEntity.EntityId.ToString(),
                                     structureEntity.SortOrder,
