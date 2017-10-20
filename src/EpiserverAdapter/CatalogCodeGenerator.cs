@@ -25,7 +25,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (entityId == 0)
                 return null;
 
-            var entity = _entityService.GetEntity(entityId, LoadLevel.Shallow);
+            var entity = _entityService.GetEntity(entityId, LoadLevel.DataOnly);
             return GetEpiserverCode(entity);
         }
 

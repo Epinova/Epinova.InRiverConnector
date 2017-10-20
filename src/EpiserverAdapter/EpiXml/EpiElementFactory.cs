@@ -156,7 +156,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         GetDisplayXXElement(entity.DisplayDescription, "DisplayDescription", config),
                         from f in entity.Fields
                         where !f.IsEmpty() && !_mappingHelper.SkipField(f.FieldType)
-                        select GetMetaFieldValueElement(f, config))),
+                        select GetMetaFieldValueElement(f))),
                 new XElement("ParentNode", _catalogCodeGenerator.GetEpiserverCode(parentId)),
                 CreateSEOInfoElement(entity, config));
         }
@@ -213,7 +213,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         GetDisplayXXElement(entity.DisplayDescription, "DisplayDescription", config),
                         from f in entity.Fields
                         where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
-                        select GetMetaFieldValueElement(f, config))),
+                        select GetMetaFieldValueElement(f))),
                         CreateSEOInfoElement(entity, config)
                         );
         }
@@ -224,7 +224,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return new Guid(concatIds);
         }
 
-        public XElement GetMetaFieldValueElement(Field field, Configuration config)
+        public XElement GetMetaFieldValueElement(Field field)
         {
             XElement metaField = new XElement(
                 "MetaField",
@@ -237,7 +237,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 LocaleString ls = field.Data as LocaleString;
                 if (!field.IsEmpty())
                 {
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                     {
                         if (ls != null)
                         {
@@ -251,7 +251,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
                 else
                 {
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in config.LanguageMapping)
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                     {
                         metaField.Add(
                             new XElement(
@@ -266,15 +266,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 metaField.Add(
                     new XElement(
                         "Data", 
-                        BusinessHelper.GetCVLValues(field, config)));
+                        BusinessHelper.GetCVLValues(field, _config)));
             }
             else
             {
                 metaField.Add(
                 new XElement(
                     "Data",
-                    new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
-                    new XAttribute("value", BusinessHelper.GetFlatFieldData(field, config))));
+                    new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
+                    new XAttribute("value", BusinessHelper.GetFlatFieldData(field, _config))));
             }
 
             return metaField;
@@ -671,8 +671,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         new XAttribute("value", string.Empty)));
             }
 
-            XElement element = GetMetaFieldValueElement(displayField, config);
-            XElement nameElement = element.Element("Name");
+            var element = GetMetaFieldValueElement(displayField);
+            var nameElement = element.Element("Name");
             if (nameElement != null)
             {
                 nameElement.Value = name;

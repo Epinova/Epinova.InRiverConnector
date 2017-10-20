@@ -282,10 +282,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                     if (_config.ChannelId.Equals(structureEntity.ParentId))
                     {
-                        _epiApi.CheckAndMoveNodeIfNeeded(entityId.ToString(CultureInfo.InvariantCulture), _config);
+                        _epiApi.CheckAndMoveNodeIfNeeded(entityId, _config);
                     }
     
-                    IntegrationLogger.Write(LogLevel.Debug, string.Format("Trying to add channelNode {0} to Nodes", entityId));
+                    IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entityId} to Nodes");
                         
                     XElement nodeElement = epiElements["Nodes"].Find(e =>
                     {

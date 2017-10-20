@@ -13,12 +13,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class EpiApi
     {
+        private readonly Configuration _config;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly HttpClientInvoker _httpClient; 
 
         public EpiApi(Configuration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
         {
+            _config = config;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
             _httpClient = new HttpClientInvoker(config);
@@ -45,7 +47,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string catalogNode = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(catalogNodeId);
+                    string catalogNode = _catalogCodeGenerator.GetEpiserverCode(catalogNodeId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogNode, catalogNode);
                 }
                 catch (Exception ex)
@@ -118,38 +120,26 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         }
 
         internal List<string> GetLinkEntityAssociationsForEntity(string linkType, 
-                                                                 int channelId, 
                                                                  Entity channelEntity, 
-                                                                 Configuration config, 
-                                                                 List<string> parentIds, 
-                                                                 List<string> targetIds)
+                                                                 List<string> parentCodes, 
+                                                                 List<string> targetCodes)
         {
             lock (EpiLockObject.Instance)
             {
                 List<string> ids = new List<string>();
                 try
                 {
-                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
-
-                    for (int i = 0; i < targetIds.Count; i++)
-                    {
-                        targetIds[i] = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(targetIds[i]);
-                    }
-
-                    for (int i = 0; i < parentIds.Count; i++)
-                    {
-                        parentIds[i] = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentIds[i]);
-                    }
+                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, _config, -1);
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
                                                                             {
                                                                                 ChannelName = channelName,
                                                                                 LinkTypeId = linkType,
-                                                                                ParentIds = parentIds,
-                                                                                TargetIds = targetIds
+                                                                                ParentIds = parentCodes,
+                                                                                TargetIds = targetCodes
                                                                             };
 
-                    ids = _httpClient.PostWithStringListAsReturn(config.Endpoints.GetLinkEntityAssociationsForEntity, dataToSend);
+                    ids = _httpClient.PostWithStringListAsReturn(_config.Endpoints.GetLinkEntityAssociationsForEntity, dataToSend);
                 }
                 catch (Exception exception)
                 {
@@ -160,13 +150,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void CheckAndMoveNodeIfNeeded(string nodeId, Configuration config)
+        internal void CheckAndMoveNodeIfNeeded(int entityId, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    string entryNodeId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(nodeId);
+                    string entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
                     _httpClient.Post(config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
                 }
                 catch (Exception exception)
@@ -177,19 +167,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         }
 
         internal void UpdateEntryRelations(string catalogEntryId, 
-                                                  int channelId,
-                                                  Entity channelEntity,
-                                                  Configuration config, 
-                                                  string parentId,
-                                                  Dictionary<string, bool> shouldExistInChannelNodes,
-                                                  string linkTypeId, 
-                                                  List<string> linkEntityIdsToRemove)
+                                           int channelId,
+                                           Entity channelEntity,
+                                           Configuration config, 
+                                           string parentId,
+                                           Dictionary<string, bool> shouldExistInChannelNodes,
+                                           string linkTypeId, 
+                                           List<string> linkEntityIdsToRemove)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
+                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, _config, -1);
                     List<string> removeFromChannelNodes = new List<string>();
                     foreach (KeyValuePair<string, bool> shouldExistInChannelNode in shouldExistInChannelNodes)
                     {

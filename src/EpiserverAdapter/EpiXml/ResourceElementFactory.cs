@@ -19,20 +19,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly ChannelHelper _channelHelper;
+        private readonly Configuration _config;
 
-        public ResourceElementFactory(EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, ChannelHelper channelHelper)
+        public ResourceElementFactory(EpiElementFactory epiElementFactory, 
+                                      EpiMappingHelper mappingHelper, 
+                                      CatalogCodeGenerator catalogCodeGenerator, 
+                                      ChannelHelper channelHelper,
+                                      Configuration config)
         {
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
             _channelHelper = channelHelper;
+            _config = config;
         }
 
         public XElement CreateResourceElement(Entity resource, 
                                               string action, 
-                                              Configuration config, 
                                               List<StructureEntity> allResourceStructureEntities,
-                                              Dictionary<int, Entity> parentEntities)
+                                              Dictionary<int, Entity> channelEntities)
         {
             string resourceFileId = "-1";
             Field resourceFileIdField = resource.GetField("ResourceFileId");
@@ -41,23 +46,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 resourceFileId = resource.GetField("ResourceFileId").Data.ToString();
             }
 
-            // TODO: Sørg for at alle IDer som legges i parents er ferdig genererte episerver-codes
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
 
             if (action == "unlinked")
             {
-                var resourceParents = parentEntities.Where(i => !i.Key.Equals(resource.Id));
+                var resourceParents = channelEntities.Where(i => !i.Key.Equals(resource.Id));
 
                 foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
                 {
                     var ids = new List<string>();
 
-                    if (config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
+                    if (_config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
                     {
-                        var skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value, config);
+                        var skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value, _config);
                         ids.AddRange(skuIds);
 
-                        if (config.UseThreeLevelsInCommerce)
+                        if (_config.UseThreeLevelsInCommerce)
                             ids.Add(_catalogCodeGenerator.GetEpiserverCode(resourceParent.Value));
                     }
 
@@ -72,7 +76,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
             else
             {
-
                 var allResourceLocations = allResourceStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
                 
                 List<Link> links = new List<Link>();
@@ -90,14 +93,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     Entity linkedEntity = link.Source;
                     List<string> ids = new List<string>();
 
-                    if (config.UseThreeLevelsInCommerce)
+                    if (_config.UseThreeLevelsInCommerce)
                     {
                         ids.Add(_catalogCodeGenerator.GetEpiserverCode(linkedEntity));
                     };
 
-                    if (config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
+                    if (_config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
                     {
-                        List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity, config);
+                        List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity, _config);
                         foreach (string skuId in skuIds)
                         {
                             var prefixedSkuId = _catalogCodeGenerator.GetPrefixedCode(skuId);
@@ -114,20 +117,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     }
                 }
 
-                if (parents.Any() && parentEntities != null)
+                if (parents.Any() && channelEntities != null)
                 {
                     List<int> nonExistingIds =
                         (from id in parents.Keys
-                         where !parentEntities.ContainsKey(int.Parse(id))
+                         where !channelEntities.ContainsKey(int.Parse(id))
                          select int.Parse(id)).ToList();
 
                     if (nonExistingIds.Any())
                     {
                         foreach (Entity entity in RemoteManager.DataService.GetEntities(nonExistingIds, LoadLevel.DataOnly))
                         {
-                            if (!parentEntities.ContainsKey(entity.Id))
+                            if (!channelEntities.ContainsKey(entity.Id))
                             {
-                                parentEntities.Add(entity.Id, entity);
+                                channelEntities.Add(entity.Id, entity);
                             }
                         }
                     }
@@ -140,8 +143,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                        new XAttribute("id", resourceId),
                        new XAttribute("action", action),
                        new XElement("ResourceFields", resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
-                                                                     .Select(field => _epiElementFactory.GetMetaFieldValueElement(field, config))),
-                       GetInternalPathsInZip(resource, config),
+                                                                     .Select(field => _epiElementFactory.GetMetaFieldValueElement(field))),
+                       GetInternalPathsInZip(resource, _config),
                        new XElement(
                            "ParentEntries",
                            parents.Select(parent =>
@@ -209,11 +212,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             from id in deletedResources select new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
         }
 
-        internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
+        internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config, Dictionary<int, Entity> channelEntities)
         {
-            Dictionary<int, Entity> parentEntities = config.ChannelEntities;
             var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
-            XElement resourceElement = CreateResourceElement(resource, "unlinked", config, allEntitiesInChannel, parentEntities);
+            XElement resourceElement = CreateResourceElement(resource, "unlinked", allEntitiesInChannel, channelEntities);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
