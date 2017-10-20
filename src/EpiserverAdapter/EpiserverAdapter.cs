@@ -59,7 +59,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _channelHelper);
                 _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper);
                 _deleteUtility = new DeleteUtility(_config, _resourceElementFactory, _epiElementFactory, _channelHelper, _epiApi, _catalogCodeGenerator);
-                
+                var documentFileHelper = new DocumentFileHelper(_config);
+
                 _publisher = new ChannelPublisher(_config, 
                                                   _channelHelper, 
                                                   _epiDocumentFactory, 
@@ -68,7 +69,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _epiApi,
                                                   _epiMappingHelper, 
                                                   _addUtility,
-                                                  _deleteUtility);
+                                                  _deleteUtility,
+                                                  documentFileHelper);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 

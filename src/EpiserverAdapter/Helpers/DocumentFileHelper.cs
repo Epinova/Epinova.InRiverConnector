@@ -13,7 +13,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class DocumentFileHelper
     {
-        public static void SaveDocument(string channelIdentifier, XDocument doc, Configuration config, string folderDateTime)
+        private readonly Configuration _config;
+        private readonly ChannelHelper _channelHelper;
+
+        public DocumentFileHelper(Configuration config, ChannelHelper channelHelper)
+        {
+            _config = config;
+            _channelHelper = channelHelper;
+        }
+
+        public void SaveDocument(string channelIdentifier, XDocument doc, Configuration config, string folderDateTime)
         {
             string dirPath = Path.Combine(config.ResourcesRootPath, folderDateTime);
             if (!Directory.Exists(dirPath))
@@ -22,15 +31,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             string filePath = Path.Combine(dirPath, "Resources.xml");
-            IntegrationLogger.Write(
-                LogLevel.Information,
-                string.Format("Saving document to path {0} for channel:{1}", filePath, channelIdentifier));
+            IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath} for channel:{channelIdentifier}");
             doc.Save(filePath);
         }
 
-        public static string SaveAndZipDocument(string channelIdentifier, XDocument doc, string folderDateTime, Configuration config)
+        public string SaveAndZipDocument(Entity channel, XDocument doc, string folderName)
         {
-            string dirPath = Path.Combine(config.PublicationsRootPath, folderDateTime);
+            string dirPath = Path.Combine(_config.PublicationsRootPath, folderName);
+            
             if (!Directory.Exists(dirPath))
             {
                 Directory.CreateDirectory(dirPath);
@@ -47,20 +55,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             string filePath = Path.Combine(dirPath, Configuration.ExportFileName);
-            IntegrationLogger.Write(
-                LogLevel.Information,
-                string.Format("Saving verified document to path {0} for channel:{1}", filePath, channelIdentifier));
+
+            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
+            IntegrationLogger.Write(LogLevel.Information, $"Saving verified document to path {filePath} for channel: {channelIdentifier}");
+            
             doc.Save(filePath);
-            string fullZippedFileName = string.Format(
-                "inRiverExport_{0}_{1}.zip",
-                channelIdentifier,
-                DateTime.Now.ToString("yyyyMMdd-HHmmss"));
+            string fullZippedFileName = $"inRiverExport_{channelIdentifier}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.zip";
+
             ZipFile(filePath, fullZippedFileName);
 
             return fullZippedFileName;
         }
 
-        public static void ZipFile(Package zip, FileInfo fi, string destFilename)
+        public void ZipFile(Package zip, FileInfo fi, string destFilename)
         {
             Uri uri = PackUriHelper.CreatePartUri(new Uri(destFilename, UriKind.Relative));
             if (zip.PartExists(uri))
@@ -93,7 +100,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
         }
 
-        public static void ZipFile(string fileToZip, string zippedFileName)
+        public void ZipFile(string fileToZip, string zippedFileName)
         {
             string path = Path.GetDirectoryName(fileToZip);
             if (path != null)
@@ -106,7 +113,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
         }
 
-        private static XDocument VerifyAndCorrectDocument(XDocument doc)
+        private XDocument VerifyAndCorrectDocument(XDocument doc)
         {
             var unwantedEntityTypes = CreateUnwantedEntityTypeList();
             XDocument result = new XDocument(doc);
@@ -147,7 +154,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return result;
         }
 
-        private static List<string> CreateUnwantedEntityTypeList()
+        private List<string> CreateUnwantedEntityTypeList()
         {
             List<string> typeIds = new List<string>
                                        {

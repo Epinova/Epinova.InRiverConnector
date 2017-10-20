@@ -232,27 +232,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal bool Import(string filePath, Guid guid, Configuration config)
+        internal void Import(string filePath, Guid guid, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
                     string result = _httpClient.Post(config.Endpoints.ImportCatalogXml, filePath);
+
                     IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
-                    return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import catalog xml file {filePath}.", exception);
-                    IntegrationLogger.Write(LogLevel.Error, exception.ToString());
-
-                    return false;
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import catalog xml file {filePath} into Episerver.", exception);
+                    throw;
                 }
             }
         }
 
-        internal bool ImportResources(string manifest, string baseFilePpath, Configuration config)
+        internal void ImportResources(string manifest, string baseFilePpath, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
@@ -262,17 +260,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     importer.ImportResources(manifest, baseFilePpath);
 
                     IntegrationLogger.Write(LogLevel.Information, $"Resource file {manifest} imported to EPi Server Commerce.");
-                    return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import resource file {manifest}.", exception);
-                    return false;
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import resource file {baseFilePpath} to Episerver. Manifest: {manifest}.", exception);
+                    throw;
                 }
             }
         }
 
-        internal bool ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded, Configuration config)
+        internal void ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded, Configuration config)
         {
             lock (EpiLockObject.Instance)
             {
@@ -287,13 +284,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                     string result = _httpClient.Post(config.Endpoints.ImportUpdateCompleted, data);
                     IntegrationLogger.Write(LogLevel.Debug, $"ImportUpdateCompleted returned: {result}");
-                    return true;
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error,
-                        $"Failed to fire import update completed for catalog {catalogName}.", exception);
-                    return false;
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to fire import update completed for catalog {catalogName}.", exception);
+                    throw;
                 }
             }
         }
@@ -341,6 +336,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             catch (Exception ex)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Exception in SendHttpPost", ex);
+                throw;
             }
         }
     }
