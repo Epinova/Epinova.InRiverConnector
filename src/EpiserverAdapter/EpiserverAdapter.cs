@@ -68,8 +68,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _epiApi,
                                                   _epiMappingHelper, 
                                                   _addUtility,
-                                                  _deleteUtility,
-                                                  _catalogCodeGenerator);
+                                                  _deleteUtility);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 
@@ -138,7 +137,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return;
             }
 
-            thingsToDo(channelEntity);
+            try
+            {
+                thingsToDo(channelEntity);
+                var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
+
+                IntegrationLogger.Write(LogLevel.Information, message);
+                ConnectorEventHelper.InitiateEvent(_config, eventType, message, 100);
+            }
+            catch (Exception ex)
+            {
+                IntegrationLogger.Write(LogLevel.Error, "Exception in ChannelEntityAdded", ex);
+                ConnectorEventHelper.InitiateEvent(_config, eventType, ex.Message, -1, true);
+            }
         }
 
         public void Publish(int channelId)
@@ -173,6 +184,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel =>
             {
+                if (channel.Id == entityId)
+                {
+                    ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, "Updated Entity is the Channel, no action required", 100);
+                    return;
+                }
+
                 _publisher.ChannelEntityUpdated(channel, entityId, data);
             });
         }
