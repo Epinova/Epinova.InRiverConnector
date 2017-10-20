@@ -456,6 +456,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
+        [Obsolete("This needs to die. Inneholder en liste over entitets-ID-er og hvilken EntityTypeId den har, for oppslag senere. Livsfarlig.")]
         public Dictionary<int, string> EntityIdAndType { get; set; }
 
         public string[] BundleEntityTypes => StringToStringArray("BUNDLE_ENTITYTYPES");

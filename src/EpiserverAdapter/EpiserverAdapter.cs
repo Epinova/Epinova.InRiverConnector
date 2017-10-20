@@ -126,12 +126,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return _started;
         }
 
-        public void Publish(int channelId)
+        private void DoWithInitCheck(int channelId, ConnectorEventType eventType, Action<Entity> thingsToDo)
         {
             if (channelId != _config.ChannelId)
                 return;
 
-            _publisher.Publish(channelId);
+            var channelEntity = _channelHelper.InitiateChannelConfiguration(channelId);
+            if (channelEntity == null)
+            {
+                ConnectorEventHelper.InitiateEvent(_config, eventType, $"Failed perform {eventType}. Could not find the channel.", -1, true);
+                return;
+            }
+
+            thingsToDo(channelEntity);
+        }
+
+        public void Publish(int channelId)
+        {
+            DoWithInitCheck(channelId, ConnectorEventType.Publish, channelEntity =>
+            {
+                _publisher.Publish(channelEntity);
+            });
         }
 
         public void UnPublish(int channelId)
@@ -139,7 +154,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (channelId != _config.ChannelId)
                 return;
 
-            IntegrationLogger.Write(LogLevel.Information, string.Format("Unpublish on channel: {0} called. No action made.", channelId));
+            IntegrationLogger.Write(LogLevel.Information, $"Unpublish on channel: {channelId} called. No action taken.");
         }
 
         public void Synchronize(int channelId)
@@ -148,84 +163,66 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelEntityAdded(int channelId, int entityId)
         {
-            if (channelId != _config.ChannelId)
-                return;
-
-            _publisher.ChannelEntityAdded(channelId, entityId);
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel =>
+            {
+                _publisher.ChannelEntityAdded(channel, entityId);
+            });
         }
         
         public void ChannelEntityUpdated(int channelId, int entityId, string data)
         {
-            if (channelId != _config.ChannelId)
-                return;
-
-            _publisher.ChannelEntityUpdated(channelId, entityId, data);
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel =>
+            {
+                _publisher.ChannelEntityUpdated(channel, entityId, data);
+            });
         }
 
         public void ChannelEntityDeleted(int channelId, Entity deletedEntity)
         {
-            if (channelId != _config.ChannelId)
-                return;
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityDeleted, channel =>
+            {
+                _publisher.ChannelEntityDeleted(channel, deletedEntity);
+            });
             
-            _publisher.ChannelEntityDeleted(channelId, deletedEntity);
         }
 
         public void ChannelEntityFieldSetUpdated(int channelId, int entityId, string fieldSetId)
         {
-            if (channelId != _config.ChannelId)
-            {
-                return;
-            }
-
             ChannelEntityUpdated(channelId, entityId, null);
         }
 
         public void ChannelEntitySpecificationFieldAdded(int channelId, int entityId, string fieldName)
         {
-            if (channelId != _config.ChannelId)
-            {
-                return;
-            }
-
             ChannelEntityUpdated(channelId, entityId, null);
         }
 
         public void ChannelEntitySpecificationFieldUpdated(int channelId, int entityId, string fieldName)
         {
-            if (channelId != _config.ChannelId)
-            {
-                return;
-            }
-
             ChannelEntityUpdated(channelId, entityId, null);
         }
 
         public void ChannelLinkAdded(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            if (channelId != _config.ChannelId)
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
             {
-                return;
-            }
-            
-            _publisher.ChannelLinkAdded(channelId, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
+                _publisher.ChannelLinkAdded(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
+            });
         }
 
         public void ChannelLinkDeleted(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            if (channelId != _config.ChannelId)
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
             {
-                return;
-            }
-
-            _publisher.ChannelLinkDeleted(channelId, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
+                _publisher.ChannelLinkDeleted(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
+            });
         }
 
         public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            if (channelId != _config.ChannelId)
-                return;
-
-            _publisher.ChannelLinkUpdated(channelId, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
+            {
+                _publisher.ChannelLinkUpdated(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
+            });
         }
 
         public void AssortmentCopiedInChannel(int channelId, int assortmentId, int targetId, string targetType)

@@ -70,29 +70,30 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void DeleteCatalogEntry(string entityId, Configuration config)
+        internal void DeleteCatalogEntry(Entity entity, Configuration config)
         {
+            string catalogEntryId = _catalogCodeGenerator.GetEpiserverCode(entity);
+
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    string catalogEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(entityId);
                     _httpClient.Post(config.Endpoints.DeleteCatalogEntry, catalogEntryId);
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on entity id: {entityId}", exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry with catalog entry ID: {catalogEntryId}", exception);
                 }
             }
         }
 
-        internal void UpdateLinkEntityData(Entity linkEntity, int channelId, Entity channelEntity, Configuration config, int parentId)
+        internal void UpdateLinkEntityData(Entity linkEntity, Entity channel, Configuration config, int parentId)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, config, -1);
+                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channel, config, -1);
 
                     string parentEntryId = _catalogCodeGenerator.GetEpiserverCode(parentId);
                     string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCode(linkEntity);

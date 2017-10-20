@@ -202,7 +202,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return structureEntities.Find(i => i.Path.Equals(parentPath) && i.EntityId.Equals(sourceEntityId));
         }
 
-        // TODO: What, why? Kan fjernes? Den oppdaterer _config med settings fra kanalnoden DERSOM FELTENE FINNES...?
         public void UpdateChannelSettings(Entity channel)
         {
             _config.ChannelDefaultLanguage = GetChannelDefaultLanguage(channel);
@@ -365,7 +364,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         }
 
         // TODO: Hvafaen er det her slags navn? Fiks, for pokker.
-        public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, int channelId)
+        public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Entity channel)
         {
             List<Link> links = new List<Link>();
 
@@ -383,7 +382,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (Link link in links)
             {
-                var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channelId, link.Target.Id, link.Source.Id);
+                var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channel.Id, link.Target.Id, link.Source.Id);
 
                 if (!_mappingHelper.IsRelation(link.LinkType.SourceEntityTypeId, link.LinkType.TargetEntityTypeId, link.LinkType.Index))
                 {
