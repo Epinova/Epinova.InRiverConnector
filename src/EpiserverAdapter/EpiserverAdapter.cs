@@ -57,9 +57,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _catalogCodeGenerator);
                 _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
                 _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _channelHelper);
-                _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper);
+
+                var documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
+                _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper, documentFileHelper);
                 _deleteUtility = new DeleteUtility(_config, _resourceElementFactory, _epiElementFactory, _channelHelper, _epiApi, _catalogCodeGenerator);
-                var documentFileHelper = new DocumentFileHelper(_config);
+                
 
                 _publisher = new ChannelPublisher(_config, 
                                                   _channelHelper, 

@@ -32,7 +32,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                               string action, 
                                               Configuration config, 
                                               List<StructureEntity> allResourceStructureEntities,
-                                              Dictionary<int, Entity> parentEntities = null)
+                                              Dictionary<int, Entity> parentEntities)
         {
             string resourceFileId = "-1";
             Field resourceFileIdField = resource.GetField("ResourceFileId");
@@ -41,40 +41,32 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 resourceFileId = resource.GetField("ResourceFileId").Data.ToString();
             }
 
+            // TODO: Sørg for at alle IDer som legges i parents er ferdig genererte episerver-codes
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
-
-            string resourceId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(resource.Id);
-            resourceId = resourceId.Replace("_", string.Empty);
 
             if (action == "unlinked")
             {
-                var resourceParents = config.ChannelEntities.Where(i => !i.Key.Equals(resource.Id));
+                var resourceParents = parentEntities.Where(i => !i.Key.Equals(resource.Id));
 
                 foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
                 {
-                    List<string> ids = new List<string> { resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture) };
+                    var ids = new List<string>();
 
                     if (config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
                     {
-                        List<string> skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value, config);
+                        var skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value, config);
+                        ids.AddRange(skuIds);
 
-                        foreach (string skuId in skuIds)
-                        {
-                            ids.Add(skuId);
-                        }
-
-                        if (config.UseThreeLevelsInCommerce == false)
-                        {
-                            ids.Remove(resourceParent.Value.Id.ToString(CultureInfo.InvariantCulture));
-                        }
+                        if (config.UseThreeLevelsInCommerce)
+                            ids.Add(_catalogCodeGenerator.GetEpiserverCode(resourceParent.Value));
                     }
 
-                    foreach (string id in ids)
+                    foreach (var id in ids)
                     {
-                        if (!parents.ContainsKey(id))
-                        {
-                            parents.Add(id, resourceParent.Value.MainPictureId);
-                        }
+                        if (parents.ContainsKey(id))
+                            continue;
+
+                        parents.Add(id, resourceParent.Value.MainPictureId);
                     }
                 }
             }
@@ -96,18 +88,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 foreach (Link link in links)
                 {
                     Entity linkedEntity = link.Source;
-                    List<string> ids = new List<string> { linkedEntity.Id.ToString(CultureInfo.InvariantCulture) };
+                    List<string> ids = new List<string>();
+
+                    if (config.UseThreeLevelsInCommerce)
+                    {
+                        ids.Add(_catalogCodeGenerator.GetEpiserverCode(linkedEntity));
+                    };
+
                     if (config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
                     {
                         List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity, config);
                         foreach (string skuId in skuIds)
                         {
-                            ids.Add(skuId);
-                        }
-
-                        if (config.UseThreeLevelsInCommerce == false)
-                        {
-                            ids.Remove(linkedEntity.Id.ToString(CultureInfo.InvariantCulture));
+                            var prefixedSkuId = _catalogCodeGenerator.GetPrefixedCode(skuId);
+                            ids.Add(prefixedSkuId);
                         }
                     }
 
@@ -123,8 +117,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 if (parents.Any() && parentEntities != null)
                 {
                     List<int> nonExistingIds =
-                        (from id in parents.Keys where !parentEntities.ContainsKey(int.Parse(id)) select int.Parse(id))
-                        .ToList();
+                        (from id in parents.Keys
+                         where !parentEntities.ContainsKey(int.Parse(id))
+                         select int.Parse(id)).ToList();
 
                     if (nonExistingIds.Any())
                     {
@@ -139,20 +134,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
             }
 
-            return new XElement(
-                "Resource",
-                new XAttribute("id", resourceId),
-                new XAttribute("action", action),
-                new XElement(
-                    "ResourceFields",
-                    resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
-                        .Select(field => _epiElementFactory.GetMetaFieldValueElement(field, config))),
-                GetInternalPathsInZip(resource, config),
-                new XElement(
-                    "ParentEntries",
-                    parents.Select(parent =>
-                            new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parent.Key), 
-                                new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
+            var resourceId = _catalogCodeGenerator.GetEpiserverCode(resource);
+            
+            return new XElement("Resource",
+                       new XAttribute("id", resourceId),
+                       new XAttribute("action", action),
+                       new XElement("ResourceFields", resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
+                                                                     .Select(field => _epiElementFactory.GetMetaFieldValueElement(field, config))),
+                       GetInternalPathsInZip(resource, config),
+                       new XElement(
+                           "ParentEntries",
+                           parents.Select(parent =>
+                                   new XElement("EntryCode", parent.Key, 
+                                       new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
         }
 
 

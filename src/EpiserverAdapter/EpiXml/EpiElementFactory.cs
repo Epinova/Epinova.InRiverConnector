@@ -371,11 +371,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         }
         public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Entity linkEntity, Dictionary<int, Entity> channelEntities = null)
         {
-            // Unique Name with no spaces required for EPiServer Commerce
+            
             string name = _mappingHelper.GetAssociationName(structureEntity, linkEntity);
             string description = structureEntity.LinkEntityId == null ? 
-                                        structureEntity.LinkTypeIdFromParent :
-                                        _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.LinkEntityId.Value);
+                                        structureEntity.LinkTypeIdFromParent : 
+                                        _catalogCodeGenerator.GetEpiserverCode(structureEntity.LinkEntityId.Value);
 
             description = description ?? string.Empty;
 
@@ -384,7 +384,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Name", name),
                 new XElement("Description", description),
                 new XElement("SortOrder", structureEntity.SortOrder),
-                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.ParentId)),
+                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId)),
                 CreateAssociationElement(structureEntity));
         }
 
@@ -392,7 +392,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             return new XElement(
                 "Association",
-                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.EntityId)),
+                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId)),
                 new XElement("SortOrder", structureEntity.SortOrder),
                     new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
@@ -559,8 +559,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             {
                 foreach (XElement sku in skuElement.Elements())
                 {
-                    string id = sku.Attribute("id").Value;
-                    if (string.IsNullOrEmpty(id))
+                    string skuId = sku.Attribute("id").Value;
+                    if (string.IsNullOrEmpty(skuId))
                     {
                         IntegrationLogger.Write(LogLevel.Information, string.Format("Could not find the id for the SKU data for item: {0}", item.Id));
                         continue;
@@ -570,7 +570,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     XElement nameElement = sku.Element("Name");
                     if (nameElement != null)
                     {
-                        string name = (!string.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : id;
+                        string name = (!string.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
                         XElement itemElementName = itemElement.Element("Name");
                         if (itemElementName != null)
                         {
@@ -581,7 +581,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     XElement codeElement = itemElement.Element("Code");
                     if (codeElement != null)
                     {
-                        codeElement.Value = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(id);
+                        codeElement.Value = _catalogCodeGenerator.GetPrefixedCode(skuId);
                     }
 
                     XElement entryTypeElement = itemElement.Element("EntryType");
@@ -596,10 +596,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         foreach (XElement skuData in skuDataElement.Elements())
                         {
                             XElement metaDataElement = itemElement.Element("MetaData");
-                            if (metaDataElement != null && metaDataElement.Element("MetaFields") != null)
+                            if (metaDataElement?.Element("MetaFields") != null)
                             {
-                                // ReSharper disable once PossibleNullReferenceException
-                                metaDataElement.Element("MetaFields").Add(CreateSimpleMetaFieldElement(skuData.Name.LocalName, skuData.Value, configuration));
+                                metaDataElement.Element("MetaFields")?.Add(CreateSimpleMetaFieldElement(skuData.Name.LocalName, skuData.Value, configuration));
                             }
                         }
                     }
@@ -607,10 +606,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (specificationMetaField != null)
                     {
                         XElement metaDataElement = itemElement.Element("MetaData");
-                        if (metaDataElement != null && metaDataElement.Element("MetaFields") != null)
+                        if (metaDataElement?.Element("MetaFields") != null)
                         {
-                            // ReSharper disable once PossibleNullReferenceException
-                            metaDataElement.Element("MetaFields").Add(specificationMetaField);
+                            metaDataElement.Element("MetaFields")?.Add(specificationMetaField);
                         }
                     }
 

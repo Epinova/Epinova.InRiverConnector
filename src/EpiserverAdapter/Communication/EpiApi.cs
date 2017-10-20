@@ -65,7 +65,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on entity id: {entityId}", exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on SKU ID: {skuId}", exception);
                 }
             }
         }

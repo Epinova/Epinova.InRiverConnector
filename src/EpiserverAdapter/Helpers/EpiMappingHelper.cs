@@ -88,13 +88,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return link.LinkType.Id;
         }
 
+        /// <summary>
+        /// Creates the unique name as required for by Episerver
+        /// </summary>
+        /// <param name="structureEntity"></param>
+        /// <param name="linkEntity"></param>
+        /// <returns></returns>
         public string GetAssociationName(StructureEntity structureEntity, Entity linkEntity)
         {
             if (structureEntity.LinkEntityId != null)
             {
-                // Use the Link name + the display name to create a unique ASSOCIATION NAME in EPi Commerce
-                return linkEntity.EntityType.Id + '_'
-                       + BusinessHelper.GetDisplayNameFromEntity(linkEntity, _config, -1).Replace(' ', '_');
+                return linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, _config, -1).Replace(' ', '_');
             }
 
             return structureEntity.LinkTypeIdFromParent;

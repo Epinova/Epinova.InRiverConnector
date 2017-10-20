@@ -317,9 +317,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var c = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
                 $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}", 0);
 
-            Entity targetEntity = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
+            Entity deletedEntity = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
 
-            _deleteUtility.Delete(channel, sourceEntityId, targetEntity, linkTypeId);
+            _deleteUtility.Delete(channel, sourceEntityId, deletedEntity, linkTypeId);
             
             if (!c.IsError)
             {

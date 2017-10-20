@@ -161,42 +161,35 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         
         private void FillElementList(Dictionary<string, List<XElement>> epiElements, List<StructureEntity> channelStructureEntities)
         {
-            try
+            List<string> addedEntities = new List<string>();
+            List<string> addedNodes = new List<string>();
+            List<string> addedRelations = new List<string>();
+
+            int totalLoaded = 0;
+            int batchSize = _config.BatchSize;
+
+            do
             {
-                List<string> addedEntities = new List<string>();
-                List<string> addedNodes = new List<string>();
-                List<string> addedRelations = new List<string>();
+                var batch = channelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
+                Dictionary<int, Entity> channelEntities = GetEntitiesInStructure(batch);
 
-                int totalLoaded = 0;
-                int batchSize = _config.BatchSize;
+                FillElements(batch, addedEntities, addedNodes, addedRelations, epiElements, channelStructureEntities, channelEntities);
 
-                do
-                {
-                    var batch = channelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
+                totalLoaded += batch.Count;
 
-                    _config.ChannelEntities = GetEntitiesInStructure(batch);
-
-                    FillElements(batch, addedEntities, addedNodes, addedRelations, epiElements, channelStructureEntities);
-
-                    totalLoaded += batch.Count;
-
-                    IntegrationLogger.Write(LogLevel.Debug, $"fetched {totalLoaded} of {channelStructureEntities.Count} total");
-                }
-                while (channelStructureEntities.Count > totalLoaded);
+                IntegrationLogger.Write(LogLevel.Debug, $"fetched {totalLoaded} of {channelStructureEntities.Count} total");
             }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error, ex.Message, ex);
-            }
+            while (channelStructureEntities.Count > totalLoaded);
+          
         }
 
         private void FillElements(List<StructureEntity> structureEntitiesBatch, 
                                   List<string> addedEntities, 
                                   List<string> addedNodes,
                                   List<string> addedRelations,
-                                  Dictionary<string, 
-                                  List<XElement>> epiElements,
-                                  List<StructureEntity> channelStructureEntities)
+                                  Dictionary<string, List<XElement>> epiElements,
+                                  List<StructureEntity> channelStructureEntities,
+                                  Dictionary<int, Entity> channelEntities)
         {
             int logCounter = 0;
 
@@ -212,505 +205,389 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             foreach (StructureEntity structureEntity in structureEntitiesBatch)
             {
-                try
-                {
-                    if (structureEntity.EntityId == _config.ChannelId)
+                if (structureEntity.EntityId == _config.ChannelId)
                         continue;
                         
                     logCounter++;
     
-                    if (logCounter == 1000)
+                if (logCounter == 1000)
+                {
+                    logCounter = 0;
+                    IntegrationLogger.Write(LogLevel.Debug, "Generating catalog xml.");
+                }
+    
+                int entityId = structureEntity.EntityId;
+    
+                if (structureEntity.LinkEntityId.HasValue)
+                {
+                    // Add the link entity
+    
+                    Entity linkEntity = null;
+    
+                    if (channelEntities.ContainsKey(structureEntity.LinkEntityId.Value))
                     {
-                        logCounter = 0;
-                        IntegrationLogger.Write(LogLevel.Debug, "Generating catalog xml.");
+                        linkEntity = channelEntities[structureEntity.LinkEntityId.Value];
                     }
     
-                    int entityId = structureEntity.EntityId;
-    
-                    if (structureEntity.LinkEntityId.HasValue)
+                    if (linkEntity == null)
                     {
-                        // Add the link entity
-    
-                        Entity linkEntity = null;
-    
-                        if (_config.ChannelEntities.ContainsKey(structureEntity.LinkEntityId.Value))
-                        {
-                            linkEntity = _config.ChannelEntities[structureEntity.LinkEntityId.Value];
-                        }
-    
-                        if (linkEntity == null)
-                        {
-                            IntegrationLogger.Write(
-                                LogLevel.Warning,
-                                string.Format(
-                                    "Link Entity with id {0} does not exist in system or ChannelStructure table is not in sync.",
-                                    (int)structureEntity.LinkEntityId));
-                            continue;
-                        }
-    
-                        XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity, _config);
-    
-                        XElement codeElement = entryElement.Element("Code");
-                        if (codeElement != null && !addedEntities.Contains(codeElement.Value))
-                        {
-                            epiElements["Entries"].Add(entryElement);
-                            addedEntities.Add(codeElement.Value);
-    
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Entity {0} to Entries", linkEntity.DisplayName));
-                        }
-                    }
-    
-                    if (structureEntity.Type == "Resource")
-                    {
+                        IntegrationLogger.Write(
+                            LogLevel.Warning,
+                            string.Format(
+                                "Link Entity with id {0} does not exist in system or ChannelStructure table is not in sync.",
+                                (int)structureEntity.LinkEntityId));
                         continue;
                     }
     
-                    Entity entity;
+                    XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity, _config);
     
-                    if (_config.ChannelEntities.ContainsKey(entityId))
+                    XElement codeElement = entryElement.Element("Code");
+                    if (codeElement != null && !addedEntities.Contains(codeElement.Value))
                     {
-                        entity = _config.ChannelEntities[entityId];
+                        epiElements["Entries"].Add(entryElement);
+                        addedEntities.Add(codeElement.Value);
+    
+                        IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Entity {0} to Entries", linkEntity.DisplayName));
+                    }
+                }
+    
+                if (structureEntity.Type == "Resource")
+                {
+                    continue;
+                }
+    
+                Entity entity;
+    
+                if (channelEntities.ContainsKey(entityId))
+                {
+                    entity = channelEntities[entityId];
+                }
+                else
+                {
+                    entity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataOnly);
+
+                    channelEntities.Add(entityId, entity);
+                }
+    
+                if (entity == null)
+                {   
+                    channelEntities.Remove(entityId);
+                    continue;
+                }
+    
+                if (structureEntity.Type == "ChannelNode")
+                {
+                    var parentId = structureEntity.ParentId;
+                    var parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);
+    
+                    if (_config.ChannelId.Equals(structureEntity.ParentId))
+                    {
+                        _epiApi.CheckAndMoveNodeIfNeeded(entityId.ToString(CultureInfo.InvariantCulture), _config);
+                    }
+    
+                    IntegrationLogger.Write(LogLevel.Debug, string.Format("Trying to add channelNode {0} to Nodes", entityId));
+                        
+                    XElement nodeElement = epiElements["Nodes"].Find(e =>
+                    {
+                        XElement xElement = e.Element("Code");
+                        return xElement != null && xElement.Value.Equals(_catalogCodeGenerator.GetEpiserverCode(entity));
+                    });
+    
+                    int linkIndex = structureEntity.SortOrder;
+                        
+                    if (nodeElement == null)
+                    {
+                        epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex, _config));
+                        addedNodes.Add(_catalogCodeGenerator.GetEpiserverCode(entity));
+    
+                        IntegrationLogger.Write(LogLevel.Debug, $"Added channelNode {entityId} to Nodes");
                     }
                     else
                     {
-                        entity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataOnly);
+                        XElement parentNode = nodeElement.Element("ParentNode");
+                        if (parentNode != null && 
+                            parentNode.Value != _config.ChannelId.ToString(CultureInfo.InvariantCulture) && 
+                            parentId == _config.ChannelId)
+                        {
+                            string oldParent = parentNode.Value;
+                            parentNode.Value = _config.ChannelId.ToString(CultureInfo.InvariantCulture);
+                            parentCode = oldParent;
+    
+                            XElement sortOrderElement = nodeElement.Element("SortOrder");
+                            if (sortOrderElement != null)
+                            {
+                                string oldSortOrder = sortOrderElement.Value;
+                                sortOrderElement.Value = linkIndex.ToString(CultureInfo.InvariantCulture);
+                                linkIndex = int.Parse(oldSortOrder);
+                            }
+                        }
 
-                        _config.ChannelEntities.Add(entityId, entity);
+
+                        var relationName = _catalogCodeGenerator.GetRelationName(entityId, parentId);
+
+                        if (!addedRelations.Contains(relationName))
+                        {
+                            var nodeRelationElement = _epiElementFactory.CreateNodeRelation(parentId, entityId, linkIndex);
+
+                            epiElements["Relations"].Add(nodeRelationElement);
+                                
+                            addedRelations.Add(relationName);
+    
+                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", entityId));
+                        }
+                            
                     }
     
-                    if (entity == null)
-                    {   
-                        _config.ChannelEntities.Remove(entityId);
+                    continue;
+                }
+    
+                if (structureEntity.Type == "Item" && _config.ItemsToSkus)
+                {
+                    List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity, _config);
+                    foreach (XElement sku in skus)
+                    {
+                        XElement codeElement = sku.Element("Code");
+                        if (codeElement != null && !addedEntities.Contains(codeElement.Value))
+                        {
+                            epiElements["Entries"].Add(sku);
+                            addedEntities.Add(codeElement.Value);
+    
+                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Item/SKU {0} to Entries", sku.Name.LocalName));
+                        }
+                    }
+                }
+    
+                if ((structureEntity.Type == "Item" && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce)
+                    || !(structureEntity.Type == "Item" && _config.ItemsToSkus))
+                {
+                    XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, _config);
+    
+                    var specificationEntry = channelStructureEntities.FirstOrDefault(s => s.ParentId.Equals(entityId) && s.Type.Equals("Specification"));
+    
+                    if (specificationEntry != null)
+                    {
+                        XElement metaField = new XElement(
+                            "MetaField",
+                            new XElement("Name", "SpecificationField"),
+                            new XElement("Type", "LongHtmlString"));
+                        foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                        {
+                            string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entity.Id, culturePair.Value);
+                            metaField.Add(
+                                new XElement("Data",
+                                    new XAttribute("language", culturePair.Key.Name.ToLower()),
+                                    new XAttribute("value", htmlData)));
+                        }
+    
+                        XElement metaFieldsElement = element.Descendants().FirstOrDefault(f => f.Name == "MetaFields");
+                        metaFieldsElement?.Add(metaField);
+                    }
+    
+                    XElement codeElement = element.Element("Code");
+                    if (codeElement != null && !addedEntities.Contains(codeElement.Value))
+                    {
+                        epiElements["Entries"].Add(element);
+                        addedEntities.Add(codeElement.Value);
+    
+                        IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Entity {0} to Entries", entityId));
+                    }
+                }
+    
+                List<StructureEntity> existingStructureEntities = channelStructureEntities.FindAll(i => i.EntityId.Equals(entityId));
+                List<StructureEntity> filteredStructureEntities = new List<StructureEntity>();
+    
+                foreach (StructureEntity se in existingStructureEntities)
+                {
+                    if (!filteredStructureEntities.Exists(i => i.EntityId == se.EntityId && i.ParentId == se.ParentId))
+                    {
+                        filteredStructureEntities.Add(se);
+                    }
+                    else
+                    {
+                        if (se.LinkEntityId.HasValue)
+                        {
+                            if (!filteredStructureEntities.Exists(
+                                    i =>
+                                    i.EntityId == se.EntityId && i.ParentId == se.ParentId
+                                    && (i.LinkEntityId != null && i.LinkEntityId == se.LinkEntityId)))
+                            {
+                                filteredStructureEntities.Add(se);
+                            }
+                        }
+                    }
+                }
+    
+                foreach (StructureEntity existingStructureEntity in filteredStructureEntities)
+                {
+                    //Parent.
+                    LinkType linkType = null;
+    
+                    if (linkTypes.ContainsKey(existingStructureEntity.LinkTypeIdFromParent))
+                    {
+                        linkType = linkTypes[existingStructureEntity.LinkTypeIdFromParent];
+                    }
+    
+                    if (linkType == null)
+                    {
                         continue;
                     }
     
-                    if (structureEntity.Type == "ChannelNode")
+                    if (linkType.SourceEntityTypeId == "ChannelNode")
                     {
-                        var parentId = structureEntity.ParentId;
-                        var parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);
-    
-                        if (_config.ChannelId.Equals(structureEntity.ParentId))
+                        var addedRelationName = _catalogCodeGenerator.GetRelationName(entityId, existingStructureEntity.ParentId);
+                        if (!addedRelations.Contains(addedRelationName))
                         {
-                            _epiApi.CheckAndMoveNodeIfNeeded(entityId.ToString(CultureInfo.InvariantCulture), _config);
+                            var relationElement = _epiElementFactory.CreateNodeEntryRelation(existingStructureEntity.ParentId, existingStructureEntity.EntityId, existingStructureEntity.SortOrder);
+
+                            epiElements["Relations"].Add(relationElement);
+
+                            addedRelations.Add(addedRelationName);
+    
+                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for Source {0} and Target {1} for LinkTypeId {2}", existingStructureEntity.ParentId, existingStructureEntity.EntityId, linkType.Id));
                         }
     
-                        IntegrationLogger.Write(LogLevel.Debug, string.Format("Trying to add channelNode {0} to Nodes", entityId));
-                        
-                        XElement nodeElement = epiElements["Nodes"].Find(e =>
-                        {
-                            XElement xElement = e.Element("Code");
-                            return xElement != null && xElement.Value.Equals(_catalogCodeGenerator.GetEpiserverCode(entity));
-                        });
+                        continue;
+                    }
     
-                        int linkIndex = structureEntity.SortOrder;
-                        
-                        if (nodeElement == null)
+                    List<string> skus = new List<string> { entityId.ToString(CultureInfo.InvariantCulture) };
+                    int parentId = structureEntity.EntityId;
+
+                    if (structureEntity.Type.Equals("Item") && _config.ItemsToSkus)
+                    {
+                        skus = _epiElementFactory.SkuItemIds(entity, _config);
+                        for (int i = 0; i < skus.Count; i++)
                         {
-                            epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex, _config));
-                            addedNodes.Add(_catalogCodeGenerator.GetEpiserverCode(entity));
+                            skus[i] = _catalogCodeGenerator.GetPrefixedCode(skus[i]);
+                        }
     
-                            IntegrationLogger.Write(LogLevel.Debug, $"Added channelNode {entityId} to Nodes");
+                        if (_config.UseThreeLevelsInCommerce)                           
+                            skus.Add(_catalogCodeGenerator.GetEpiserverCode(parentId));
+                    }
+    
+                    Entity linkEntity = null;
+    
+                    if (existingStructureEntity.LinkEntityId != null)
+                    {
+                        if (channelEntities.ContainsKey(existingStructureEntity.LinkEntityId.Value))
+                        {
+                            linkEntity = channelEntities[existingStructureEntity.LinkEntityId.Value];
                         }
                         else
                         {
-                            XElement parentNode = nodeElement.Element("ParentNode");
-                            if (parentNode != null && 
-                                parentNode.Value != _config.ChannelId.ToString(CultureInfo.InvariantCulture) && 
-                                parentId == _config.ChannelId)
-                            {
-                                string oldParent = parentNode.Value;
-                                parentNode.Value = _config.ChannelId.ToString(CultureInfo.InvariantCulture);
-                                parentCode = oldParent;
+                            linkEntity = RemoteManager.DataService.GetEntity(
+                            existingStructureEntity.LinkEntityId.Value,
+                            LoadLevel.DataOnly);
+
+                            channelEntities.Add(linkEntity.Id, linkEntity);
+                        }
+                    }
     
-                                XElement sortOrderElement = nodeElement.Element("SortOrder");
-                                if (sortOrderElement != null)
-                                {
-                                    string oldSortOrder = sortOrderElement.Value;
-                                    sortOrderElement.Value = linkIndex.ToString(CultureInfo.InvariantCulture);
-                                    linkIndex = int.Parse(oldSortOrder);
-                                }
-                            }
+                    foreach (string skuId in skus)
+                    {   
+                        // prod -> item link, bundle, package or dynamic package => Relation
+                        if (_epiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index))
+                        {
+                            int parentNodeId = _channelHelper.GetParentChannelNode(structureEntity);
+                            if (parentNodeId == 0)
+                                continue;
 
-
-                            var relationName = _catalogCodeGenerator.GetRelationName(entityId, parentId);
+                            var relationName = _catalogCodeGenerator.GetRelationName(skuId, parentNodeId);
 
                             if (!addedRelations.Contains(relationName))
                             {
-                                var nodeRelationElement = _epiElementFactory.CreateNodeRelation(parentId, entityId, linkIndex);
+                                epiElements["Relations"].Add(_epiElementFactory.CreateNodeEntryRelation(
+                                        parentNodeId,
+                                        skuId,
+                                        existingStructureEntity.SortOrder));
 
-                                epiElements["Relations"].Add(nodeRelationElement);
-                                
                                 addedRelations.Add(relationName);
     
-                                IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", entityId));
+                                IntegrationLogger.Write(LogLevel.Debug, $"Added Relation for EntryCode {skuId}");
                             }
-                            
-                        }
     
-                        continue;
-                    }
+                            var parentCode =_catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.ParentId);
     
-                    if (structureEntity.Type == "Item" && _config.ItemsToSkus)
-                    {
-                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity, _config);
-                        foreach (XElement sku in skus)
-                        {
-                            XElement codeElement = sku.Element("Code");
-                            if (codeElement != null && !addedEntities.Contains(codeElement.Value))
+                            if (parentId != 0 && skuId != parentCode)
                             {
-                                epiElements["Entries"].Add(sku);
-                                addedEntities.Add(codeElement.Value);
+                                var addedRelationsName = _catalogCodeGenerator.GetRelationName(skuId, parentNodeId);
+
+                                if (!addedRelations.Contains(addedRelationsName))
+                                {
+                                    var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(
+                                                                    parentId,
+                                                                    linkType.SourceEntityTypeId, 
+                                                                    skuId, 
+                                                                    existingStructureEntity.SortOrder);
+
+                                    epiElements["Relations"].Add(entryRelationElement);
+                                    addedRelations.Add(addedRelationsName);
     
-                                IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Item/SKU {0} to Entries", sku.Name.LocalName));
+                                    IntegrationLogger.Write(LogLevel.Debug,
+                                        $"Added Relation for ChildEntryCode {skuId}");
+                                }
                             }
-                        }
-                    }
-    
-                    if ((structureEntity.Type == "Item" && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce)
-                        || !(structureEntity.Type == "Item" && _config.ItemsToSkus))
-                    {
-                        XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, _config);
-    
-                        var specificationEntry = channelStructureEntities.FirstOrDefault(s => s.ParentId.Equals(entityId) && s.Type.Equals("Specification"));
-    
-                        if (specificationEntry != null)
-                        {
-                            XElement metaField = new XElement(
-                                "MetaField",
-                                new XElement("Name", "SpecificationField"),
-                                new XElement("Type", "LongHtmlString"));
-                            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                            else
                             {
-                                string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entity.Id, culturePair.Value);
-                                metaField.Add(
-                                    new XElement("Data",
-                                        new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                        new XAttribute("value", htmlData)));
+                                var addedRelationsName = _catalogCodeGenerator.GetRelationName(skuId, parentId);
+
+                                if (!addedRelations.Contains(addedRelationsName))
+                                {
+                                    var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(existingStructureEntity.ParentId,
+                                        linkType.SourceEntityTypeId,
+                                        skuId,
+                                        existingStructureEntity.SortOrder);
+
+                                    epiElements["Relations"].Add(entryRelationElement);
+                                    addedRelations.Add(addedRelationsName);
+    
+                                    IntegrationLogger.Write(LogLevel.Debug, $"Added Relation for ChildEntryCode {skuId}");
+                                }
                             }
-    
-                            XElement metaFieldsElement = element.Descendants().FirstOrDefault(f => f.Name == "MetaFields");
-                            metaFieldsElement?.Add(metaField);
-                        }
-    
-                        XElement codeElement = element.Element("Code");
-                        if (codeElement != null && !addedEntities.Contains(codeElement.Value))
-                        {
-                            epiElements["Entries"].Add(element);
-                            addedEntities.Add(codeElement.Value);
-    
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Entity {0} to Entries", entityId));
-                        }
-                    }
-    
-                    List<StructureEntity> existingStructureEntities = channelStructureEntities.FindAll(i => i.EntityId.Equals(entityId));
-                    List<StructureEntity> filteredStructureEntities = new List<StructureEntity>();
-    
-                    foreach (StructureEntity se in existingStructureEntities)
-                    {
-                        if (!filteredStructureEntities.Exists(i => i.EntityId == se.EntityId && i.ParentId == se.ParentId))
-                        {
-                            filteredStructureEntities.Add(se);
                         }
                         else
                         {
-                            if (se.LinkEntityId.HasValue)
+                            if (!_config.UseThreeLevelsInCommerce && _config.ItemsToSkus && structureEntity.Type == "Item")
                             {
-                                if (!filteredStructureEntities.Exists(
-                                        i =>
-                                        i.EntityId == se.EntityId && i.ParentId == se.ParentId
-                                        && (i.LinkEntityId != null && i.LinkEntityId == se.LinkEntityId)))
+                                string linkEntityId = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.LinkEntityId ?? 0);
+                                string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
+    
+                                Entity source;
+    
+                                if (channelEntities.ContainsKey(existingStructureEntity.ParentId))
                                 {
-                                    filteredStructureEntities.Add(se);
-                                }
-                            }
-                        }
-                    }
-    
-                    foreach (StructureEntity existingStructureEntity in filteredStructureEntities)
-                    {
-                        //Parent.
-                        LinkType linkType = null;
-    
-                        if (linkTypes.ContainsKey(existingStructureEntity.LinkTypeIdFromParent))
-                        {
-                            linkType = linkTypes[existingStructureEntity.LinkTypeIdFromParent];
-                        }
-    
-                        if (linkType == null)
-                        {
-                            continue;
-                        }
-    
-                        if (linkType.SourceEntityTypeId == "ChannelNode")
-                        {
-                            var addedRelationName = _catalogCodeGenerator.GetRelationName(entityId, existingStructureEntity.ParentId);
-                            if (!addedRelations.Contains(addedRelationName))
-                            {
-                                var relationElement = _epiElementFactory.CreateNodeEntryRelation(existingStructureEntity.ParentId, existingStructureEntity.EntityId, existingStructureEntity.SortOrder);
-
-                                epiElements["Relations"].Add(relationElement);
-
-                                addedRelations.Add(addedRelationName);
-    
-                                IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for Source {0} and Target {1} for LinkTypeId {2}", existingStructureEntity.ParentId, existingStructureEntity.EntityId, linkType.Id));
-                            }
-    
-                            continue;
-                        }
-    
-                        List<string> skus = new List<string> { entityId.ToString(CultureInfo.InvariantCulture) };
-                        int parentId = structureEntity.EntityId;
-
-                        if (structureEntity.Type.Equals("Item") && _config.ItemsToSkus)
-                        {
-                            skus = _epiElementFactory.SkuItemIds(entity, _config);
-                            for (int i = 0; i < skus.Count; i++)
-                            {
-                                skus[i] = _catalogCodeGenerator.GetPrefixedCode(skus[i]);
-                            }
-    
-                            if (_config.UseThreeLevelsInCommerce)                           
-                                skus.Add(_catalogCodeGenerator.GetEpiserverCode(parentId));
-                        }
-    
-                        Entity linkEntity = null;
-    
-                        if (existingStructureEntity.LinkEntityId != null)
-                        {
-                            if (_config.ChannelEntities.ContainsKey(existingStructureEntity.LinkEntityId.Value))
-                            {
-                                linkEntity = _config.ChannelEntities[existingStructureEntity.LinkEntityId.Value];
-                            }
-                            else
-                            {
-                                linkEntity = RemoteManager.DataService.GetEntity(
-                                existingStructureEntity.LinkEntityId.Value,
-                                LoadLevel.DataOnly);
-
-                                _config.ChannelEntities.Add(linkEntity.Id, linkEntity);
-                            }
-                        }
-    
-                        foreach (string skuId in skus)
-                        {   
-                            // prod -> item link, bundle, package or dynamic package => Relation
-                            if (_epiMappingHelper.IsRelation(linkType.SourceEntityTypeId, linkType.TargetEntityTypeId, linkType.Index))
-                            {
-                                int parentNodeId = _channelHelper.GetParentChannelNode(structureEntity);
-                                if (parentNodeId == 0)
-                                    continue;
-
-                                var relationName = _catalogCodeGenerator.GetRelationName(skuId, parentNodeId);
-
-                                if (!addedRelations.Contains(relationName))
-                                {
-                                    epiElements["Relations"].Add(_epiElementFactory.CreateNodeEntryRelation(
-                                            parentNodeId,
-                                            skuId,
-                                            existingStructureEntity.SortOrder));
-
-                                    addedRelations.Add(relationName);
-    
-                                    IntegrationLogger.Write(LogLevel.Debug, $"Added Relation for EntryCode {skuId}");
-                                }
-    
-                                var parentCode =_catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.ParentId);
-    
-                                if (parentId != 0 && skuId != parentCode)
-                                {
-                                    var addedRelationsName = _catalogCodeGenerator.GetRelationName(skuId, parentNodeId);
-
-                                    if (!addedRelations.Contains(addedRelationsName))
-                                    {
-                                        var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(
-                                                                        parentId,
-                                                                        linkType.SourceEntityTypeId, 
-                                                                        skuId, 
-                                                                        existingStructureEntity.SortOrder);
-
-                                        epiElements["Relations"].Add(entryRelationElement);
-                                        addedRelations.Add(addedRelationsName);
-    
-                                        IntegrationLogger.Write(LogLevel.Debug,
-                                            $"Added Relation for ChildEntryCode {skuId}");
-                                    }
+                                    source = channelEntities[existingStructureEntity.ParentId];
                                 }
                                 else
                                 {
-                                    var addedRelationsName = _catalogCodeGenerator.GetRelationName(skuId, parentId);
-
-                                    if (!addedRelations.Contains(addedRelationsName))
-                                    {
-                                        var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(existingStructureEntity.ParentId,
-                                            linkType.SourceEntityTypeId,
-                                            skuId,
-                                            existingStructureEntity.SortOrder);
-
-                                        epiElements["Relations"].Add(entryRelationElement);
-                                        addedRelations.Add(addedRelationsName);
-    
-                                        IntegrationLogger.Write(LogLevel.Debug, $"Added Relation for ChildEntryCode {skuId}");
-                                    }
+                                    source = RemoteManager.DataService.GetEntity(existingStructureEntity.ParentId, LoadLevel.DataOnly);
+                                    channelEntities.Add(source.Id, source);
                                 }
-                            }
-                            else
-                            {
-                                if (!_config.UseThreeLevelsInCommerce && _config.ItemsToSkus && structureEntity.Type == "Item")
+    
+                                List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source, _config);
+                                for (int i = 0; i < sourceSkuIds.Count; i++)
                                 {
-                                    string linkEntityId = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.LinkEntityId ?? 0);
-                                    string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
-    
-                                    Entity source;
-    
-                                    if (_config.ChannelEntities.ContainsKey(existingStructureEntity.ParentId))
-                                    {
-                                        source = _config.ChannelEntities[existingStructureEntity.ParentId];
-                                    }
-                                    else
-                                    {
-                                        source = RemoteManager.DataService.GetEntity(
-                                            existingStructureEntity.ParentId,
-                                            LoadLevel.DataOnly);
-                                        _config.ChannelEntities.Add(source.Id, source);
-                                    }
-    
-                                    List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source, _config);
-                                    for (int i = 0; i < sourceSkuIds.Count; i++)
-                                    {
-                                        sourceSkuIds[i] = _catalogCodeGenerator.GetPrefixedCode(sourceSkuIds[i]);
-                                    }
-    
-                                    foreach (string sourceSkuId in sourceSkuIds)
-                                    {
-                                        bool exists;
-                                        if (existingStructureEntity.LinkEntityId != null)
-                                        {
-                                            exists = epiElements["Associations"].Any(
-                                                e =>
-                                                    {
-                                                        XElement entryCode = e.Element("EntryCode");
-                                                        XElement description = e.Element("Description");
-                                                        return description != null && entryCode != null && entryCode.Value.Equals(sourceSkuId) && e.Elements("Association").Any(
-                                                            e2 =>
-                                                                {
-                                                                    XElement associatedEntryCode =
-                                                                        e2.Element("EntryCode");
-                                                                    return associatedEntryCode != null
-                                                                           && associatedEntryCode.Value
-                                                                                  .Equals(sourceSkuId);
-                                                                }) && description.Value.Equals(linkEntityId);
-                                                    });
-                                        }
-                                        else
-                                        {
-                                            exists = epiElements["Associations"].Any(
-                                                e =>
-                                                    {
-                                                        XElement entryCode = e.Element("EntryCode");
-                                                        return entryCode != null && entryCode.Value.Equals(sourceSkuId) && e.Elements("Association").Any(
-                                                            e2 =>
-                                                                {
-                                                                    XElement associatedEntryCode = e2.Element("EntryCode");
-                                                                    return associatedEntryCode != null && associatedEntryCode.Value.Equals(sourceSkuId);
-                                                                }) && e.Elements("Association").Any(
-                                                                    e3 =>
-                                                                        {
-                                                                            XElement typeElement = e3.Element("Type");
-                                                                            return typeElement != null && typeElement.Value.Equals(linkType.Id);
-                                                                        });
-                                                    });
-                                        }
-    
-                                        if (!exists)
-                                        {
-                                            XElement existingAssociation;
-    
-                                            if (existingStructureEntity.LinkEntityId != null)
-                                            {
-                                                existingAssociation = epiElements["Associations"].FirstOrDefault(
-                                                    a =>
-                                                        {
-                                                            XElement nameElement = a.Element("Name");
-                                                            XElement entryCodeElement = a.Element("EntryCode");
-                                                            XElement descriptionElement = a.Element("Description");
-                                                            return descriptionElement != null && entryCodeElement != null && nameElement != null && nameElement.Value.Equals(
-                                                                associationName) && entryCodeElement.Value.Equals(sourceSkuId) && descriptionElement.Value.Equals(linkEntityId);
-                                                        });
-                                            }
-                                            else
-                                            {
-                                                existingAssociation = epiElements["Associations"].FirstOrDefault(
-                                                    a =>
-                                                        {
-                                                            XElement nameElement = a.Element("Name");
-                                                            XElement entryCodeElement = a.Element("EntryCode");
-                                                            return entryCodeElement != null && nameElement != null && nameElement.Value.Equals(
-                                                                associationName) && entryCodeElement.Value.Equals(sourceSkuId);
-                                                        });
-                                            }
-    
-                                            XElement associationElement = new XElement(
-                                                "Association",
-                                                new XElement("EntryCode", skuId),
-                                                new XElement("SortOrder", existingStructureEntity.SortOrder),
-                                                new XElement("Type", linkType.Id));
-    
-                                            if (existingAssociation != null)
-                                            {
-                                                if (!existingAssociation.Descendants().Any(e => e.Name.LocalName == "EntryCode" && e.Value == skuId))
-                                                {
-                                                    existingAssociation.Add(associationElement);
-                                                }
-                                            }
-                                            else
-                                            {
-    
-                                                string description = existingStructureEntity.LinkEntityId == null
-                                                                         ? linkType.Id
-                                                                         : linkEntityId;
-                                                description = description ?? string.Empty;
-    
-                                                XElement catalogAssociation = new XElement(
-                                                    "CatalogAssociation",
-                                                    new XElement("Name", associationName),
-                                                    new XElement("Description", description),
-                                                    new XElement("SortOrder", existingStructureEntity.SortOrder),
-                                                    new XElement("EntryCode", sourceSkuId),
-                                                    associationElement);
-    
-                                                epiElements["Associations"].Add(catalogAssociation);
-                                            }
-                                        }
-                                    }
+                                    sourceSkuIds[i] = _catalogCodeGenerator.GetPrefixedCode(sourceSkuIds[i]);
                                 }
-                                else
+    
+                                foreach (string sourceSkuId in sourceSkuIds)
                                 {
-                                    var entityCode = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.EntityId);
-                                    var parentCode = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.ParentId);
-    
-                                    string channelPrefixAndLinkEntityId = string.Empty;
-    
-                                    if (existingStructureEntity.LinkEntityId != null)
-                                    {
-                                        channelPrefixAndLinkEntityId = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.LinkEntityId ?? 0);
-                                    }
-    
-                                    string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
-    
                                     bool exists;
                                     if (existingStructureEntity.LinkEntityId != null)
                                     {
                                         exists = epiElements["Associations"].Any(
                                             e =>
                                                 {
-                                                    XElement entryCodeElement = e.Element("EntryCode");
-                                                    XElement descriptionElement = e.Element("Description");
-                                                    return descriptionElement != null && entryCodeElement != null && entryCodeElement.Value.Equals(parentCode) && e.Elements("Association").Any(
-                                                                e2 =>
-                                                                    {
-                                                                        XElement associatedEntryCode = e2.Element("EntryCode");
-                                                                        return associatedEntryCode != null && associatedEntryCode.Value.Equals(entityCode);
-                                                                    }) && descriptionElement.Value.Equals(channelPrefixAndLinkEntityId);
+                                                    XElement entryCode = e.Element("EntryCode");
+                                                    XElement description = e.Element("Description");
+                                                    return description != null && entryCode != null && entryCode.Value.Equals(sourceSkuId) && e.Elements("Association").Any(
+                                                        e2 =>
+                                                            {
+                                                                XElement associatedEntryCode =
+                                                                    e2.Element("EntryCode");
+                                                                return associatedEntryCode != null
+                                                                        && associatedEntryCode.Value
+                                                                                .Equals(sourceSkuId);
+                                                            }) && description.Value.Equals(linkEntityId);
                                                 });
                                     }
                                     else
@@ -718,12 +595,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                         exists = epiElements["Associations"].Any(
                                             e =>
                                                 {
-                                                    XElement entryCodeElement = e.Element("EntryCode");
-                                                    return entryCodeElement != null && entryCodeElement.Value.Equals(parentCode) && e.Elements("Association").Any(
+                                                    XElement entryCode = e.Element("EntryCode");
+                                                    return entryCode != null && entryCode.Value.Equals(sourceSkuId) && e.Elements("Association").Any(
                                                         e2 =>
                                                             {
                                                                 XElement associatedEntryCode = e2.Element("EntryCode");
-                                                                return associatedEntryCode != null && associatedEntryCode.Value.Equals(entityCode);
+                                                                return associatedEntryCode != null && associatedEntryCode.Value.Equals(sourceSkuId);
                                                             }) && e.Elements("Association").Any(
                                                                 e3 =>
                                                                     {
@@ -745,8 +622,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                                         XElement nameElement = a.Element("Name");
                                                         XElement entryCodeElement = a.Element("EntryCode");
                                                         XElement descriptionElement = a.Element("Description");
-                                                        return descriptionElement != null && entryCodeElement != null && nameElement != null && nameElement.Value.Equals(associationName) && entryCodeElement.Value.Equals(
-                                                            parentCode) && descriptionElement.Value.Equals(channelPrefixAndLinkEntityId);
+                                                        return descriptionElement != null && entryCodeElement != null && nameElement != null && nameElement.Value.Equals(
+                                                            associationName) && entryCodeElement.Value.Equals(sourceSkuId) && descriptionElement.Value.Equals(linkEntityId);
                                                     });
                                         }
                                         else
@@ -756,38 +633,143 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                                     {
                                                         XElement nameElement = a.Element("Name");
                                                         XElement entryCodeElement = a.Element("EntryCode");
-                                                        return entryCodeElement != null && nameElement != null && nameElement.Value.Equals(associationName) && entryCodeElement.Value.Equals(parentCode);
+                                                        return entryCodeElement != null && nameElement != null && nameElement.Value.Equals(
+                                                            associationName) && entryCodeElement.Value.Equals(sourceSkuId);
                                                     });
                                         }
     
+                                        XElement associationElement = new XElement(
+                                            "Association",
+                                            new XElement("EntryCode", skuId),
+                                            new XElement("SortOrder", existingStructureEntity.SortOrder),
+                                            new XElement("Type", linkType.Id));
+    
                                         if (existingAssociation != null)
                                         {
-                                            XElement newElement = _epiElementFactory.CreateAssociationElement(existingStructureEntity);
-    
-                                            if (!existingAssociation.Descendants().Any(
-                                                         e =>
-                                                         e.Name.LocalName == "EntryCode"
-                                                         && e.Value == entityCode))
+                                            if (!existingAssociation.Descendants().Any(e => e.Name.LocalName == "EntryCode" && e.Value == skuId))
                                             {
-                                                existingAssociation.Add(newElement);
+                                                existingAssociation.Add(associationElement);
                                             }
                                         }
                                         else
                                         {
-                                            epiElements["Associations"].Add(
-                                                _epiElementFactory.CreateCatalogAssociationElement(
-                                                    existingStructureEntity,
-                                                    linkEntity));
+    
+                                            string description = existingStructureEntity.LinkEntityId == null
+                                                                        ? linkType.Id
+                                                                        : linkEntityId;
+                                            description = description ?? string.Empty;
+    
+                                            XElement catalogAssociation = new XElement(
+                                                "CatalogAssociation",
+                                                new XElement("Name", associationName),
+                                                new XElement("Description", description),
+                                                new XElement("SortOrder", existingStructureEntity.SortOrder),
+                                                new XElement("EntryCode", sourceSkuId),
+                                                associationElement);
+    
+                                            epiElements["Associations"].Add(catalogAssociation);
                                         }
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                var entityCode = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.EntityId);
+                                var parentCode = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.ParentId);
+    
+                                string channelPrefixAndLinkEntityId = string.Empty;
+    
+                                if (existingStructureEntity.LinkEntityId != null)
+                                {
+                                    channelPrefixAndLinkEntityId = _catalogCodeGenerator.GetEpiserverCode(existingStructureEntity.LinkEntityId ?? 0);
+                                }
+    
+                                string associationName = _epiMappingHelper.GetAssociationName(existingStructureEntity, linkEntity);
+    
+                                bool exists;
+                                if (existingStructureEntity.LinkEntityId != null)
+                                {
+                                    exists = epiElements["Associations"].Any(
+                                        e =>
+                                            {
+                                                XElement entryCodeElement = e.Element("EntryCode");
+                                                XElement descriptionElement = e.Element("Description");
+                                                return descriptionElement != null && entryCodeElement != null && entryCodeElement.Value.Equals(parentCode) && e.Elements("Association").Any(
+                                                            e2 =>
+                                                                {
+                                                                    XElement associatedEntryCode = e2.Element("EntryCode");
+                                                                    return associatedEntryCode != null && associatedEntryCode.Value.Equals(entityCode);
+                                                                }) && descriptionElement.Value.Equals(channelPrefixAndLinkEntityId);
+                                            });
+                                }
+                                else
+                                {
+                                    exists = epiElements["Associations"].Any(
+                                        e =>
+                                            {
+                                                XElement entryCodeElement = e.Element("EntryCode");
+                                                return entryCodeElement != null && entryCodeElement.Value.Equals(parentCode) && e.Elements("Association").Any(
+                                                    e2 =>
+                                                        {
+                                                            XElement associatedEntryCode = e2.Element("EntryCode");
+                                                            return associatedEntryCode != null && associatedEntryCode.Value.Equals(entityCode);
+                                                        }) && e.Elements("Association").Any(
+                                                            e3 =>
+                                                                {
+                                                                    XElement typeElement = e3.Element("Type");
+                                                                    return typeElement != null && typeElement.Value.Equals(linkType.Id);
+                                                                });
+                                            });
+                                }
+    
+                                if (!exists)
+                                {
+                                    XElement existingAssociation;
+    
+                                    if (existingStructureEntity.LinkEntityId != null)
+                                    {
+                                        existingAssociation = epiElements["Associations"].FirstOrDefault(
+                                            a =>
+                                                {
+                                                    XElement nameElement = a.Element("Name");
+                                                    XElement entryCodeElement = a.Element("EntryCode");
+                                                    XElement descriptionElement = a.Element("Description");
+                                                    return descriptionElement != null && entryCodeElement != null && nameElement != null && nameElement.Value.Equals(associationName) && entryCodeElement.Value.Equals(
+                                                        parentCode) && descriptionElement.Value.Equals(channelPrefixAndLinkEntityId);
+                                                });
+                                    }
+                                    else
+                                    {
+                                        existingAssociation = epiElements["Associations"].FirstOrDefault(
+                                            a =>
+                                                {
+                                                    XElement nameElement = a.Element("Name");
+                                                    XElement entryCodeElement = a.Element("EntryCode");
+                                                    return entryCodeElement != null && nameElement != null && nameElement.Value.Equals(associationName) && entryCodeElement.Value.Equals(parentCode);
+                                                });
+                                    }
+    
+                                    if (existingAssociation != null)
+                                    {
+                                        XElement newElement = _epiElementFactory.CreateAssociationElement(existingStructureEntity);
+    
+                                        if (!existingAssociation.Descendants().Any(
+                                                        e =>
+                                                        e.Name.LocalName == "EntryCode"
+                                                        && e.Value == entityCode))
+                                        {
+                                            existingAssociation.Add(newElement);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        var associationElement = _epiElementFactory.CreateCatalogAssociationElement(existingStructureEntity, linkEntity);
+                                        epiElements["Associations"].Add(associationElement);
                                     }
                                 }
                             }
                         }
                     }
-                }    
-                catch (Exception ex)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, ex.Message, ex);
                 }
             }
         }
@@ -795,52 +777,43 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private Dictionary<int, Entity> GetEntitiesInStructure(List<StructureEntity> batch)
         {
             Dictionary<int, Entity> channelEntites = new Dictionary<int, Entity>();
-
-            try
+            
+            foreach (EntityType entityType in _config.ExportEnabledEntityTypes)
             {
-                foreach (EntityType entityType in _config.ExportEnabledEntityTypes)
+                List<StructureEntity> structureEntities = batch.FindAll(i => i.Type.Equals(entityType.Id));
+
+                List<int> ids = structureEntities.Select(x => x.EntityId).Distinct().ToList();
+
+                if (!ids.Any())
                 {
-                    List<StructureEntity> structureEntities = batch.FindAll(i => i.Type.Equals(entityType.Id));
-
-                    List<int> ids = structureEntities.Select(structureEntity => structureEntity.EntityId).Distinct().ToList();
-
-                    if (!ids.Any())
-                    {
-                        continue;
-                    }
-
-                    List<Entity> entities = RemoteManager.DataService.GetEntities(ids, LoadLevel.DataOnly);
-
-                    foreach (Entity entity in entities)
-                    {
-                        if (!channelEntites.ContainsKey(entity.Id))
-                        {
-                            channelEntites.Add(entity.Id, entity);
-                        }
-                    }
+                    continue;
                 }
 
-                List<int> linkEntityIds = (from channelEntity in batch
-                                           where channelEntity.LinkEntityId.HasValue
-                                           select channelEntity.LinkEntityId.Value).Distinct().ToList();
+                List<Entity> entities = RemoteManager.DataService.GetEntities(ids, LoadLevel.DataOnly);
 
-
-                List<Entity> linkEntities = RemoteManager.DataService.GetEntities(linkEntityIds, LoadLevel.DataOnly);
-
-                foreach (Entity entity in linkEntities)
+                foreach (Entity entity in entities)
                 {
                     if (!channelEntites.ContainsKey(entity.Id))
                     {
                         channelEntites.Add(entity.Id, entity);
                     }
                 }
-
             }
-            catch (Exception ex)
+
+            List<int> linkEntityIds = (from channelEntity in batch
+                                        where channelEntity.LinkEntityId.HasValue
+                                        select channelEntity.LinkEntityId.Value).Distinct().ToList();
+
+
+            List<Entity> linkEntities = RemoteManager.DataService.GetEntities(linkEntityIds, LoadLevel.DataOnly);
+
+            foreach (Entity entity in linkEntities)
             {
-                IntegrationLogger.Write(LogLevel.Error, "GetEntitiesInStructure ", ex);
+                if (!channelEntites.ContainsKey(entity.Id))
+                {
+                    channelEntites.Add(entity.Id, entity);
+                }
             }
-
 
             return channelEntites;
         }
