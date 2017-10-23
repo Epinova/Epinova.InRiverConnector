@@ -47,12 +47,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
             _channelHelper.BuildEntityIdAndTypeDict(new List<StructureEntity>());
-            var channelEntities = new Dictionary<int, Entity>();
-
-            if (!channelEntities.ContainsKey(deletedEntity.Id))
-            {
-                channelEntities.Add(deletedEntity.Id, deletedEntity);
-            }
 
             string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);
 
@@ -62,33 +56,28 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
                 Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
 
-                if (!channelEntities.ContainsKey(parentEnt.Id))
-                {
-                    channelEntities.Add(parentEnt.Id, parentEnt);
-                }
-
                 if (deletedEntity.EntityType.Id == "Resource")
                 {
-                    DeleteResource(deletedEntity, parentEnt, channelIdentifier, folderDateTime, resourceZipFile, channelEntities);
+                    DeleteResource(deletedEntity, parentEnt, channelIdentifier, folderDateTime, resourceZipFile);
                 }
                 else
                 {
-                    DeleteEntityThatStillExistInChannel(channelEntity, deletedEntity, parentEnt, linkTypeId, structureEntitiesToDelete, folderDateTime, channelEntities);
+                    DeleteEntityThatStillExistInChannel(channelEntity, deletedEntity, parentEnt, linkTypeId, structureEntitiesToDelete, folderDateTime);
                 }
             }
             else
             {
-                DeleteEntity(channelEntity, parentEntityId, deletedEntity, linkTypeId, channelIdentifier, folderDateTime, channelEntities, productParentIds);
+                DeleteEntity(channelEntity, parentEntityId, deletedEntity, linkTypeId, channelIdentifier, folderDateTime, productParentIds);
             }
         }
+
 
         private void DeleteEntityThatStillExistInChannel(Entity channelEntity, 
                                                          Entity deletedEntity, 
                                                          Entity parentEnt, 
                                                          string linkTypeId,
-                                                         List<StructureEntity> existingEntities, 
-                                                         string folderDateTime,
-                                                         Dictionary<int, Entity> channelEntities)
+                                                         List<StructureEntity> structureEntitiesToDelete, 
+                                                         string folderDateTime)
         {
             var entitiesToUpdate = new Dictionary<string, Dictionary<string, bool>>();
 
@@ -102,63 +91,38 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             List<string> linkEntityIds = new List<string>();
             if (_channelHelper.LinkTypeHasLinkEntity(linkTypeId))
             {
-                var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel(_config.ExportEnabledEntityTypes);
-
-                List<StructureEntity> newEntityNodes = _channelHelper.FindEntitiesElementInStructure(allEntitiesInChannel, parentEnt.Id, deletedEntity.Id, linkTypeId);
-
-                List<string> parentCodes = new List<string>(); 
-                if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)
-                {
-                    var prefixedSkuCodes = _epiElementFactory.SkuItemIds(parentEnt, _config)
-                                                             .Select(_catalogCodeGenerator.GetPrefixedCode); 
-                    parentCodes.AddRange(prefixedSkuCodes);
-                }
-                
-                parentCodes.Add(_catalogCodeGenerator.GetEpiserverCode(parentEnt));
-
-                var targetCodes = new List<string>();
-                if (deletedEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
-                {
-                    var prefixedSkuIds = _epiElementFactory.SkuItemIds(deletedEntity, _config)
-                                                           .Select(_catalogCodeGenerator.GetPrefixedCode);
-                    targetCodes.AddRange(prefixedSkuIds);
-                }
-                    
-                targetCodes.Add(_catalogCodeGenerator.GetEpiserverCode(deletedEntity));
-                linkEntityIds = _epiApi.GetLinkEntityAssociationsForEntity(linkTypeId, channelEntity, parentCodes, targetCodes);
-
-                linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == _catalogCodeGenerator.GetEpiserverCode(n.ParentId)));
+                linkEntityIds = GetLinkEntitiesToRemove(channelEntity, deletedEntity, parentEnt, linkTypeId, linkEntityIds);
             }
 
             // Add the removed entity element together with all the underlying entity elements
-            List<XElement> updatedElements = new List<XElement>();
-            foreach (StructureEntity existingEntity in existingEntities)
+            var updatedEntities = new List<KeyValuePair<string, int>> ();
+            
+            foreach (var structureEntityToDelete in structureEntitiesToDelete)
             {
-                XElement copyOfElement = new XElement(existingEntity.Type + "_" + existingEntity.EntityId);
-                if (updatedElements.All(p => p.Name.LocalName != copyOfElement.Name.LocalName))
+                var isContainedAlready = updatedEntities.Any(x => x.Key == structureEntityToDelete.Type && x.Value == structureEntityToDelete.EntityId);
+                if (!isContainedAlready)
                 {
-                    updatedElements.Add(copyOfElement);
+                    updatedEntities.Add(new KeyValuePair<string, int>(structureEntityToDelete.Type, structureEntityToDelete.EntityId));
                 }
 
-                if (channelEntities.ContainsKey(existingEntity.EntityId))
+                var outboundLinksToUpdate = RemoteManager.DataService.GetOutboundLinksForEntity(structureEntityToDelete.EntityId);
+                foreach (Link link in outboundLinksToUpdate)
                 {
-                    foreach (Link outboundLinks in channelEntities[existingEntity.EntityId].OutboundLinks)
+                    var linkContainedAlready = updatedEntities.Any(x => x.Key == link.Target.EntityType.Id && x.Value == link.Target.Id);
+
+                    if (!linkContainedAlready)
                     {
-                        XElement copyOfDescendant = new XElement(outboundLinks.Target.EntityType.Id + "_" + outboundLinks.Target.Id);
-                        if (updatedElements.All(p => p.Name.LocalName != copyOfDescendant.Name.LocalName))
-                        {
-                            updatedElements.Add(copyOfDescendant);
-                        }
+                        updatedEntities.Add(new KeyValuePair<string, int>(link.Target.EntityType.Id, link.Target.Id));
                     }
                 }
             }
 
-            foreach (XElement element in updatedElements)
+            foreach (var updatedEntity in updatedEntities)
             {
-                string elementEntityType = element.Name.LocalName.Split('_')[0];
-                string elementEntityId = element.Name.LocalName.Split('_')[1];
+                string elementEntityType = updatedEntity.Key;
+                int elementEntityId = updatedEntity.Value;
 
-                Dictionary<string, bool> shouldExsistInChannelNodes = _channelHelper.ShouldEntityExistInChannelNodes(int.Parse(elementEntityId), channelNodes, channelEntity.Id);
+                Dictionary<string, bool> shouldExsistInChannelNodes = _channelHelper.ShouldEntityExistInChannelNodes(elementEntityId, channelNodes, channelEntity.Id);
                 
                 if (elementEntityType == "Link")
                     continue;
@@ -169,7 +133,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     
                     try
                     {
-                        entityToDelete = RemoteManager.DataService.GetEntity(int.Parse(elementEntityId), LoadLevel.DataOnly);
+                        entityToDelete = RemoteManager.DataService.GetEntity(elementEntityId, LoadLevel.DataOnly);
                     }
                     catch (Exception ex)
                     {
@@ -195,9 +159,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     }
                 }
 
-                if (!entitiesToUpdate.ContainsKey(elementEntityId))
+                if (!entitiesToUpdate.ContainsKey(elementEntityId.ToString()))
                 {
-                    entitiesToUpdate.Add(elementEntityId, shouldExsistInChannelNodes);
+                    entitiesToUpdate.Add(elementEntityId.ToString(), shouldExsistInChannelNodes);
                 }
             }
 
@@ -241,9 +205,40 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
         }
 
-        private void DeleteResource(Entity targetEntity, Entity parentEnt, string channelIdentifier, string folderDateTime, string resourceZipFile, Dictionary<int, Entity> channelEntities)
+        private List<string> GetLinkEntitiesToRemove(Entity channelEntity, Entity deletedEntity, Entity parentEnt, string linkTypeId, List<string> linkEntityIds)
         {
-            XDocument doc = _resourceElementFactory.HandleResourceUnlink(targetEntity, parentEnt, _config, channelEntities);
+            var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel(_config.ExportEnabledEntityTypes);
+
+            List<StructureEntity> newEntityNodes = _channelHelper.FindEntitiesElementInStructure(allEntitiesInChannel, parentEnt.Id, deletedEntity.Id, linkTypeId);
+
+            List<string> parentCodes = new List<string>();
+            if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)
+            {
+                var prefixedSkuCodes = _epiElementFactory.SkuItemIds(parentEnt, _config)
+                    .Select(_catalogCodeGenerator.GetPrefixedCode);
+                parentCodes.AddRange(prefixedSkuCodes);
+            }
+
+            parentCodes.Add(_catalogCodeGenerator.GetEpiserverCode(parentEnt));
+
+            var targetCodes = new List<string>();
+            if (deletedEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
+            {
+                var prefixedSkuIds = _epiElementFactory.SkuItemIds(deletedEntity, _config)
+                    .Select(_catalogCodeGenerator.GetPrefixedCode);
+                targetCodes.AddRange(prefixedSkuIds);
+            }
+
+            targetCodes.Add(_catalogCodeGenerator.GetEpiserverCode(deletedEntity));
+            linkEntityIds = _epiApi.GetLinkEntityAssociationsForEntity(linkTypeId, channelEntity, parentCodes, targetCodes);
+
+            linkEntityIds.RemoveAll(i => newEntityNodes.Any(n => i == _catalogCodeGenerator.GetEpiserverCode(n.ParentId)));
+            return linkEntityIds;
+        }
+
+        private void DeleteResource(Entity targetEntity, Entity parentEnt, string channelIdentifier, string folderDateTime, string resourceZipFile)
+        {
+            XDocument doc = _resourceElementFactory.HandleResourceUnlink(targetEntity, parentEnt, _config);
 
             _documentFileHelper.SaveDocument(channelIdentifier, doc, _config, folderDateTime);
             IntegrationLogger.Write(LogLevel.Debug, "Resource update-xml saved!");
@@ -260,13 +255,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         }
 
         private void DeleteEntity(Entity channelEntity, 
-            int parentEntityId,
-            Entity deletedEntity, 
-            string linkTypeId, 
-            string channelIdentifier, 
-            string folderDateTime,
-            Dictionary<int, Entity> channelEntities,
-            List<int> productParentIds = null)
+                                  int parentEntityId,
+                                  Entity deletedEntity, 
+                                  string linkTypeId, 
+                                  string channelIdentifier, 
+                                  string folderDateTime,
+                                  List<int> productParentIds = null)
         {
             XElement removedElement = new XElement(deletedEntity.EntityType.Id + "_" + deletedEntity.Id);
 
@@ -276,11 +270,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", "deleted")));
             Entity parentEntity = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
-
-            if (parentEntity != null && !channelEntities.ContainsKey(parentEntity.Id))
-            {
-                channelEntities.Add(parentEntity.Id, parentEntity);
-            }
 
             List<XElement> parentElements = _channelHelper.GetParentXElements(parentEntity);
             foreach (var parentElement in parentElements)
@@ -292,11 +281,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             foreach (XElement deletedElement in deletedElements)
             {
-                if (!deletedElement.Name.LocalName.Contains('_'))
-                {
-                    continue;
-                }
-
                 string deletedElementEntityType = deletedElement.Name.LocalName.Split('_')[0];
                 int deletedElementEntityId;
                 int.TryParse(deletedElement.Name.LocalName.Split('_')[1], out deletedElementEntityId);

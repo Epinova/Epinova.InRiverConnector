@@ -290,7 +290,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         public List<XElement> GetParentXElements(Entity parentEntity)
         {
             List<XElement> elements = new List<XElement>();
-            List<string> parents = new List<string>();
+
             if (parentEntity == null)
             {
                 return elements;
@@ -298,17 +298,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (parentEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
             {
-                parents = _epiElementFactory.SkuItemIds(parentEntity, _config);
+                var parents = _epiElementFactory.SkuItemIds(parentEntity, _config);
+                elements.AddRange(parents.Select(parent => new XElement("parent", _catalogCodeGenerator.GetPrefixedCode(parent))));
             }
             else
             {
-                parents.Add(parentEntity.Id.ToString(CultureInfo.InvariantCulture));
-            }
-
-            foreach (var parent in parents)
-            {
-                XElement parentElement = new XElement("parent", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parent));
-                elements.Add(parentElement);
+                elements.Add(new XElement("parent", _catalogCodeGenerator.GetEpiserverCode(parentEntity)));
             }
 
             return elements;

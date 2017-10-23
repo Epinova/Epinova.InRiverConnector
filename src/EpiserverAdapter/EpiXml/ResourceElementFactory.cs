@@ -36,8 +36,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XElement CreateResourceElement(Entity resource, 
                                               string action, 
-                                              List<StructureEntity> allResourceStructureEntities,
-                                              Dictionary<int, Entity> channelEntities)
+                                              List<StructureEntity> allResourceStructureEntities)
         {
             string resourceFileId = "-1";
             Field resourceFileIdField = resource.GetField("ResourceFileId");
@@ -50,7 +49,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             if (action == "unlinked")
             {
-                var resourceParents = channelEntities.Where(i => !i.Key.Equals(resource.Id));
+                // TODO: ResourceParents her: "ChannelEntities" opprinnelig. Finn alle foreldre-structure-entities til ressursen
+                // (Husk at det er Resource => Link => Parent, så to nivåer.
+                // <int, Entity> == <EntityId, Entity>. Finn en liste av entities ellerno i stedet, RemoteManager kan sikkert hjelpe.
+                var resourceParents = new Dictionary<int, Entity>().Where(i => !i.Key.Equals(resource.Id));
 
                 foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
                 {
@@ -113,25 +115,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         if (!parents.ContainsKey(id))
                         {
                             parents.Add(id, linkedEntity.MainPictureId);
-                        }
-                    }
-                }
-
-                if (parents.Any() && channelEntities != null)
-                {
-                    List<int> nonExistingIds =
-                        (from id in parents.Keys
-                         where !channelEntities.ContainsKey(int.Parse(id))
-                         select int.Parse(id)).ToList();
-
-                    if (nonExistingIds.Any())
-                    {
-                        foreach (Entity entity in RemoteManager.DataService.GetEntities(nonExistingIds, LoadLevel.DataOnly))
-                        {
-                            if (!channelEntities.ContainsKey(entity.Id))
-                            {
-                                channelEntities.Add(entity.Id, entity);
-                            }
                         }
                     }
                 }
@@ -212,10 +195,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             from id in deletedResources select new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
         }
 
-        internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config, Dictionary<int, Entity> channelEntities)
+        internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
         {
             var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
-            XElement resourceElement = CreateResourceElement(resource, "unlinked", allEntitiesInChannel, channelEntities);
+            XElement resourceElement = CreateResourceElement(resource, "unlinked", allEntitiesInChannel);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
@@ -235,18 +218,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         new XElement("ResourceFiles", resourceElement)));
         }
 
-        internal XDocument CreateResourceDocument(XElement resourceMetaClasses, List<Entity> channelResources, List<Entity> resources, string action, Configuration config)
+        internal XDocument CreateResourceDocument(XElement resourceMetaClasses, List<Entity> channelResources, List<Entity> resources, string action)
         {
             var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
-
-            Dictionary<int, Entity> parentEntities = config.ChannelEntities;
-
+            
             return
-                new XDocument(
-                    new XElement("Resources",
-                        resourceMetaClasses,
-                        new XElement("ResourceFiles",
-                            resources.Select(res => CreateResourceElement(res, action, config, allEntitiesInChannel, parentEntities)))));
+                new XDocument(new XElement("Resources",
+                              resourceMetaClasses,
+                              new XElement("ResourceFiles",
+                                  resources.Select(res => CreateResourceElement(res, action, allEntitiesInChannel)))));
         }
 
         internal bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)
