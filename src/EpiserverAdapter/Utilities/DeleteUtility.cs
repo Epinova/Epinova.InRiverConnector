@@ -67,7 +67,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
             else
             {
-                DeleteEntity(channelEntity, parentEntityId, deletedEntity, linkTypeId, channelIdentifier, folderDateTime, productParentIds);
+                DeleteEntity(channelEntity, parentEntityId, deletedEntity, channelIdentifier, folderDateTime, productParentIds);
             }
         }
 
@@ -257,17 +257,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         private void DeleteEntity(Entity channelEntity, 
                                   int parentEntityId,
                                   Entity deletedEntity, 
-                                  string linkTypeId, 
                                   string channelIdentifier, 
                                   string folderDateTime,
                                   List<int> productParentIds = null)
         {
-            XElement removedElement = new XElement(deletedEntity.EntityType.Id + "_" + deletedEntity.Id);
-
-            List<XElement> deletedElements = new List<XElement>();
-
-            deletedElements.Add(removedElement);
-
             XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", "deleted")));
             Entity parentEntity = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
 
@@ -276,268 +269,130 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             {
                 deleteXml.Root?.Add(parentElement);
             }
-
-            deletedElements = deletedElements.GroupBy(elem => elem.Name.LocalName).Select(grp => grp.First()).ToList();
-
-            foreach (XElement deletedElement in deletedElements)
+            
+            switch (deletedEntity.EntityType.Id)
             {
-                string deletedElementEntityType = deletedElement.Name.LocalName.Split('_')[0];
-                int deletedElementEntityId;
-                int.TryParse(deletedElement.Name.LocalName.Split('_')[1], out deletedElementEntityId);
-
-                if (deletedElementEntityType == "Link")
-                {
-                    continue;
-                }
-
-                List<string> deletedResources = new List<string>();
-
-                // TODO: Del opp. Hver case kan bli en egen metode.
-
-                switch (deletedElementEntityType)
-                {
-                    case "Channel":
-                        _epiApi.DeleteCatalog(deletedElementEntityId, _config);
-                        deletedResources = _channelHelper.GetResourceIds(deletedElement);
-                        break;
-                    case "ChannelNode":
-                        _epiApi.DeleteCatalogNode(deletedElementEntityId, channelEntity.Id, _config);
-
-                        deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedElementEntityId)));
-
-                        Entity channelNode = deletedEntity.Id == deletedElementEntityId
-                                                 ? deletedEntity
-                                                 : RemoteManager.DataService.GetEntity(
-                                                     deletedElementEntityId,
-                                                     LoadLevel.DataAndLinks);
-
-                        if (channelNode == null)
-                        {
-                            break;
-                        }
-
-                        if (deletedElement.Elements().Any())
-                        {
-                            foreach (XElement linkElement in deletedElement.Elements())
-                            {
-                                foreach (XElement entityElement in linkElement.Elements())
-                                {
-                                    string elementEntityId = entityElement.Name.LocalName.Split('_')[1];
-
-                                    Entity child = RemoteManager.DataService.GetEntity(int.Parse(elementEntityId), LoadLevel.DataAndLinks);
-                                    Delete(channelEntity, deletedEntity.Id, child, linkTypeId);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            foreach (Link link in deletedEntity.OutboundLinks)
-                            {
-                                Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
-
-                                Delete(channelEntity, deletedEntity.Id, child, link.LinkType.Id);
-                            }
-                        }
-
-                        deletedResources = _channelHelper.GetResourceIds(deletedElement);
-                        break;
-                    case "Item":
-                        deletedResources = _channelHelper.GetResourceIds(deletedElement);
-                        if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)
-                        {
-                            _epiApi.DeleteCatalogEntry(deletedEntity, _config);
-
-                            deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
-                        }
-
-                        if (_config.ItemsToSkus)
-                        {
-                            // delete skus if exist
-                            var entitiesToDelete = new List<Entity>();
-
-                            if (deletedEntity != null)
-                            {
-                                List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
-
-                                foreach (XElement sku in skus)
-                                {
-                                    XElement skuCodElement = sku.Element("Code");
-                                    if (skuCodElement != null)
-                                    {
-                                        entitiesToDelete.Add(deletedEntity);
-                                    }
-                                }
-                            }
-
-                            foreach (var entity in entitiesToDelete)
-                            {
-                                _epiApi.DeleteCatalogEntry(entity, _config);
-
-                                deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(entity)));
-                            }
-                        }
-
-                        break;
-                    case "Resource":
-                        deletedResources = new List<string> { _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(deletedElementEntityId) };
+                case "Resource":
+                    var resourceStillExistsInChannel = RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, deletedEntity.Id);
+                    if (resourceStillExistsInChannel)
                         break;
 
-                    case "Product":
-                        _epiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), _config);
-                        deletedResources = _channelHelper.GetResourceIds(deletedElement);
+                    var deletedResource = _catalogCodeGenerator.GetEpiserverCode(deletedEntity);
 
-                        deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(deletedElementEntityId)));
+                    XDocument resDoc = _resourceElementFactory.HandleResourceDelete(deletedResource);
 
-                        Entity delEntity = RemoteManager.DataService.GetEntity(
-                            deletedElementEntityId,
-                            LoadLevel.DataAndLinks);
+                    _documentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime);
 
-                        if (delEntity == null)
-                        {
-                            break;
-                        }
+                    string zipFileDelete = $"resourceDelete_{folderDateTime}{deletedEntity.Id}.zip";
 
-                        foreach (Link link in delEntity.OutboundLinks)
-                        {
-                            if (link.Target.EntityType.Id == "Product")
-                            {
-                                if (productParentIds != null && productParentIds.Contains(link.Target.Id))
-                                {
-                                    IntegrationLogger.Write(LogLevel.Information, string.Format("Entity with id {0} has already been deleted, break the chain to avoid circular relations behaviors (deadlocks)", link.Target.Id));
-                                    continue;
-                                }
-
-                                if (productParentIds == null)
-                                {
-                                    productParentIds = new List<int>();
-                                }
-
-                                productParentIds.Add(delEntity.Id);
-                            }
-
-                            Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
-
-                            Delete(channelEntity, delEntity.Id, child, link.LinkType.Id, productParentIds);
-                        }
-
-                        break;
-                    default:
-                        _epiApi.DeleteCatalogEntry(deletedElementEntityId.ToString(CultureInfo.InvariantCulture), _config);
-                        deletedResources = _channelHelper.GetResourceIds(deletedElement);
-
-                        deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(deletedElementEntityId)));
-
-                        Entity prodEntity;
-                        if (deletedEntity.Id == deletedElementEntityId)
-                        {
-                            prodEntity = deletedEntity;
-                        }
-                        else
-                        {
-                            prodEntity = RemoteManager.DataService.GetEntity(
-                                deletedElementEntityId,
-                                LoadLevel.DataAndLinks);
-                        }
-
-                        if (prodEntity == null)
-                        {
-                            break;
-                        }
-
-                        foreach (Link link in prodEntity.OutboundLinks)
-                        {
-                            if (link.Target.EntityType.Id == "Product")
-                            {
-                                if (productParentIds != null && productParentIds.Contains(link.Target.Id))
-                                {
-                                    IntegrationLogger.Write(LogLevel.Information, string.Format("Entity with id {0} has already been deleted, break the chain to avoid circular relations behaviors (deadlocks)", link.Target.Id));
-                                    continue;
-                                }
-
-                                if (productParentIds == null)
-                                {
-                                    productParentIds = new List<int>();
-                                }
-
-                                productParentIds.Add(prodEntity.Id);
-                            }
-
-                            Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
-
-                            Delete(channelEntity, parentEntityId, child, link.LinkType.Id);
-                        }
-
-                        break;
-                }
-
-                foreach (string resourceId in deletedResources)
-                {
-                    string resourceIdWithoutPrefix = resourceId.Substring(_config.ChannelIdPrefix.Length);
-
-                    int resourceIdAsInt;
-
-                    if (Int32.TryParse(resourceIdWithoutPrefix, out resourceIdAsInt))
-                    {
-                        if (RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, resourceIdAsInt))
-                        {
-                            deletedResources.Remove(resourceId);
-                        }
-                    }
-                }
-                
-                if (deletedResources != null && deletedResources.Count != 0)
-                {
-                    XDocument resDoc = _resourceElementFactory.HandleResourceDelete(deletedResources);
-                    string folderDateTime2 = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
-
-                    _documentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime2);
-
-                    string zipFileDelete = $"resource_{folderDateTime2}{deletedElementEntityId}.zip";
-
-                    var removeResourceFileToZip = Path.Combine(_config.ResourcesRootPath, folderDateTime2, "Resources.xml");
+                    var removeResourceFileToZip = Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml");
                     _documentFileHelper.ZipFile(removeResourceFileToZip, zipFileDelete);
 
-                    foreach (string resourceIdString in deletedResources)
+                    var unlinkFileToZip = Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml");
+                    
+                    Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
+                    var unlinkDoc = _resourceElementFactory.HandleResourceUnlink(deletedEntity, parentEnt, _config);
+
+                    _documentFileHelper.SaveDocument(channelIdentifier, unlinkDoc, _config, folderDateTime);
+                    var zipFileUnlink = $"resourceUnlink_{folderDateTime}{deletedEntity.Id}.zip";
+
+                    _documentFileHelper.ZipFile(unlinkFileToZip, zipFileUnlink);
+
+                    IntegrationLogger.Write(LogLevel.Debug, "Resources saved! Starting automatic import!");
+
+                    _epiApi.ImportResources(unlinkFileToZip, Path.Combine(_config.ResourcesRootPath, folderDateTime), _config);
+                    _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, zipFileUnlink));
+
+                    _epiApi.ImportResources(removeResourceFileToZip, Path.Combine(_config.ResourcesRootPath, folderDateTime), _config);
+                    _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, zipFileDelete));
+                    
+                    break;
+                case "Channel":
+                    _epiApi.DeleteCatalog(deletedEntity.Id, _config);
+                    break;
+                case "ChannelNode":
+                    _epiApi.DeleteCatalogNode(deletedEntity.Id, channelEntity.Id, _config);
+                    deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
+
+                    foreach (Link link in deletedEntity.OutboundLinks)
                     {
-                        int resourceId = int.Parse(resourceIdString);
-                        bool sendUnlinkResource = false;
-                        string zipFileUnlink = string.Empty;
-                        Entity resource = RemoteManager.DataService.GetEntity(resourceId, LoadLevel.DataOnly);
+                        Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
 
-                        var unlinkFileToZip = Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml");
-                        if (resource != null)
-                        {
-                            // Only do this when removing an link (unlink)
-                            Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
-                            var unlinkDoc = _resourceElementFactory.HandleResourceUnlink(resource, parentEnt, _config);
-
-                            _documentFileHelper.SaveDocument(channelIdentifier, unlinkDoc, _config, folderDateTime);
-                            zipFileUnlink = $"resource_{folderDateTime}{deletedElementEntityId}.zip";
-
-                            _documentFileHelper.ZipFile(unlinkFileToZip, zipFileUnlink);
-                            sendUnlinkResource = true;
-                        }
-
-                        IntegrationLogger.Write(LogLevel.Debug, "Resources saved! Starting automatic import!");
-
-                        if (sendUnlinkResource)
-                        {
-                            _epiApi.ImportResources(unlinkFileToZip, Path.Combine(_config.ResourcesRootPath, folderDateTime), _config);
-                            _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, zipFileUnlink));
-                        }
-
-                        _epiApi.ImportResources(removeResourceFileToZip, Path.Combine(_config.ResourcesRootPath, folderDateTime2), _config);
-                        _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime2, zipFileDelete));
+                        Delete(channelEntity, deletedEntity.Id, child, link.LinkType.Id);
                     }
-                }
+                    break;
+                case "Item":
+                    if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)
+                    {
+                        _epiApi.DeleteCatalogEntry(deletedEntity, _config);
+
+                        deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
+                    }
+
+                    if (_config.ItemsToSkus)
+                    {
+                        var entitiesToDelete = new List<Entity>();
+
+                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity, _config);
+
+                        foreach (XElement sku in skus)
+                        {
+                            XElement skuCodElement = sku.Element("Code");
+                            if (skuCodElement != null)
+                            {
+                                entitiesToDelete.Add(deletedEntity);
+                            }
+                        }
+
+                        foreach (var entity in entitiesToDelete)
+                        {
+                            _epiApi.DeleteCatalogEntry(entity, _config);
+
+                            deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(entity)));
+                        }
+                    }
+
+                    break;
+                default:
+                    _epiApi.DeleteCatalogEntry(deletedEntity, _config);
+                    deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
+                    deletedEntity = RemoteManager.DataService.GetEntity(deletedEntity.Id, LoadLevel.DataAndLinks);
+
+                    foreach (Link link in deletedEntity.OutboundLinks)
+                    {
+                        if (link.Target.EntityType.Id == "Product")
+                        {
+                            if (productParentIds != null && productParentIds.Contains(link.Target.Id))
+                            {
+                                IntegrationLogger.Write(LogLevel.Information, $"Entity with id {link.Target.Id} has already been deleted, skipping it to avoid problems.");
+                                continue;
+                            }
+
+                            if (productParentIds == null)
+                            {
+                                productParentIds = new List<int>();
+                            }
+
+                            productParentIds.Add(deletedEntity.Id);
+                        }
+
+                        Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
+
+                        if(deletedEntity.EntityType.Id == "Product")
+                            Delete(channelEntity, deletedEntity.Id, child, link.LinkType.Id, productParentIds);
+
+                        else
+                            Delete(channelEntity, parentEntityId, child, link.LinkType.Id);
+                    }
+                    break;
             }
 
-            if (deleteXml.Root != null && deleteXml.Root.Elements().FirstOrDefault(e => e.Name.LocalName == "entry") != null)
-            {
-                string zippedCatName = _documentFileHelper.SaveAndZipDocument(channelEntity, deleteXml, folderDateTime);
-                IntegrationLogger.Write(LogLevel.Debug, "catalog saved");
-                _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedCatName));
-            }
+            if (deleteXml.Root.Elements().FirstOrDefault(e => e.Name.LocalName == "entry") == null)
+                return;
+
+            var zippedCatName = _documentFileHelper.SaveAndZipDocument(channelEntity, deleteXml, folderDateTime);
+            IntegrationLogger.Write(LogLevel.Debug, "Catalog XML saved.");
+            _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedCatName));
         }
     }
 }

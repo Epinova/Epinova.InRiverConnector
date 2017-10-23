@@ -309,19 +309,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return elements;
         }
 
-        internal List<string> GetResourceIds(XElement deletedElement)
-        {
-            List<string> foundResources = new List<string>();
-            foreach (
-                XElement resourceElement in
-                    deletedElement.Descendants().Where(e => e.Name.LocalName.Contains("Resource_")))
-            {
-                foundResources.Add(_config.ChannelIdPrefix + resourceElement.Name.LocalName.Split('_')[1]);
-            }
-
-            return foundResources;
-        }
-
         public Dictionary<string, bool> ShouldEntityExistInChannelNodes(int entityId, List<StructureEntity> channelNodes, int channelId)
         {
             Dictionary<string, bool> dictionary = new Dictionary<string, bool>();

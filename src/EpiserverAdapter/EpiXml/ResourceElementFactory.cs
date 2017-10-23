@@ -184,15 +184,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return CreateResourceDocument(null, channelResources, new List<Entity> { updatedResource }, "updated", config);
         }
 
-        internal XDocument HandleResourceDelete(List<string> deletedResources)
+        internal XDocument HandleResourceDelete(string deletedResourceCode)
         {
             return
-                new XDocument(
-                    new XElement(
-                        "Resources",
+                new XDocument(new XElement("Resources",
                         new XElement("ResourceMetaFields"),
                         new XElement("ResourceFiles",
-                            from id in deletedResources select new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
+                            new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
         }
 
         internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
