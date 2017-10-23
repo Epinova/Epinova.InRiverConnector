@@ -61,8 +61,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var channelStructureEntities = _channelHelper.GetAllEntitiesInChannel(_config.ExportEnabledEntityTypes);
 
-            _channelHelper.BuildEntityIdAndTypeDict(channelStructureEntities);
-
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities. Generating catalog.xml...", 10);
 
             var epiElements = _epiDocumentFactory.GetEPiElements(channelStructureEntities);
@@ -89,7 +87,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             channelStructureEntities.AddRange(resources);
 
-            var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(resources, _config, folderDateTime);
+            var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(resources, folderDateTime);
 
             _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, _config, folderDateTime);
 
@@ -154,7 +152,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             structureEntities.AddRange(childLinkEntities);
 
-            _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
             _addUtility.Add(channel, connectorEvent, structureEntities, out resourceIncluded);
           
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
@@ -182,8 +179,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
 
             var structureEntities = _channelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
-
-            _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
 
             if (updatedEntity.EntityType.Id.Equals("Resource"))
             {
@@ -283,8 +278,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             //Adding existing Entities. If it occurs more than one time in channel. We can not remove duplicates.
             structureEntities.AddRange(existingEntitiesInChannel);
 
-            _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
-
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
             _addUtility.Add(channel, connectorEvent, structureEntities, out resourceIncluded);
@@ -336,8 +329,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var entities = _channelHelper.GetChildrenEntitiesInChannel(parentStructureEntity.EntityId, parentStructureEntity.Path);
             structureEntities.AddRange(entities);
-
-            _channelHelper.BuildEntityIdAndTypeDict(structureEntities);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
@@ -403,7 +394,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var resourceIncluded = false;
             string channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
 
-            var resDoc = _resourceElementFactory.HandleResourceUpdate(updatedEntity, _config, folderDateTime);
+            var resDoc = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
             _documentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime);
 
             string resourceZipFile = $"resource_{folderDateTime}.zip";
@@ -411,8 +402,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _documentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
 
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
-            
-            _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config)
+
+            _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config);
             _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
             resourceIncluded = true;
 

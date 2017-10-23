@@ -330,21 +330,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return dictionary;
         }
 
-        public void BuildEntityIdAndTypeDict(List<StructureEntity> channelStructureEntities)
-        {
-            Dictionary<int, string> entityIdAndType = new Dictionary<int, string>();
-
-            foreach (StructureEntity structureEntity in channelStructureEntities)
-            {
-                if (!entityIdAndType.ContainsKey(structureEntity.EntityId))
-                {
-                    entityIdAndType.Add(structureEntity.EntityId, structureEntity.Type);
-                }
-            }
-
-            _config.EntityIdAndType = entityIdAndType;
-        }
-
         // TODO: Hvafaen er det her slags navn? Fiks, for pokker.
         public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Entity channel)
         {
@@ -395,30 +380,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                             continue;
                         }
 
-                        string channelPrefixAndSkuId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.EntityId);
-                        string channelPrefixAndParentNodeId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentNodeId);
+                        string skuCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId);
+                        string parentNodeCode = _catalogCodeGenerator.GetEpiserverCode(parentNodeId);
 
-                        if (!relationsElements.ContainsKey(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId))
+                        if (!relationsElements.ContainsKey(skuCode + "_" + parentNodeCode))
                         {
-                            relationsElements.Add(channelPrefixAndSkuId + "_" + channelPrefixAndParentNodeId,
-                                _epiElementFactory.CreateNodeEntryRelation(
-                                    parentNodeId.ToString(CultureInfo.InvariantCulture),
-                                    structureEntity.EntityId.ToString(),
-                                    structureEntity.SortOrder,
-                                    _config));
+                            relationsElements.Add(skuCode + "_" + parentNodeCode, 
+                                                  _epiElementFactory.CreateNodeEntryRelation(parentNodeId, structureEntity.EntityId, structureEntity.SortOrder));
                         }
 
-                        string channelPrefixAndParent = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(structureEntity.ParentId);
-
-                        var relationName = channelPrefixAndSkuId + "_" + channelPrefixAndParent;
+                        string parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);
+                        var relationName = skuCode + "_" + parentCode;
 
                         if (!relationsElements.ContainsKey(relationName))
                         {
                             var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(
-                                structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
-                                link.LinkType.SourceEntityTypeId,
-                                structureEntity.EntityId.ToString(),
-                                structureEntity.SortOrder, _config);
+                                                                            structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
+                                                                            link.LinkType.SourceEntityTypeId,
+                                                                            structureEntity.EntityId.ToString(),
+                                                                            structureEntity.SortOrder);
                             relationsElements.Add(relationName, entryRelationElement);
                         }
                     }

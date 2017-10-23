@@ -136,14 +136,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         }
 
 
-        public XDocument GetDocumentAndSaveFilesToDisk(List<StructureEntity> channelEntities, Configuration config, string folderDateTime)
+        public XDocument GetDocumentAndSaveFilesToDisk(List<StructureEntity> channelEntities, string folderDateTime)
         {
             XDocument resourceDocument = new XDocument();
             try
             {
-                if (!Directory.Exists(config.ResourcesRootPath))
+                if (!Directory.Exists(_config.ResourcesRootPath))
                 {
-                    Directory.CreateDirectory(config.ResourcesRootPath);
+                    Directory.CreateDirectory(_config.ResourcesRootPath);
                 }
 
                 List<int> resourceIds = new List<int>();
@@ -158,12 +158,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 List<Entity> resources = RemoteManager.DataService.GetEntities(resourceIds, LoadLevel.DataAndLinks);
                 foreach (Entity res in resources)
                 {
-                    SaveFileToDisk(res, config, folderDateTime);
+                    SaveFileToDisk(res, _config, folderDateTime);
                 }
 
                 EntityType reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
                 XElement resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType);
-                resourceDocument = CreateResourceDocument(resourceMetaClasses, resources, resources, "added", config);
+                resourceDocument = CreateResourceDocument(resourceMetaClasses, resources, resources, "added");
             }
             catch (Exception ex)
             {
@@ -173,15 +173,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return resourceDocument;
         }
         
-        internal XDocument HandleResourceUpdate(Entity updatedResource, Configuration config, string folderDateTime)
+        internal XDocument HandleResourceUpdate(Entity updatedResource, string folderDateTime)
         {
-            SaveFileToDisk(updatedResource, config, folderDateTime);
+            SaveFileToDisk(updatedResource, _config, folderDateTime);
             List<Entity> channelResources = new List<Entity>();
             channelResources.Add(updatedResource);
 
-            var allResourcesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
-
-            return CreateResourceDocument(null, channelResources, new List<Entity> { updatedResource }, "updated", config);
+            return CreateResourceDocument(null, channelResources, new List<Entity> { updatedResource }, "updated");
         }
 
         internal XDocument HandleResourceDelete(string deletedResourceCode)
@@ -190,7 +188,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XDocument(new XElement("Resources",
                         new XElement("ResourceMetaFields"),
                         new XElement("ResourceFiles",
-                            new XElement("Resource", new XAttribute("id", id), new XAttribute("action", "deleted")))));
+                            new XElement("Resource", new XAttribute("id", deletedResourceCode), new XAttribute("action", "deleted")))));
         }
 
         internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)

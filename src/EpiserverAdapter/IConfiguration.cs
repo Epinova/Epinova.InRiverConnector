@@ -32,7 +32,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         LinkType[] ExportEnabledLinkTypes { get; }
         bool ItemsToSkus { get; }
         int BatchSize { get; }
-        Dictionary<int, string> EntityIdAndType { get; set; }
         string[] BundleEntityTypes { get; }
         string[] PackageEntityTypes { get; }
         string[] DynamicPackageEntityTypes { get; }

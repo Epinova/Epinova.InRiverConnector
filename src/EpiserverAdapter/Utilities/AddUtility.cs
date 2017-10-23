@@ -56,7 +56,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating catalog.xml. Generating Resource.xml and saving files to disk...", 26);
 
-            var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(structureEntities, _connectorConfig, folderDateTime);
+            var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(structureEntities, folderDateTime);
             _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, _connectorConfig, folderDateTime);
 
             string zipFileName = $"resource_{folderDateTime}.zip";

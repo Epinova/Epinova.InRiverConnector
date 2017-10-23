@@ -80,13 +80,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         return codeValue;
                     }
 
-                    if (!_config.EntityIdAndType.ContainsKey(entityId))
-                    {
-                        if (RemoteManager.DataService.GetEntity(entityId, LoadLevel.Shallow) == null)
-                        {
-                            return codeValue;
-                        }
-                    }
+                    
                 }
             }
 

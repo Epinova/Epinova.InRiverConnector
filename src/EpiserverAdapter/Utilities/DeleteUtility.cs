@@ -46,8 +46,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             string channelIdentifier = _channelHelper.GetChannelIdentifier(channelEntity);
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
-            _channelHelper.BuildEntityIdAndTypeDict(new List<StructureEntity>());
-
             string resourceZipFile = string.Format("resource_{0}.zip", folderDateTime);
 
             if (RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, deletedEntity.Id))

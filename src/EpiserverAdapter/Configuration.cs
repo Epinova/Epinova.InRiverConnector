@@ -3,9 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Xml;
-using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Enums;
-using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
@@ -453,9 +451,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return int.MaxValue;
             }
         }
-
-        [Obsolete("This needs to die. Inneholder en liste over entitets-ID-er og hvilken EntityTypeId den har, for oppslag senere. Livsfarlig.", true)]
-        public Dictionary<int, string> EntityIdAndType { get; set; }
 
         public string[] BundleEntityTypes => StringToStringArray("BUNDLE_ENTITYTYPES");
 
