@@ -64,7 +64,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities. Generating catalog.xml...", 10);
 
             var epiElements = _epiDocumentFactory.GetEPiElements(channelStructureEntities);
-            var metaClasses = _epiElementFactory.GetMetaClassesFromFieldSets(_config);
+            var metaClasses = _epiElementFactory.GetMetaClassesFromFieldSets();
             var associationTypes = _epiDocumentFactory.GetAssociationTypes();
 
             var doc = _epiDocumentFactory.CreateImportDocument(channel, metaClasses, associationTypes, epiElements);
@@ -89,7 +89,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(resources, folderDateTime);
 
-            _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, _config, folderDateTime);
+            _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, folderDateTime);
 
             string resourceZipFile = $"resource_{folderDateTime}.zip";
 
@@ -101,26 +101,26 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var filePath = Path.Combine(_config.PublicationsRootPath, folderDateTime, Configuration.ExportFileName);
 
-            _epiApi.Import(filePath, _channelHelper.GetChannelGuid(channel), _config);
+            _epiApi.Import(filePath, _channelHelper.GetChannelGuid(channel));
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
+            _epiApi.SendHttpPost(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Sending Resources to EPiServer...", 76);
 
             var baseFilePpath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
-            _epiApi.ImportResources(resourceXml, baseFilePpath, _config);
+            _epiApi.ImportResources(resourceXml, baseFilePpath);
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending resources to EPiServer...", 99);
 
             var resourceZipFilePath = Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile);
             
-            _epiApi.SendHttpPost(_config, resourceZipFilePath);
+            _epiApi.SendHttpPost(resourceZipFilePath);
 
             var channelName = _mappingHelper.GetNameForEntity(channel, 100);
 
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.Publish, true, _config);
+            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.Publish, true);
         }
 
         public void ChannelEntityAdded(Entity channel, int entityId)
@@ -155,7 +155,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _addUtility.Add(channel, connectorEvent, structureEntities, out resourceIncluded);
           
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityAdded, resourceIncluded, _config);
+            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityAdded, resourceIncluded);
         }
 
         public void ChannelEntityUpdated(Entity channel, int entityId, string data)
@@ -209,18 +209,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 {
                     List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
                     if (links.Count > 0)
-                        _epiApi.UpdateLinkEntityData(updatedEntity, channel, _config, links.First().Source.Id);
+                        _epiApi.UpdateLinkEntityData(updatedEntity, channel, links.First().Source.Id);
                 }
 
                 string zippedName = _documentFileHelper.SaveAndZipDocument(channel, doc, folderDateTime);
 
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
                 var channelGuid = _channelHelper.GetChannelGuid(channel);
-                _epiApi.Import(Path.Combine(_config.PublicationsRootPath, folderDateTime, "Catalog.xml"), channelGuid, _config);
-                _epiApi.SendHttpPost(_config, Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
+                _epiApi.Import(Path.Combine(_config.PublicationsRootPath, folderDateTime, "Catalog.xml"), channelGuid);
+                _epiApi.SendHttpPost(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
             }
 
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded, _config);
+            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
         }
 
         public void ChannelEntityDeleted(Entity channel, Entity deletedEntity)
@@ -233,7 +233,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (!connectorEvent.IsError)
             {
                 string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-                _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.EntitiyDeleted, _config);
+                _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.EntitiyDeleted);
             }
         }
 
@@ -285,7 +285,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (!connectorEvent.IsError)
             {
                 string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-                _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkAdded, resourceIncluded, _config);
+                _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkAdded, resourceIncluded);
             }
         }
 
@@ -302,7 +302,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (!c.IsError)
             {
                 string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-                _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted, _config);
+                _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted);
             }
         }
 
@@ -337,7 +337,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (!connectorEvent.IsError)
             {
                 string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-                _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, resourceIncluded, _config);
+                _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, resourceIncluded);
             }
         }
 
@@ -373,7 +373,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             foreach (XElement skuToDelete in skusToDelete)
             {
                 var skuId = skuToDelete.Attribute("id").Value;
-                _epiApi.DeleteSku(skuId, _config);
+                _epiApi.DeleteSku(skuId);
             }
 
             if (skusToAdd.Count > 0)
@@ -386,7 +386,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             bool resourceIncluded;
             _addUtility.Add(channel, entityUpdatedConnectorEvent, structureEntities, out resourceIncluded);
-            _epiApi.ImportUpdateCompleted(BusinessHelper.GetDisplayNameFromEntity(channel, _config, 100), ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded, _config);
+            _epiApi.ImportUpdateCompleted(BusinessHelper.GetDisplayNameFromEntity(channel, _config, 100), ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
         }
 
         private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime, Entity channel)
@@ -395,7 +395,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
 
             var resDoc = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
-            _documentFileHelper.SaveDocument(channelIdentifier, resDoc, _config, folderDateTime);
+            _documentFileHelper.SaveDocument(channelIdentifier, resDoc, folderDateTime);
 
             string resourceZipFile = $"resource_{folderDateTime}.zip";
 
@@ -403,8 +403,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
 
-            _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime), _config);
-            _epiApi.SendHttpPost(_config, Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
+            _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime));
+            _epiApi.SendHttpPost(Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
             resourceIncluded = true;
 
             return resourceIncluded;

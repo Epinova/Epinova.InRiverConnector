@@ -298,7 +298,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (parentEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
             {
-                var parents = _epiElementFactory.SkuItemIds(parentEntity, _config);
+                var parents = _epiElementFactory.SkuItemIds(parentEntity);
                 elements.AddRange(parents.Select(parent => new XElement("parent", _catalogCodeGenerator.GetPrefixedCode(parent))));
             }
             else

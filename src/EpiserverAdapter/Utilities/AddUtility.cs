@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
-using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using inRiver.Integration.Logging;
@@ -57,7 +56,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating catalog.xml. Generating Resource.xml and saving files to disk...", 26);
 
             var resourceDocument = _resourceElementFactory.GetDocumentAndSaveFilesToDisk(structureEntities, folderDateTime);
-            _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, _connectorConfig, folderDateTime);
+            _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, folderDateTime);
 
             string zipFileName = $"resource_{folderDateTime}.zip";
             var fileToZip = Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, "Resources.xml");
@@ -71,19 +70,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             var channelGuid = _channelHelper.GetChannelGuid(channel);
 
-            _epiApi.Import(filePath, channelGuid, _connectorConfig);
+            _epiApi.Import(filePath, channelGuid);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.SendHttpPost(_connectorConfig, Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, zippedfileName));
+            _epiApi.SendHttpPost(Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, zippedfileName));
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Sending Resources to EPiServer...", 76);
 
-            _epiApi.ImportResources(fileToZip, Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime), _connectorConfig);
+            _epiApi.ImportResources(fileToZip, Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime));
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Resources to EPiServer...", 99);
 
-            _epiApi.SendHttpPost(_connectorConfig, Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, zipFileName));
+            _epiApi.SendHttpPost(Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, zipFileName));
 
             resourceIncluded = true;
         }

@@ -22,9 +22,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _channelHelper = channelHelper;
         }
 
-        public void SaveDocument(string channelIdentifier, XDocument doc, Configuration config, string folderDateTime)
+        public void SaveDocument(string channelIdentifier, XDocument doc, string folderDateTime)
         {
-            string dirPath = Path.Combine(config.ResourcesRootPath, folderDateTime);
+            string dirPath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
             if (!Directory.Exists(dirPath))
             {
                 Directory.CreateDirectory(dirPath);

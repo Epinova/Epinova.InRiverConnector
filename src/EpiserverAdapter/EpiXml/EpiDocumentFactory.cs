@@ -41,7 +41,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                                      XElement associationTypes, 
                                                      Dictionary<string, List<XElement>> epiElements)
         {
-            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, _config);
+            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
             if (catalogElement == null)
             {
                 return null;
@@ -63,7 +63,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             List<XElement> skus = new List<XElement>();
             if (_config.ItemsToSkus && updatedEntity.EntityType.Id == "Item")
             {
-                skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity, _config);
+                skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity);
                 count += skus.Count;
             }
 
@@ -79,11 +79,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     sortOrder = nodeLink.Index;
                 }
 
-                updatedNode = _epiElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder, _config);
+                updatedNode = _epiElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder);
             }
             else if (!(updatedEntity.EntityType.Id == "Item" && !_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
             {
-                updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity, _config);
+                updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity);
                 Link specLink = updatedEntity.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
                 if (specLink != null)
                 {
@@ -109,7 +109,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 count += 1;
             }
 
-            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity, _config);
+            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
 
             catalogElement.Add(
                 new XElement("Sites", 
@@ -239,7 +239,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         continue;
                     }
     
-                    XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity, _config);
+                    XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity);
     
                     XElement codeElement = entryElement.Element("Code");
                     if (codeElement != null && !addedEntities.Contains(codeElement.Value))
@@ -282,7 +282,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                     if (_config.ChannelId.Equals(structureEntity.ParentId))
                     {
-                        _epiApi.CheckAndMoveNodeIfNeeded(entityId, _config);
+                        _epiApi.CheckAndMoveNodeIfNeeded(entityId);
                     }
     
                     IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entityId} to Nodes");
@@ -297,7 +297,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         
                     if (nodeElement == null)
                     {
-                        epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex, _config));
+                        epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex));
                         addedNodes.Add(_catalogCodeGenerator.GetEpiserverCode(entity));
     
                         IntegrationLogger.Write(LogLevel.Debug, $"Added channelNode {entityId} to Nodes");
@@ -343,7 +343,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                 if (structureEntity.Type == "Item" && _config.ItemsToSkus)
                 {
-                    List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity, _config);
+                    List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity);
                     foreach (XElement sku in skus)
                     {
                         XElement codeElement = sku.Element("Code");
@@ -360,7 +360,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 if ((structureEntity.Type == "Item" && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce)
                     || !(structureEntity.Type == "Item" && _config.ItemsToSkus))
                 {
-                    XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity, _config);
+                    XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity);
     
                     var specificationEntry = channelStructureEntities.FirstOrDefault(s => s.ParentId.Equals(entityId) && s.Type.Equals("Specification"));
     
@@ -454,7 +454,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                     if (structureEntity.Type.Equals("Item") && _config.ItemsToSkus)
                     {
-                        skus = _epiElementFactory.SkuItemIds(entity, _config);
+                        skus = _epiElementFactory.SkuItemIds(entity);
                         for (int i = 0; i < skus.Count; i++)
                         {
                             skus[i] = _catalogCodeGenerator.GetPrefixedCode(skus[i]);
@@ -563,7 +563,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                     channelEntities.Add(source.Id, source);
                                 }
     
-                                List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source, _config);
+                                List<string> sourceSkuIds = _epiElementFactory.SkuItemIds(source);
                                 for (int i = 0; i < sourceSkuIds.Count; i++)
                                 {
                                     sourceSkuIds[i] = _catalogCodeGenerator.GetPrefixedCode(sourceSkuIds[i]);

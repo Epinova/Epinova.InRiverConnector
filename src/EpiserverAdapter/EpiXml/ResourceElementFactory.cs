@@ -60,7 +60,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                     if (_config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
                     {
-                        var skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value, _config);
+                        var skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value);
                         ids.AddRange(skuIds);
 
                         if (_config.UseThreeLevelsInCommerce)
@@ -102,7 +102,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                     if (_config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
                     {
-                        List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity, _config);
+                        List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity);
                         foreach (string skuId in skuIds)
                         {
                             var prefixedSkuId = _catalogCodeGenerator.GetPrefixedCode(skuId);
