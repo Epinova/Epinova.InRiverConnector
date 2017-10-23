@@ -163,8 +163,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelEntityUpdated(Entity channel, int entityId, string data)
         {
-            _config.ChannelEntities = new Dictionary<int, Entity>();
-
             IntegrationLogger.Write(LogLevel.Debug, $"Received entity update for entity {entityId} in channel {channel.DisplayName}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
 
@@ -203,14 +201,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 {
                     HandleChannelNodeUpdate(channel, structureEntities, connectorEvent);
                     return;
-                }
-
-                if (updatedEntity.EntityType.IsLinkEntityType)
-                {
-                    if (!_config.ChannelEntities.ContainsKey(updatedEntity.Id))
-                    {
-                        _config.ChannelEntities.Add(updatedEntity.Id, updatedEntity);
-                    }
                 }
 
                 XDocument doc = _epiDocumentFactory.CreateUpdateDocument(channel, updatedEntity);

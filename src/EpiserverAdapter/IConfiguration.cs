@@ -24,7 +24,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         CultureInfo ChannelDefaultLanguage { get; set; }
         string ChannelDefaultCurrency { get; set; }
         Dictionary<string, string> EpiCodeMapping { get; }
-        Dictionary<int, Entity> ChannelEntities { get; set; }
         string ChannelDefaultWeightBase { get; set; }
         string ChannelIdPrefix { get; set; }
         Dictionary<string, string> ChannelMimeTypeMappings { get; set; }

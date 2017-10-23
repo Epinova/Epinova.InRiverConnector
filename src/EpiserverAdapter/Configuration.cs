@@ -53,8 +53,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             Endpoints = new EndpointCollection(EpiEndpoint);
             LinkTypes = new List<LinkType>(RemoteManager.ModelService.GetAllLinkTypes());
 
-            ChannelEntities = new Dictionary<int, Entity>();
-
             _epiFieldsIninRiver = new List<string> { "startdate", "enddate", "displaytemplate", "seodescription", "seokeywords", "seotitle", "seouri", "skus" };
         }
 
@@ -458,9 +456,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         [Obsolete("This needs to die. Inneholder en liste over entitets-ID-er og hvilken EntityTypeId den har, for oppslag senere. Livsfarlig.", true)]
         public Dictionary<int, string> EntityIdAndType { get; set; }
-
-        [Obsolete("This needs to die. Inneholder en liste over entiteter henta ut fra StructureEntities.", true)]
-        public Dictionary<int, Entity> ChannelEntities { get; set; }
 
         public string[] BundleEntityTypes => StringToStringArray("BUNDLE_ENTITYTYPES");
 
