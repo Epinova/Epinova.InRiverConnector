@@ -331,6 +331,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         }
 
         // TODO: Hvafaen er det her slags navn? Fiks, for pokker.
+        // Blir kalt når Code oppdaterer seg, slik at relasjonene mellom ting må oppdateres. Men - er det nødvendig? SJekk Epi-basen, tror den kan endre code uten å gjøre noe med assosiasjoner osv.
         public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Entity channel)
         {
             List<Link> links = new List<Link>();
