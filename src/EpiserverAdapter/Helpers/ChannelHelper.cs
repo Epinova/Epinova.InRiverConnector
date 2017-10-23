@@ -312,6 +312,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         public Dictionary<string, bool> ShouldEntityExistInChannelNodes(int entityId, List<StructureEntity> channelNodes, int channelId)
         {
             Dictionary<string, bool> dictionary = new Dictionary<string, bool>();
+
             var entities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, entityId);
             foreach (var node in channelNodes)
             {
@@ -323,7 +324,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
                 if (!dictionary.ContainsKey(node.EntityId.ToString()))
                 {
-                    dictionary.Add(node.EntityId.ToString(), result);
+                    dictionary.Add(_catalogCodeGenerator.GetEpiserverCode(node.EntityId), result);
                 }
             }
 

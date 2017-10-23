@@ -177,6 +177,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         {
             lock (EpiLockObject.Instance)
             {
+                string parentEntryId = parentId;
+
                 try
                 {
                     string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, _config, -1);
@@ -185,20 +187,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     {
                         if (!shouldExistInChannelNode.Value)
                         {
-                            removeFromChannelNodes.Add(_catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(shouldExistInChannelNode.Key));
+                            removeFromChannelNodes.Add(shouldExistInChannelNode.Key);
                         }
                     }
 
-                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId);
-                    string catalogEntryIdString = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
-                    string channelIdEpified = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(channelId);
+                    string channelIdEpified = _catalogCodeGenerator.GetEpiserverCode(channelId);
                     bool relation = _mappingHelper.IsRelation(linkTypeId);
                     bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
 
                     var updateEntryRelationData = new UpdateRelationData
                                                 {
                                                     ParentEntryId = parentEntryId,
-                                                    CatalogEntryIdString = catalogEntryIdString,
+                                                    CatalogEntryIdString = catalogEntryId,
                                                     ChannelIdEpified = channelIdEpified,
                                                     ChannelName = channelName,
                                                     RemoveFromChannelNodes = removeFromChannelNodes,
@@ -212,12 +212,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 }
                 catch (Exception exception)
                 {
-                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(parentId);
-                    string childEntryId = _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(catalogEntryId);
-                    IntegrationLogger.Write(
-                        LogLevel.Error,
-                        $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {childEntryId} in catalog with id {catalogEntryId}",
-                        exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {catalogEntryId}.", exception);
+                    throw;
                 }
             }
         }

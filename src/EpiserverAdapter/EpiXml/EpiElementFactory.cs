@@ -194,8 +194,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         
         public XElement InRiverEntityToEpiEntry(Entity entity, Configuration config)
         {
-            return new XElement(
-                "Entry",
+            return new XElement("Entry",
                 new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
                 new XElement("StartDate", BusinessHelper.GetStartDateFromEntity(entity)),
                 new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
@@ -541,13 +540,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     new XElement("Type", "LongHtmlString"));
                 foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in configuration.LanguageMapping)
                 {
-                    string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(
-                        specLink.Target.Id,
-                        item.Id,
-                        culturePair.Value);
+                    string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, item.Id, culturePair.Value);
                     specificationMetaField.Add(
-                        new XElement(
-                            "Data",
+                        new XElement("Data",
                             new XAttribute("language", culturePair.Key.Name.ToLower()),
                             new XAttribute("value", htmlData)));
                 }
@@ -625,9 +620,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (skuField == null || skuField.Data == null)
             {
                 XElement itemElement = InRiverEntityToEpiEntry(item, configuration);
-                IntegrationLogger.Write(
-                    LogLevel.Information,
-                    string.Format("Could not find SKU data for item: {0}", item.Id));
+                IntegrationLogger.Write(LogLevel.Information, $"Could not find SKU data for item: {item.Id}");
                 return new XDocument(itemElement);
             }
 
@@ -661,12 +654,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             if (displayField == null || displayField.IsEmpty())
             {
-                return new XElement(
-                    "MetaField",
+                return new XElement("MetaField",
                     new XElement("Name", name),
                     new XElement("Type", "LongHtmlString"),
-                    new XElement(
-                        "Data",
+                    new XElement("Data",
                         new XAttribute("language", config.ChannelDefaultLanguage.Name.ToLower()),
                         new XAttribute("value", string.Empty)));
             }

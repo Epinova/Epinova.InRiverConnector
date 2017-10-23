@@ -117,37 +117,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             foreach (var updatedEntity in updatedEntities)
             {
-                string elementEntityType = updatedEntity.Key;
-                int elementEntityId = updatedEntity.Value;
+                string updatedEntityType = updatedEntity.Key;
+                int updatedEntityId = updatedEntity.Value;
 
-                Dictionary<string, bool> shouldExsistInChannelNodes = _channelHelper.ShouldEntityExistInChannelNodes(elementEntityId, channelNodes, channelEntity.Id);
+                Dictionary<string, bool> shouldExsistInChannelNodes = _channelHelper.ShouldEntityExistInChannelNodes(updatedEntityId, channelNodes, channelEntity.Id);
                 
-                if (elementEntityType == "Link")
+                if (updatedEntityType == "Link")
                     continue;
 
-                if (elementEntityType == "Item" && _config.ItemsToSkus)
+                if (updatedEntityType == "Item" && _config.ItemsToSkus)
                 {
-                    Entity entityToDelete = null;
-                    
-                    try
-                    {
-                        entityToDelete = RemoteManager.DataService.GetEntity(elementEntityId, LoadLevel.DataOnly);
-                    }
-                    catch (Exception ex)
-                    {
-                        IntegrationLogger.Write(LogLevel.Warning, "Error when getting entity:" + ex);
-                    }
+                    var entityToDelete = RemoteManager.DataService.GetEntity(updatedEntityId, LoadLevel.DataOnly);
 
-                    if (entityToDelete != null)
+                    List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entityToDelete, _config);
+                    foreach (XElement sku in skus)
                     {
-                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entityToDelete, _config);
-                        foreach (XElement sku in skus)
+                        XElement skuCode = sku.Element("Code");
+                        if (skuCode != null && !entitiesToUpdate.ContainsKey(skuCode.Value))
                         {
-                            XElement skuCode = sku.Element("Code");
-                            if (skuCode != null && !entitiesToUpdate.ContainsKey(skuCode.Value))
-                            {
-                                entitiesToUpdate.Add(skuCode.Value, shouldExsistInChannelNodes);
-                            }
+                            entitiesToUpdate.Add(skuCode.Value, shouldExsistInChannelNodes);
                         }
                     }
 
@@ -157,23 +145,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     }
                 }
 
-                if (!entitiesToUpdate.ContainsKey(elementEntityId.ToString()))
+                var updatedEntityCode = _catalogCodeGenerator.GetEpiserverCode(updatedEntityId);
+                if (!entitiesToUpdate.ContainsKey(updatedEntityCode))
                 {
-                    entitiesToUpdate.Add(elementEntityId.ToString(), shouldExsistInChannelNodes);
+                    entitiesToUpdate.Add(updatedEntityCode, shouldExsistInChannelNodes);
                 }
             }
 
-            List<string> parents = new List<string> { parentEnt.Id.ToString(CultureInfo.InvariantCulture) };
-            if (parentEnt.EntityType.Id == "Item")
+            List<string> parents = new List<string>
             {
-                if (_config.ItemsToSkus)
-                {
-                    parents = _epiElementFactory.SkuItemIds(parentEnt, _config);
+                _catalogCodeGenerator.GetEpiserverCode(parentEnt)
+            };
 
-                    if (_config.UseThreeLevelsInCommerce)
-                    {
-                        parents.Add(parentEnt.Id.ToString(CultureInfo.InvariantCulture));
-                    }
+            if (parentEnt.EntityType.Id == "Item" && _config.ItemsToSkus)
+            {
+                parents = _epiElementFactory.SkuItemIds(parentEnt, _config);
+
+                if (_config.UseThreeLevelsInCommerce)
+                {
+                    parents.Add(_catalogCodeGenerator.GetEpiserverCode(parentEnt));
                 }
             }
 
@@ -194,7 +184,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     _epiApi.UpdateEntryRelations(entityIdToUpdate.Key, channelEntity.Id, channelEntity, _config, parentId, entityIdToUpdate.Value, linkTypeId, linkEntityIds);
                 }
 
-                updateXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCodeLEGACYDAMNIT(entityIdToUpdate.Key)));
+                updateXml.Root?.Add(new XElement("entry", entityIdToUpdate.Key));
             }
 
             string zippedfileName = _documentFileHelper.SaveAndZipDocument(channelEntity, updateXml, folderDateTime);
