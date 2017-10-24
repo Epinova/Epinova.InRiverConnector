@@ -55,7 +55,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void Publish(Entity channel)
         {
-            var publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channel.DisplayName}", 0);
+            var publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channel.DisplayName.Data}", 0);
           
             ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
 
