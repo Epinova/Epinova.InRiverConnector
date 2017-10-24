@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
+using System.Threading.Tasks;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 
@@ -68,34 +69,29 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                 if (parsedResponse.StartsWith("ERROR"))
                 {
-                    inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, parsedResponse);
+                    IntegrationLogger.Write(LogLevel.Error, parsedResponse);
                 }
 
                 return parsedResponse;
             }
             
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }
 
-        private string Get(string uri)
+        public string Get(string uri)
         {
             HttpResponseMessage response = HttpClient.GetAsync(uri).Result;
 
-            if (response.IsSuccessStatusCode)
-            {
-                return response.Content.ReadAsAsync<string>().Result;
-            }
-            string errorMsg = string.Format("Import failed: {0} ({1})", (int)response.StatusCode, response.ReasonPhrase);
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            response.EnsureSuccessStatusCode();
 
-            throw new HttpRequestException(errorMsg);
+            return response.Content.ReadAsAsync<string>().Result;
         }
-
+        
         public List<string> PostWithStringListAsReturn<T>(string url, T message)
         {
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
+            IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
             var uri = new Uri(url);
             HttpResponseMessage response = HttpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;

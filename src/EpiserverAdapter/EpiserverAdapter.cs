@@ -76,10 +76,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 
-                if (!InitConnector())
-                {
-                    return;
-                }
+                InitConnector();
 
                 base.Start();
                 _started = true;
@@ -96,7 +93,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public new void Stop()
         {
             base.Stop();
+
             _started = false;
+            _config = null;
+            _epiApi = null;
+            _epiElementFactory = null;
+            _epiDocumentFactory = null;
+            _addUtility = null;
+            _channelHelper = null;
+            _resourceElementFactory = null;
+            _deleteUtility = null;
+            _epiMappingHelper = null;
+            _catalogCodeGenerator = null;
+            _publisher = null;
+
             ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Stop, "Connector is stopped", 100);
         }
 
@@ -251,31 +261,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         }
 
-        private bool InitConnector()
+        private void InitConnector()
         {
-            bool result = true;
             try
             {
-                if (!Directory.Exists(_config.PublicationsRootPath))
-                {
-                    try
-                    {
-                        Directory.CreateDirectory(_config.PublicationsRootPath);
-                    }
-                    catch (Exception exception)
-                    {
-                        result = false;
-                        IntegrationLogger.Write(LogLevel.Error, string.Format("Root directory {0} is missing, and not creatable.\n", _config.PublicationsRootPath), exception);
-                    }
-                }
+                Directory.CreateDirectory(_config.PublicationsRootPath);
             }
             catch (Exception ex)
             {
-                result = false;
-                IntegrationLogger.Write(LogLevel.Error, "Error in InitConnector", ex);
+                IntegrationLogger.Write(LogLevel.Error, string.Format("Root directory {0} is missing, and not creatable.\n", _config.PublicationsRootPath), ex);
+                throw;
             }
-
-            return result;
         }
 
         private Assembly CurrentDomainAssemblyResolve(object sender, ResolveEventArgs args)

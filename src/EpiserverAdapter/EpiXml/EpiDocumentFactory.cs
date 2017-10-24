@@ -161,9 +161,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         
         private void FillElementList(Dictionary<string, List<XElement>> epiElements, List<StructureEntity> channelStructureEntities)
         {
-            List<string> addedEntities = new List<string>();
-            List<string> addedNodes = new List<string>();
-            List<string> addedRelations = new List<string>();
+            var addedEntities = new List<string>();
+            var addedNodes = new List<string>();
+            var addedRelations = new List<string>();
 
             int totalLoaded = 0;
             int batchSize = _config.BatchSize;
@@ -177,7 +177,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 totalLoaded += batch.Count;
 
-                IntegrationLogger.Write(LogLevel.Debug, $"fetched {totalLoaded} of {channelStructureEntities.Count} total");
+                IntegrationLogger.Write(LogLevel.Debug, $"Fetched {totalLoaded} of {channelStructureEntities.Count} total");
             }
             while (channelStructureEntities.Count > totalLoaded);
           
@@ -191,9 +191,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                   List<StructureEntity> channelStructureEntities,
                                   Dictionary<int, Entity> channelEntities)
         {
-            int logCounter = 0;
-
-            Dictionary<string, LinkType> linkTypes = new Dictionary<string, LinkType>();
+            var linkTypes = new Dictionary<string, LinkType>();
 
             foreach (LinkType linkType in _config.LinkTypes)
             {
@@ -206,22 +204,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             foreach (StructureEntity structureEntity in structureEntitiesBatch)
             {
                 if (structureEntity.EntityId == _config.ChannelId)
-                        continue;
-                        
-                    logCounter++;
-    
-                if (logCounter == 1000)
-                {
-                    logCounter = 0;
-                    IntegrationLogger.Write(LogLevel.Debug, "Generating catalog xml.");
-                }
-    
-                int entityId = structureEntity.EntityId;
-    
+                    continue;
+                
                 if (structureEntity.LinkEntityId.HasValue)
                 {
                     // Add the link entity
-    
                     Entity linkEntity = null;
     
                     if (channelEntities.ContainsKey(structureEntity.LinkEntityId.Value))
@@ -231,11 +218,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                     if (linkEntity == null)
                     {
-                        IntegrationLogger.Write(
-                            LogLevel.Warning,
-                            string.Format(
-                                "Link Entity with id {0} does not exist in system or ChannelStructure table is not in sync.",
-                                (int)structureEntity.LinkEntityId));
+                        IntegrationLogger.Write(LogLevel.Warning, $"Link Entity with id {structureEntity.LinkEntityId} does not exist in system or ChannelStructure table is not in sync.");
                         continue;
                     }
     
@@ -257,7 +240,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
     
                 Entity entity;
-    
+                int entityId = structureEntity.EntityId;
+
                 if (channelEntities.ContainsKey(entityId))
                 {
                     entity = channelEntities[entityId];
@@ -284,13 +268,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     {
                         _epiApi.CheckAndMoveNodeIfNeeded(entityId);
                     }
-    
+                    
                     IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entityId} to Nodes");
-                        
-                    XElement nodeElement = epiElements["Nodes"].Find(e =>
+
+                    var currentNodeCode = _catalogCodeGenerator.GetEpiserverCode(entity);
+                    XElement nodeElement = epiElements["Nodes"].FirstOrDefault(e =>
                     {
                         XElement xElement = e.Element("Code");
-                        return xElement != null && xElement.Value.Equals(_catalogCodeGenerator.GetEpiserverCode(entity));
+                        return xElement != null && xElement.Value.Equals(currentNodeCode);
                     });
     
                     int linkIndex = structureEntity.SortOrder;
@@ -298,7 +283,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (nodeElement == null)
                     {
                         epiElements["Nodes"].Add(_epiElementFactory.CreateNodeElement(entity, parentId, linkIndex));
-                        addedNodes.Add(_catalogCodeGenerator.GetEpiserverCode(entity));
+                        addedNodes.Add(currentNodeCode);
     
                         IntegrationLogger.Write(LogLevel.Debug, $"Added channelNode {entityId} to Nodes");
                     }
@@ -443,7 +428,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                             addedRelations.Add(addedRelationName);
     
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Relation for Source {0} and Target {1} for LinkTypeId {2}", existingStructureEntity.ParentId, existingStructureEntity.EntityId, linkType.Id));
+                            IntegrationLogger.Write(LogLevel.Debug,
+                                $"Added Relation for Source {existingStructureEntity.ParentId} and Target {existingStructureEntity.EntityId} for LinkTypeId {linkType.Id}");
                         }
     
                         continue;
@@ -780,16 +766,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             
             foreach (EntityType entityType in _config.ExportEnabledEntityTypes)
             {
-                List<StructureEntity> structureEntities = batch.FindAll(i => i.Type.Equals(entityType.Id));
+                var structureEntityIds = batch.Where(x => x.Type == entityType.Id)
+                                              .Select(x => x.EntityId)
+                                              .Distinct()
+                                              .ToList();
 
-                List<int> ids = structureEntities.Select(x => x.EntityId).Distinct().ToList();
-
-                if (!ids.Any())
-                {
+                if (!structureEntityIds.Any())
                     continue;
-                }
 
-                List<Entity> entities = RemoteManager.DataService.GetEntities(ids, LoadLevel.DataOnly);
+                var entities = RemoteManager.DataService.GetEntities(structureEntityIds, LoadLevel.DataOnly);
 
                 foreach (Entity entity in entities)
                 {

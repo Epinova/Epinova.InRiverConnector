@@ -2,6 +2,6 @@
 {
     public class ConfigDefaults
     {
-        public static string ExportEntities = "Product,Item";
+        public static string ExportEntities = "Product,Item,ChannelNode";
     }
 }

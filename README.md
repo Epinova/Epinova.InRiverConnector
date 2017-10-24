@@ -1,3 +1,7 @@
+# Test if it's installed correctly:
+
+Visit <yourSiteRoot>/inriverapi/inriverdataimport/get, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+
 # Changes from original connector
 
 ## Inventory and price exports

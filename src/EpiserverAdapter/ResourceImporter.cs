@@ -5,8 +5,10 @@ using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
+using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Poco;
 using Epinova.InRiverConnector.Interfaces;
+using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 using EntryCode = Epinova.InRiverConnector.EpiserverAdapter.Poco.EntryCode;
 
@@ -15,24 +17,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
     public class ResourceImporter
     {
         private readonly Configuration _config;
+        private readonly HttpClientInvoker _httpClient;
 
-        private static readonly HttpClient _httpClient;
-        
-        static ResourceImporter()
-        {
-            _httpClient = new HttpClient();
-        }
-
-        public ResourceImporter(Configuration config)
+        public ResourceImporter(Configuration config, HttpClientInvoker httpClient)
         {
             _config = config;
-            Uri uri = new Uri(_config.EpiEndpoint);
-            var baseUrl = uri.Scheme + "://" + uri.Authority;
-
-            _httpClient.BaseAddress = new Uri(baseUrl);
-            _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.Add("apikey", _config.EpiApiKey);
-            _httpClient.Timeout = new TimeSpan(_config.EpiRestTimeout, 0, 0);
+            _httpClient = httpClient;
         }
 
         
@@ -179,42 +169,38 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 {
                     // Parse the response body. Blocking!
                     var result = response.Content.ReadAsAsync<bool>().Result;
-                    if (result)
+                    if (!result) continue;
+                    string resp = GetImportStatus();
+
+                    int tries = 0;
+                    while (resp == "importing")
                     {
-                        string resp = GetImportStatus();
-
-                        int tries = 0;
-                        while (resp == "importing")
+                        tries++;
+                        if (tries < 10)
                         {
-                            tries++;
-                            if (tries < 10)
-                            {
-                                Thread.Sleep(5000);
-                            }
-                            else if (tries < 30)
-                            {
-                                Thread.Sleep(60000);
-                            }
-                            else
-                            {
-                                Thread.Sleep(600000);
-                            }
-
-                            resp = GetImportStatus();
+                            Thread.Sleep(5000);
+                        }
+                        else if (tries < 30)
+                        {
+                            Thread.Sleep(60000);
+                        }
+                        else
+                        {
+                            Thread.Sleep(600000);
                         }
 
-                        if (resp.StartsWith("ERROR"))
-                        {
-                            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, resp);
-                            return false;
-                        }
+                        resp = GetImportStatus();
+                    }
+
+                    if (resp.StartsWith("ERROR"))
+                    {
+                        IntegrationLogger.Write(LogLevel.Error, resp);
+                        return false;
                     }
                 }
                 else
                 {
-                    inRiver.Integration.Logging.IntegrationLogger.Write(
-                        LogLevel.Error,
-                        string.Format("Import failed: {0} ({1})", (int)response.StatusCode, response.ReasonPhrase));
+                    IntegrationLogger.Write(LogLevel.Error, $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})");
                     return false;
                 }
             }
@@ -228,17 +214,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             endpointAddress = endpointAddress + "IsImporting";
             var uri = new Uri(endpointAddress);
 
-            HttpResponseMessage response = _httpClient.GetAsync(uri.PathAndQuery).Result;
-
-            if (response.IsSuccessStatusCode)
-            {
-                var resp = response.Content.ReadAsAsync<string>().Result;
-                return resp;
-            }
-            
-            string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
-            throw new HttpRequestException(errorMsg);
+            return _httpClient.Get(uri.PathAndQuery);
         }
     }
 }
