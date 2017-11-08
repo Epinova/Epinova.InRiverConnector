@@ -31,6 +31,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             string filePath = Path.Combine(dirPath, "Resources.xml");
+
             IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath} for channel:{channelIdentifier}");
             doc.Save(filePath);
         }

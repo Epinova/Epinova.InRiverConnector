@@ -34,10 +34,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             _config = config;
         }
 
-        public XElement CreateResourceElement(Entity resource, 
-                                              string action, 
-                                              List<StructureEntity> allResourceStructureEntities)
+        public XElement CreateResourceElement(Entity resource, string action)
         {
+            var allResourceStructureEntities = _channelHelper.GetAllEntitiesInChannel("Resource");
+
             string resourceFileId = "-1";
             Field resourceFileIdField = resource.GetField("ResourceFileId");
             if (resourceFileIdField != null && !resourceFileIdField.IsEmpty())
@@ -130,13 +130,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                        GetInternalPathsInZip(resource, _config),
                        new XElement(
                            "ParentEntries",
-                           parents.Select(parent =>
+                                parents.Select(parent =>
                                    new XElement("EntryCode", parent.Key, 
                                        new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
         }
 
 
-        public XDocument GetDocumentAndSaveFilesToDisk(List<StructureEntity> channelEntities, string folderDateTime)
+        public XDocument GetResourcesNodeForChannelEntities(List<StructureEntity> channelEntities, string folderDateTime)
         {
             XDocument resourceDocument = new XDocument();
             try
@@ -161,13 +161,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     SaveFileToDisk(res, _config, folderDateTime);
                 }
 
-                EntityType reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
-                XElement resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType);
-                resourceDocument = CreateResourceDocument(resourceMetaClasses, resources, resources, "added");
+                resourceDocument = CreateResourceDocument(resources, resources, "added", true);
             }
             catch (Exception ex)
             {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Could not add resources"), ex);
+                IntegrationLogger.Write(LogLevel.Error, "Could not add resources", ex);
             }
 
             return resourceDocument;
@@ -179,7 +177,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             List<Entity> channelResources = new List<Entity>();
             channelResources.Add(updatedResource);
 
-            return CreateResourceDocument(null, channelResources, new List<Entity> { updatedResource }, "updated");
+            return CreateResourceDocument(channelResources, new List<Entity> { updatedResource }, "updated", false);
         }
 
         internal XDocument HandleResourceDelete(string deletedResourceCode)
@@ -193,8 +191,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
         {
-            var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
-            XElement resourceElement = CreateResourceElement(resource, "unlinked", allEntitiesInChannel);
+            XElement resourceElement = CreateResourceElement(resource, "unlinked");
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {
@@ -214,15 +211,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         new XElement("ResourceFiles", resourceElement)));
         }
 
-        internal XDocument CreateResourceDocument(XElement resourceMetaClasses, List<Entity> channelResources, List<Entity> resources, string action)
+        internal XDocument CreateResourceDocument(List<Entity> channelResources, List<Entity> resources, string action, bool addMetadata)
         {
-            var allEntitiesInChannel = _channelHelper.GetAllEntitiesInChannel("Resource");
-            
-            return
-                new XDocument(new XElement("Resources",
-                              resourceMetaClasses,
-                              new XElement("ResourceFiles",
-                                  resources.Select(res => CreateResourceElement(res, action, allEntitiesInChannel)))));
+            XElement resourceMetaClasses = null;
+            if (addMetadata)
+            {
+                var reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
+                resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType);
+            }
+
+            return new XDocument(new XElement("Resources", 
+                                    resourceMetaClasses,
+                                    new XElement("ResourceFiles",
+                                        resources.Select(res => CreateResourceElement(res, action)))));
         }
 
         internal bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)

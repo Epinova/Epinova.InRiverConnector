@@ -2,6 +2,10 @@
 
 Visit <yourSiteRoot>/inriverapi/inriverdataimport/get, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
 
+# Config in Episerver
+
+- You can now add a setting (appSettings) `InRiverPimConnector.ResourceFolderName` to set your own folder name for the imported resources. Defaults to `ImportedResources`.
+
 # Changes from original connector
 
 ## inRiverAssociations
@@ -39,3 +43,9 @@ TODO: As of now there's a TODO to update all Episerver entities whenever a CVL v
 ## Possible settings
 
 - Setting `AllowsSearch` on your field type (with values `True` or `False`), tells the built in search index in CommerceManager whether the field is searchable or not.
+
+## Resources
+
+- No longer creates completely empty InRiverGenericMedia objects for resources in InRiver without a file attached to it.
+- No longer creates InRiverGenericMedia for file types not matching any of your implemented media types. If your Episerver site does not have a content type matching a file extension, no file will be created. 
+- Implementing `IInriverResource` is no longer required; it'll find the default matching content type if none of your types implements the interface. 

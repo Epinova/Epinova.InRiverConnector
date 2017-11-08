@@ -39,13 +39,19 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly IAssetService _assetService;
         private readonly ICatalogSystem _catalogSystem;
         private readonly IContentTypeRepository _contentTypeRepository;
+        private readonly ContentFolderCreator _contentFolderCreator;
+        private readonly IBlobFactory _blobFactory;
+        private readonly ContentMediaResolver _contentMediaResolver;
 
         public CatalogImporter(ILogger logger, 
             ReferenceConverter referenceConverter, 
             IContentRepository contentRepository,
             IAssetService assetService,
             ICatalogSystem catalogSystem,
-            IContentTypeRepository contentTypeRepository)
+            IContentTypeRepository contentTypeRepository,
+            ContentFolderCreator contentFolderCreator,
+            IBlobFactory blobFactory,
+            ContentMediaResolver contentMediaResolver)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
@@ -53,6 +59,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _assetService = assetService;
             _catalogSystem = catalogSystem;
             _contentTypeRepository = contentTypeRepository;
+            _contentFolderCreator = contentFolderCreator;
+            _blobFactory = blobFactory;
+            _contentMediaResolver = contentMediaResolver;
         }
 
         private bool RunICatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
@@ -678,8 +687,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     return;
                 }
 
-                ContentReference contentReference;
-                existingMediaData = CreateNewFile(out contentReference, inriverResource);
+                existingMediaData = CreateNewFile(inriverResource);
 
                 AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
             }
@@ -901,128 +909,71 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
-        private MediaData CreateNewFile(out ContentReference contentReference, IInRiverImportResource inriverResource)
-        {
-            IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
-            ContentMediaResolver mediaDataResolver = ServiceLocator.Current.GetInstance<ContentMediaResolver>();
-            
-            bool resourceWithoutFile = false;
-
+        private MediaData CreateNewFile(IInRiverImportResource inriverResource)
+        {           
             ResourceMetaField resourceFileId = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
             if (resourceFileId == null || string.IsNullOrEmpty(resourceFileId.Values.First().Data))
             {
-                resourceWithoutFile = true;
+                return null;
             }
 
-            string ext;
-            FileInfo fileInfo = null;
-            if (resourceWithoutFile)
-            {
-                ext = "url";
-            }
-            else
-            {
-                fileInfo = new FileInfo(inriverResource.Path);
-                if (fileInfo.Exists == false)
-                {
-                    throw new FileNotFoundException("File could not be imported", inriverResource.Path);
-                }
+            var fileInfo = new FileInfo(inriverResource.Path);
 
-                ext = fileInfo.Extension;
-            }
+            IEnumerable<Type> mediaTypes = _contentMediaResolver.ListAllMatching(fileInfo.Extension);
 
-            ContentType contentType = null;
-            IEnumerable<Type> mediaTypes = mediaDataResolver.ListAllMatching(ext);
+            var contentTypeType = mediaTypes.FirstOrDefault(x => x.GetInterfaces().Contains(typeof(IInRiverResource))) ??
+                                  _contentMediaResolver.GetFirstMatching(fileInfo.Extension);
 
-            foreach (Type type in mediaTypes)
-            {
-                if (type.GetInterfaces().Contains(typeof(IInRiverResource)))
-                {
-                    contentType = _contentTypeRepository.Load(type);
-                    break;
-                }
-            }
+            var contentType = _contentTypeRepository.Load(contentTypeType);
 
-            if (contentType == null)
-            {
-                contentType = _contentTypeRepository.Load(typeof(InRiverGenericMedia));
-            }
+            var newFile = _contentRepository.GetDefault<MediaData>(GetFolder(fileInfo, contentType), contentType.ID);
+            newFile.Name = fileInfo.Name;
+            newFile.ContentGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
 
-            MediaData newFile = _contentRepository.GetDefault<MediaData>(GetInRiverResourceFolder(), contentType.ID);
-            if (resourceWithoutFile)
-            {
-                ResourceMetaField resourceName = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceName");
-                if (resourceName != null && !string.IsNullOrEmpty(resourceName.Values.First().Data))
-                {
-                    newFile.Name = resourceName.Values.First().Data;
-                }
-                else
-                {
-                    newFile.Name = inriverResource.ResourceId.ToString(CultureInfo.InvariantCulture);
-                }
-            }
-            else
-            {
-                newFile.Name = fileInfo.Name;
-            }
-
-            IInRiverResource resource = (IInRiverResource)newFile;
-
-            if (resourceFileId != null && fileInfo != null)
+            if (newFile is IInRiverResource resource)
             {
                 resource.ResourceFileId = int.Parse(resourceFileId.Values.First().Data);
-            }
+                resource.EntityId = inriverResource.ResourceId;
 
-            resource.EntityId = inriverResource.ResourceId;
-
-            try
-            {
-                resource.HandleMetaData(inriverResource.MetaFields);
-            }
-            catch (Exception exception)
-            {
-
-                _logger.Error($"Error when running HandleMetaData for resource {inriverResource.ResourceId} with contentType {contentType.Name}: {exception.Message}");
-            }
-
-            if (!resourceWithoutFile)
-            {
-                Blob blob = blobFactory.CreateBlob(newFile.BinaryDataContainer, ext);
-                using (Stream s = blob.OpenWrite())
+                try
                 {
-                    FileStream fileStream = File.OpenRead(fileInfo.FullName);
-                    fileStream.CopyTo(s);
+                    resource.HandleMetaData(inriverResource.MetaFields);
                 }
-
-                newFile.BinaryData = blob;
+                catch (Exception exception)
+                {
+                    _logger.Error($"Error when running HandleMetaData for resource {inriverResource.ResourceId} with contentType {contentType.Name}: {exception.Message}");
+                }
             }
-
-            newFile.ContentGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
-            try
+                        
+            var blob = _blobFactory.CreateBlob(newFile.BinaryDataContainer, fileInfo.Extension);
+            using (var stream = blob.OpenWrite())
             {
-                contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
-                return newFile;
+                var fileStream = File.OpenRead(fileInfo.FullName);
+                fileStream.CopyTo(stream);
             }
-            catch (Exception ex)
-            {
-                _logger.Error("Error when calling Save", ex);
-                contentReference = null;
-                return newFile;
-            }
+
+            newFile.BinaryData = blob;
+
+            var contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
+            _contentRepository.Get<MediaData>(contentReference);
+            return newFile;
         }
 
         /// <summary>
-        /// Returns a reference to the inRiver Resource folder. It will be created if it
-        /// does not already exist.
+        /// Returns a reference to the inRiver Resource folder. It will be created if it does not already exist.
         /// </summary>
-        /// <remarks>
-        /// The folder structure will be: /globalassets/inRiver/Resources/...
-        /// </remarks>
-        protected ContentReference GetInRiverResourceFolder()
+        /// <param name="fileInfo"></param>
+        /// <param name="contentType"></param>
+        protected ContentReference GetFolder(FileInfo fileInfo, ContentType contentType)
         {
-            ContentReference rootInRiverFolder = ContentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, "inRiver");
-            ContentReference resourceRiverFolder = ContentFolderCreator.CreateOrGetFolder(rootInRiverFolder, "Resources");
-            return resourceRiverFolder;
+            var rootFolderName = ConfigurationManager.AppSettings["InRiverPimConnector.ResourceFolderName"];
+            var rootFolder = _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
+
+            var firstLevelFolderName = fileInfo.Name[0].ToString().ToUpper();
+            var firstLevelFolder = _contentFolderCreator.CreateOrGetFolder(rootFolder, firstLevelFolderName);
+
+            var secondLevelFolderName = contentType.DisplayName.Replace("File", "");
+            return _contentFolderCreator.CreateOrGetFolder(firstLevelFolder, secondLevelFolderName);
         }
 
         private void HandleUnlink(IInRiverImportResource inriverResource)

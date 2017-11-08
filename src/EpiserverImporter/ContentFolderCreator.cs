@@ -3,25 +3,31 @@ using EPiServer;
 using EPiServer.Core;
 using EPiServer.DataAccess;
 using EPiServer.Security;
-using EPiServer.ServiceLocation;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class ContentFolderCreator
     {
-        public static ContentReference CreateOrGetFolder(ContentReference startFrom, string folderName)
-        {
-            var contentRepository = ServiceLocator.Current.GetInstance<IContentRepository>();
-            var inriverContentFolder = contentRepository.GetChildren<ContentFolder>(startFrom).Where(x => x.Name == folderName);
+        private readonly IContentRepository _contentRepo;
 
-            if (!inriverContentFolder.Any())
+        public ContentFolderCreator(IContentRepository contentRepo)
+        {
+            _contentRepo = contentRepo;
+        }
+
+        public ContentReference CreateOrGetFolder(ContentReference parent, string folderName)
+        {
+            var existingFolder = _contentRepo.GetChildren<ContentFolder>(parent)
+                                                  .FirstOrDefault(x => x.Name == folderName);
+
+            if (existingFolder == null)
             {
-                var newFolder = contentRepository.GetDefault<ContentFolder>(startFrom);
+                var newFolder = _contentRepo.GetDefault<ContentFolder>(parent);
                 newFolder.Name = folderName;
-                return contentRepository.Save(newFolder, SaveAction.Save, AccessLevel.NoAccess);
+                return _contentRepo.Save(newFolder, SaveAction.Save, AccessLevel.NoAccess);
             }
 
-            return inriverContentFolder.First().ContentLink;
+            return existingFolder.ContentLink;
         }
     }
 }
