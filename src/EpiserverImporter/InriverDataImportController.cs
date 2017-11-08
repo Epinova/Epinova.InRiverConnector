@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Logging;
 using log4net;
-using LogManager = log4net.LogManager;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
@@ -12,12 +12,15 @@ namespace Epinova.InRiverConnector.EpiserverImporter
     {
         private readonly ICatalogImporter _catalogImporter;
         private readonly ILogger _logger;
+        private readonly MediaImporter _mediaImporter;
 
         public InriverDataImportController(ICatalogImporter catalogImporter,
-                                           ILogger logger)
+                                           ILogger logger,
+                                           MediaImporter mediaImporter)
         {
             _catalogImporter = catalogImporter;
             _logger = logger;
+            _mediaImporter = mediaImporter;
         }
       
         [HttpGet]
@@ -105,9 +108,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public bool ImportResources(List<InRiverImportResource> resources)
+        public void ImportResources(List<InRiverImportResource> resources)
         {
-            return _catalogImporter.ImportResources(resources);
+            Task.Run(
+                () =>
+                {
+                    _mediaImporter.ImportResources(resources);
+                });
         }
 
         [HttpPost]
