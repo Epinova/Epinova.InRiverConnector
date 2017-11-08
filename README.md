@@ -4,6 +4,10 @@ Visit <yourSiteRoot>/inriverapi/inriverdataimport/get, with an added HTTP header
 
 # Changes from original connector
 
+## inRiverAssociations
+
+This concept has been completely removed. The node will never be created, and anything that would live just inside this (like linked products/items) and nowhere else will simply not be transferred to Episerver. Should make catalog management drastically cleaner.
+
 ## Inventory and price exports
 
 The original connector contained loads of code for dealing with inventory and price updates. This was not documented anywhere, nor reflected in default connector settings.
@@ -21,6 +25,8 @@ The adapter no longer implements `ICVLListener` - thus it no longer maintains CV
 Episerver has no need to maintain these values.
 
 Caution: If updating a value that's already in use, this will no longer be updated automatically. Might be re-added in a fundamentally different way later on.
+
+TODO: As of now there's a TODO to update all Episerver entities whenever a CVL value updates. This should usually not be a common case though, so I won't prioritize it quite yet.
 
 ## Config changes
 
