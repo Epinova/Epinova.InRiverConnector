@@ -185,9 +185,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             var catalogItemAssetRow = catalogEntry.CatalogItemAsset.FirstOrDefault(row => row.AssetKey == newAssetRow.AssetKey);
             if (catalogItemAssetRow == null)
             {
-                IAssetService assetService = ServiceLocator.Current.GetInstance<IAssetService>();
-
-                List<CatalogEntryDto.CatalogItemAssetRow> list = new List<CatalogEntryDto.CatalogItemAssetRow>();
+                var list = new List<CatalogEntryDto.CatalogItemAssetRow>();
 
                 if (entryCode.IsMainPicture)
                 {
@@ -204,53 +202,52 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     list.Add(newAssetRow);
                 }
 
-                // Set sort order correctly (instead of having them all to 0)
+                // Set sort order correctly
                 for (int i = 0; i < list.Count; i++)
                 {
                     list[i].SortOrder = i;
                 }
 
-                assetService.CommitAssetsToEntry(list, catalogEntry);
-
+                _assetService.CommitAssetsToEntry(list, catalogEntry);
                 _catalogSystem.SaveCatalogEntry(catalogEntry);
             }
             else
             {
-                // Already in the list, check and fix sort order
-                if (entryCode.IsMainPicture)
+                // Already in the list. Fix sort order if needed.
+                if (!entryCode.IsMainPicture)
+                    return;
+
+                bool needsSave = false;
+                // If more than one entry have sort order 0, we need to clean it up
+                int count = catalogEntry.CatalogItemAsset.Count(row => row.SortOrder.Equals(0));
+                if (count > 1)
                 {
-                    bool needsSave = false;
-                    // If more than one entry have sort order 0, we need to clean it up
-                    int count = catalogEntry.CatalogItemAsset.Count(row => row.SortOrder.Equals(0));
-                    if (count > 1)
-                    {
-                        _logger.Debug($"Sorting and setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
+                    _logger.Debug($"Sorting and setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
 
-                        List<CatalogEntryDto.CatalogItemAssetRow> assetRows = catalogEntry.CatalogItemAsset.ToList();
-                        // Keep existing sort order, but start at pos 1 since we will set the main picture to 0
-                        for (int i = 0; i < assetRows.Count; i++)
-                        {
-                            assetRows[i].SortOrder = i + 1;
-                        }
-                        // Set the one we found to 0, which will make it main.
-                        catalogItemAssetRow.SortOrder = 0;
-                        needsSave = true;
-                    }
-                    else if (catalogItemAssetRow.SortOrder != 0)
+                    var assetRows = catalogEntry.CatalogItemAsset.ToList();
+                    
+                    // Keep existing sort order, but start at pos 1 since we will set the main picture to 0
+                    for (int i = 0; i < assetRows.Count; i++)
                     {
-                        // Switch order if it isn't already first
-                        _logger.Debug($"Setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
-
-                        int oldOrder = catalogItemAssetRow.SortOrder;
-                        catalogItemAssetRow.SortOrder = 0;
-                        catalogEntry.CatalogItemAsset[0].SortOrder = oldOrder;
-                        needsSave = true;
+                        assetRows[i].SortOrder = i + 1;
                     }
+                    
+                    catalogItemAssetRow.SortOrder = 0;
+                    needsSave = true;
+                }
+                else if (catalogItemAssetRow.SortOrder != 0)
+                {
+                    _logger.Debug($"Setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
 
-                    if (needsSave)
-                    {
-                        _catalogSystem.SaveCatalogEntry(catalogEntry);
-                    }
+                    int oldOrder = catalogItemAssetRow.SortOrder;
+                    catalogItemAssetRow.SortOrder = 0;
+                    catalogEntry.CatalogItemAsset[0].SortOrder = oldOrder;
+                    needsSave = true;
+                }
+
+                if (needsSave)
+                {
+                    _catalogSystem.SaveCatalogEntry(catalogEntry);
                 }
             }
         }
@@ -261,8 +258,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             
             if (catalogNodeDto.CatalogItemAsset.FirstOrDefault(row => row.AssetKey == newAssetRow.AssetKey) == null)
             {
-                // This asset have not been added previously
-                List<CatalogNodeDto.CatalogItemAssetRow> list = new List<CatalogNodeDto.CatalogItemAssetRow>();
+                var list = new List<CatalogNodeDto.CatalogItemAssetRow>();
 
                 if (entryCode.IsMainPicture)
                 {

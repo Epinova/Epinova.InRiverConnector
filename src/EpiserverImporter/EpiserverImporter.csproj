@@ -213,10 +213,11 @@
     <Compile Include="ImporterExceptionFilterAttribute.cs" />
     <Compile Include="InriverDataImportController.cs" />
     <Compile Include="InRiverImportResource.cs" />
+    <Compile Include="MediaImporter.cs" />
+    <Compile Include="Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PublisherInitializer.cs" />
     <Compile Include="ResourceModels\IInRiverResource.cs" />
-    <Compile Include="ResourceModels\InRiverGenericMedia.cs" />
     <Compile Include="SecuredApiController.cs" />
     <Compile Include="ImportStatusContainer.cs" />
   </ItemGroup>
