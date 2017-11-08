@@ -139,39 +139,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return _started;
         }
 
-        private void DoWithInitCheck(int channelId, ConnectorEventType eventType, Action<Entity> thingsToDo)
-        {
-            if (channelId != _config.ChannelId)
-                return;
-
-            var channelEntity = _channelHelper.InitiateChannelConfiguration(channelId);
-            if (channelEntity == null)
-            {
-                ConnectorEventHelper.InitiateEvent(_config, eventType, $"Failed perform {eventType}. Could not find the channel.", -1, true);
-                return;
-            }
-
-            try
-            {
-                thingsToDo(channelEntity);
-                var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
-
-                IntegrationLogger.Write(LogLevel.Information, message);
-                ConnectorEventHelper.InitiateEvent(_config, eventType, message, 100);
-            }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error, "Exception in ChannelEntityAdded", ex);
-                ConnectorEventHelper.InitiateEvent(_config, eventType, ex.Message, -1, true);
-            }
-        }
+        
 
         public void Publish(int channelId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.Publish, channelEntity =>
-            {
-                _publisher.Publish(channelEntity);
-            });
+            DoWithInitCheck(channelId, ConnectorEventType.Publish, channelEntity => _publisher.Publish(channelEntity));
         }
 
         public void UnPublish(int channelId)
@@ -188,10 +160,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelEntityAdded(int channelId, int entityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel =>
-            {
-                _publisher.ChannelEntityAdded(channel, entityId);
-            });
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel => _publisher.ChannelEntityAdded(channel, entityId));
         }
         
         public void ChannelEntityUpdated(int channelId, int entityId, string data)
@@ -200,20 +169,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 if (channel.Id == entityId)
                 {
-                    ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, "Updated Entity is the Channel, no action required", 100);
-                    return;
+                    var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, "Updated Entity is the Channel, no action required", 100);
+                    return connectorEvent;
                 }
 
-                _publisher.ChannelEntityUpdated(channel, entityId, data);
+                return _publisher.ChannelEntityUpdated(channel, entityId, data);
             });
         }
 
         public void ChannelEntityDeleted(int channelId, Entity deletedEntity)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityDeleted, channel =>
-            {
-                _publisher.ChannelEntityDeleted(channel, deletedEntity);
-            });
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityDeleted, channel => _publisher.ChannelEntityDeleted(channel, deletedEntity));
             
         }
 
@@ -234,26 +200,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelLinkAdded(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
-            {
-                _publisher.ChannelLinkAdded(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
-            });
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, 
+                channel => _publisher.ChannelLinkAdded(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId));
         }
 
         public void ChannelLinkDeleted(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
-            {
-                _publisher.ChannelLinkDeleted(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
-            });
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, 
+                channel => _publisher.ChannelLinkDeleted(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
+            );
         }
 
         public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
-            {
-                _publisher.ChannelLinkUpdated(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId);
-            });
+                _publisher.ChannelLinkUpdated(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
+            );
         }
 
         public void AssortmentCopiedInChannel(int channelId, int assortmentId, int targetId, string targetType)
@@ -269,8 +231,36 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
             catch (Exception ex)
             {
-                IntegrationLogger.Write(LogLevel.Error, string.Format("Root directory {0} is missing, and not creatable.\n", _config.PublicationsRootPath), ex);
+                IntegrationLogger.Write(LogLevel.Error, $"Root directory {_config.PublicationsRootPath} is missing, and not creatable.\n", ex);
                 throw;
+            }
+        }
+
+        private void DoWithInitCheck(int channelId, ConnectorEventType eventType, Func<Entity, ConnectorEvent> thingsToDo)
+        {
+            if (channelId != _config.ChannelId)
+                return;
+
+            var channelEntity = _channelHelper.InitiateChannelConfiguration(channelId);
+            if (channelEntity == null)
+            {
+                ConnectorEventHelper.InitiateEvent(_config, eventType, $"Failed perform {eventType}. Could not find the channel.", -1, true);
+                return;
+            }
+
+            try
+            {
+                var connectorEvent = thingsToDo(channelEntity);
+
+                var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
+
+                ConnectorEventHelper.UpdateEvent(connectorEvent, message, 100);
+                IntegrationLogger.Write(LogLevel.Information, message);
+            }
+            catch (Exception ex)
+            {
+                IntegrationLogger.Write(LogLevel.Error, "Exception in ChannelEntityAdded", ex);
+                ConnectorEventHelper.InitiateEvent(_config, eventType, ex.Message, -1, true);
             }
         }
 

@@ -53,7 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _documentFileHelper = documentFileHelper;
         }
 
-        public void Publish(Entity channel)
+        public ConnectorEvent Publish(Entity channel)
         {
             var publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channel.DisplayName.Data}", 0);
           ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
@@ -115,9 +115,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var channelName = _mappingHelper.GetNameForEntity(channel, 100);
 
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.Publish, true);
+
+            return publishEvent;
         }
 
-        public void ChannelEntityAdded(Entity channel, int entityId)
+        public ConnectorEvent ChannelEntityAdded(Entity channel, int entityId)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Received entity added for entity {entityId} in channel {channel.Id}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityAdded, $"Received entity added for entity {entityId} in channel {channel.DisplayName}", 0);
@@ -148,9 +150,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
           
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityAdded, true);
+            return connectorEvent;
         }
 
-        public void ChannelEntityUpdated(Entity channel, int entityId, string data)
+        public ConnectorEvent ChannelEntityUpdated(Entity channel, int entityId, string data)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Received entity update for entity {entityId} in channel {channel.DisplayName}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
@@ -162,7 +165,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 IntegrationLogger.Write(LogLevel.Error, $"ChannelEntityUpdated, could not find entity with id: {entityId}");
                 ConnectorEventHelper.UpdateEvent(connectorEvent, $"ChannelEntityUpdated, could not find entity with id: {entityId}", -1, true);
 
-                return;
+                return connectorEvent;
             }
 
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
@@ -187,7 +190,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 else if (updatedEntity.EntityType.Id.Equals("ChannelNode"))
                 {
                     HandleChannelNodeUpdate(channel, structureEntities, connectorEvent);
-                    return;
+                    return connectorEvent;
                 }
 
                 XDocument doc = _epiDocumentFactory.CreateUpdateDocument(channel, updatedEntity);
@@ -213,20 +216,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
 
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
+            return connectorEvent;
         }
 
-        public void ChannelEntityDeleted(Entity channel, Entity deletedEntity)
+        public ConnectorEvent ChannelEntityDeleted(Entity channel, Entity deletedEntity)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Received entity deleted for entity {deletedEntity.Id} in channel {channel.DisplayName}");
-            ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityDeleted, $"Received entity deleted for entity {deletedEntity.Id} in channel {channel.DisplayName}", 0);
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityDeleted, $"Received entity deleted for entity {deletedEntity.Id} in channel {channel.DisplayName}", 0);
 
             _deleteUtility.Delete(channel, -1, deletedEntity, string.Empty);
 
-            string channelName = _mappingHelper.GetNameForEntity(channel, 100);
+            var channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.EntitiyDeleted);
+
+            return connectorEvent;
         }
 
-        public void ChannelLinkAdded(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+        public ConnectorEvent ChannelLinkAdded(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Received link added for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded,
@@ -271,12 +277,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkAdded, true);
+
+            return connectorEvent;
         }
 
-        public void ChannelLinkDeleted(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+        public ConnectorEvent ChannelLinkDeleted(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}");
-            var c = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
                 $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}", 0);
 
             Entity deletedEntity = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
@@ -285,9 +293,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted);
+
+            return connectorEvent;
         }
 
-        public void ChannelLinkUpdated(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+        public ConnectorEvent ChannelLinkUpdated(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Received link update for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded,
@@ -315,6 +325,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, true);
+
+            return connectorEvent;
         }
 
 
