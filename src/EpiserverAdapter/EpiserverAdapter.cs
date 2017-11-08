@@ -34,17 +34,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public new void Start()
         {
             _config = new Configuration(Id);
-            ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
+            ConnectorEventHelper.CleanupOngoingEvents(_config);
+
+            var startEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
 
             try
             {
-                ConnectorEventHelper.CleanupOngoingEvents(_config);
-
                 Entity channel = RemoteManager.DataService.GetEntity(_config.ChannelId, LoadLevel.Shallow);
                 if (channel == null || channel.EntityType.Id != "Channel")
                 {
                     _started = false;
-                    ConnectorEventHelper.UpdateEvent(connectorEvent, "Channel id is not valid: Entity with given ID is not a channel, or doesn't exist. Unable to start", -1, true);
+                    ConnectorEventHelper.UpdateEvent(startEvent, "Channel id is not valid: Entity with given ID is not a channel, or doesn't exist. Unable to start", -1, true);
                     return;
                 }
 
@@ -80,12 +80,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 base.Start();
                 _started = true;
-                ConnectorEventHelper.UpdateEvent(connectorEvent, "Connector has started", 100);
+                ConnectorEventHelper.UpdateEvent(startEvent, "Connector has started", 100);
             }
             catch (Exception ex)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Error while starting connector", ex);
-                ConnectorEventHelper.UpdateEvent(connectorEvent, "Issue while starting, see log.", 100, true);
+                ConnectorEventHelper.UpdateEvent(startEvent, "Issue while starting, see log.", 100, true);
                 throw;
             }
         }
@@ -277,31 +277,29 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private Assembly CurrentDomainAssemblyResolve(object sender, ResolveEventArgs args)
         {
             string folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            if (folderPath != null)
+            if (folderPath == null)
+                return null;
+
+            int ix = folderPath.LastIndexOf("\\", StringComparison.Ordinal);
+            if (ix == -1)
             {
-                int ix = folderPath.LastIndexOf("\\", StringComparison.Ordinal);
-                if (ix == -1)
+                return null;
+            }
+
+            folderPath = folderPath.Substring(0, ix);
+            string assemblyPath = Path.Combine(folderPath, new AssemblyName(args.Name).Name + ".dll");
+
+            if (File.Exists(assemblyPath) == false)
+            {
+                assemblyPath = Path.Combine(folderPath + "\\OutboundConnectors\\", new AssemblyName(args.Name).Name + ".dll");
+                if (File.Exists(assemblyPath) == false)
                 {
                     return null;
                 }
-
-                folderPath = folderPath.Substring(0, ix);
-                string assemblyPath = Path.Combine(folderPath, new AssemblyName(args.Name).Name + ".dll");
-
-                if (File.Exists(assemblyPath) == false)
-                {
-                    assemblyPath = Path.Combine(folderPath + "\\OutboundConnectors\\", new AssemblyName(args.Name).Name + ".dll");
-                    if (File.Exists(assemblyPath) == false)
-                    {
-                        return null;
-                    }
-                }
-
-                Assembly assembly = Assembly.LoadFrom(assemblyPath);
-                return assembly;
             }
 
-            return null;
+            Assembly assembly = Assembly.LoadFrom(assemblyPath);
+            return assembly;
         }
 
         public void CVLValueCreated(string cvlId, string cvlValueKey)

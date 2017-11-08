@@ -4,6 +4,7 @@ using System.Linq;
 using inRiver.Integration.Reporting;
 using inRiver.Remoting;
 using inRiver.Remoting.Connect;
+using inRiver.Remoting.Exceptions;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
@@ -25,6 +26,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             ReportManager.Instance.WriteEvent(connectorEvent);
             return connectorEvent;
+            
         }
 
         internal static ConnectorEvent UpdateEvent(ConnectorEvent connectorEvent, string message, int percentage, bool error = false)
@@ -43,7 +45,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         internal static void CleanupOngoingEvents(Configuration configuration)
         {
-            List<ConnectorEventSession> sessions = RemoteManager.ChannelService.GetOngoingConnectorEventSessions(null, configuration.Id);
+            List<ConnectorEventSession> sessions = RemoteManager.ChannelService.GetOngoingConnectorEventSessions(configuration.ChannelId, configuration.Id);
             foreach (ConnectorEventSession connectorEventSession in sessions)
             {
                 ConnectorEvent latestConnectorEvent = connectorEventSession.ConnectorEvents.First();
