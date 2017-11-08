@@ -10,7 +10,6 @@ using Epinova.InRiverConnector.EpiserverAdapter.Poco;
 using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
-using EntryCode = Epinova.InRiverConnector.EpiserverAdapter.Poco.EntryCode;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter
 {
@@ -24,23 +23,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _config = config;
             _httpClient = httpClient;
         }
-
         
         public bool ImportResources(string manifest, string baseResourcePath)
         {
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Information,$"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
-
-            var timeout = _config.EpiRestTimeout;
-            var apikey = _config.EpiApiKey;
-            var endpointAddress = _config.EpiEndpoint;
-            
-            endpointAddress = endpointAddress + "ImportResources";
-
-            return ImportResourcesToEPiServerCommerce(manifest, baseResourcePath, endpointAddress, apikey, timeout);
-        }
-
-        public bool ImportResourcesToEPiServerCommerce(string manifest, string baseResourcePath, string endpointAddress, string apikey, int timeout)
-        {
+            IntegrationLogger.Write(LogLevel.Information, $"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
             var serializer = new XmlSerializer(typeof(Resources));
             Resources resources;
             using (var reader = XmlReader.Create(manifest))
@@ -51,24 +37,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var resourcesForImport = new List<InRiverImportResource>();
             foreach (var resource in resources.ResourceFiles.Resource)
             {
-                var newRes = new InRiverImportResource();
-                newRes.Action = resource.action;
-                newRes.Codes = new List<string>();
+                var newRes = new InRiverImportResource
+                {
+                    Action = resource.action
+                };
+
                 if (resource.ParentEntries != null && resource.ParentEntries.EntryCode != null)
                 {
-                    foreach (EntryCode entryCode in resource.ParentEntries.EntryCode)
+                    foreach (var entryCode in resource.ParentEntries.EntryCode)
                     {
-                        if (!string.IsNullOrEmpty(entryCode.Value))
-                        {
-                            newRes.Codes = new List<string>();
+                        if (string.IsNullOrEmpty(entryCode.Value))
+                            continue;
 
-                            newRes.Codes.Add(entryCode.Value);
-                            newRes.EntryCodes.Add(new Interfaces.EntryCode()
-                            {
-                                Code = entryCode.Value,
-                                IsMainPicture = entryCode.IsMainPicture
-                            });
-                        }
+                        newRes.Codes.Add(entryCode.Value);
+                        newRes.EntryCodes.Add(new Interfaces.EntryCode
+                        {
+                            Code = entryCode.Value,
+                            IsMainPicture = entryCode.IsMainPicture
+                        });
                     }
                 }
 
@@ -91,12 +77,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (resourcesForImport.Count == 0)
             {
-                inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, string.Format("Nothing to tell server about."));
+                IntegrationLogger.Write(LogLevel.Debug, "Nothing to tell server about.");
                 return true;
             }
 
-            Uri importEndpoint = new Uri(endpointAddress);
-            return PostResourceDataToImporterEndPoint(manifest, importEndpoint, resourcesForImport, apikey, timeout);
+            return PostToEpiserver(resourcesForImport);
         }
 
         private List<ResourceMetaField> GenerateMetaFields(Resource resource)
@@ -141,66 +126,36 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return metaFields;
         }
 
-        /// <param name="importEndpoint">// http://server:port/inriverapi/InriverDataImport/ImportImages</param>
-        private bool PostResourceDataToImporterEndPoint(string manifest, Uri importEndpoint, List<InRiverImportResource> resourcesForImport, string apikey, int timeout)
+        private bool PostToEpiserver(List<InRiverImportResource> resourcesForImport)
         {
-            List<List<InRiverImportResource>> listofLists = new List<List<InRiverImportResource>>();
-            int maxSize = 1000;
-            for (int i = 0; i < resourcesForImport.Count; i += maxSize)
+            var listofLists = new List<List<InRiverImportResource>>();
+            var maxSize = 100;
+            for (var i = 0; i < resourcesForImport.Count; i += maxSize)
             {
                 listofLists.Add(resourcesForImport.GetRange(i, Math.Min(maxSize, resourcesForImport.Count - i)));
             }
 
-            foreach (List<InRiverImportResource> resources in listofLists)
+            foreach (var resourceList in listofLists)
             {
-                HttpClient client = new HttpClient();
-                string baseUrl = importEndpoint.Scheme + "://" + importEndpoint.Authority;
+               IntegrationLogger.Write(LogLevel.Debug, $"Sending {resourceList.Count} of {resourcesForImport.Count} resources to Episerver");
 
-                inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Debug, string.Format("Sending {2} of {3} resources from {0} to {1}", manifest, importEndpoint, resources.Count, resourcesForImport.Count));
-                client.BaseAddress = new Uri(baseUrl);
+                var response = _httpClient.PostAsJsonAsync(_config.Endpoints.ImportResources, resourceList).Result;
+                response.EnsureSuccessStatusCode();
+                
+                var result = response.Content.ReadAsAsync<bool>().Result;
+                if (!result)
+                    continue;
 
-                // Add an Accept header for JSON format.
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                client.DefaultRequestHeaders.Add("apikey", apikey);
-
-                client.Timeout = new TimeSpan(timeout, 0, 0);
-                HttpResponseMessage response = client.PostAsJsonAsync(importEndpoint.PathAndQuery, resources).Result;
-                if (response.IsSuccessStatusCode)
+                var resp = GetImportStatus();
+                while (resp == "importing")
                 {
-                    // Parse the response body. Blocking!
-                    var result = response.Content.ReadAsAsync<bool>().Result;
-                    if (!result) continue;
-                    string resp = GetImportStatus();
-
-                    int tries = 0;
-                    while (resp == "importing")
-                    {
-                        tries++;
-                        if (tries < 10)
-                        {
-                            Thread.Sleep(5000);
-                        }
-                        else if (tries < 30)
-                        {
-                            Thread.Sleep(60000);
-                        }
-                        else
-                        {
-                            Thread.Sleep(600000);
-                        }
-
-                        resp = GetImportStatus();
-                    }
-
-                    if (resp.StartsWith("ERROR"))
-                    {
-                        IntegrationLogger.Write(LogLevel.Error, resp);
-                        return false;
-                    }
+                    Thread.Sleep(10000);
+                    resp = GetImportStatus();
                 }
-                else
+
+                if (resp.StartsWith("ERROR"))
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})");
+                    IntegrationLogger.Write(LogLevel.Error, resp);
                     return false;
                 }
             }
@@ -210,11 +165,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private string GetImportStatus()
         {
-            var endpointAddress = _config.EpiEndpoint;
-            endpointAddress = endpointAddress + "IsImporting";
-            var uri = new Uri(endpointAddress);
-
-            return _httpClient.Get(uri.PathAndQuery);
+            return _httpClient.Get(_config.Endpoints.IsImporting);
         }
     }
 }

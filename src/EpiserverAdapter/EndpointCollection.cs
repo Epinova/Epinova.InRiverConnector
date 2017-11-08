@@ -9,6 +9,7 @@
             _baseUrl = baseUrl;
         }
 
+        public string ImportResources => _baseUrl + "ImportResources";
         public string IsImporting => _baseUrl + "IsImporting";
         public string DeleteCatalog => _baseUrl + "DeleteCatalog";
         public string DeleteCatalogNode => _baseUrl + "DeleteCatalogNode";

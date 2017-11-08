@@ -11,6 +11,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public InRiverImportResource()
         {
             EntryCodes = new List<EntryCode>();
+            Codes = new List<string>();
         }
 
         /// <summary>

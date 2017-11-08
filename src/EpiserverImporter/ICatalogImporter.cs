@@ -22,7 +22,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         void ImportCatalogXml([FromBody] string path);
 
-        bool ImportResources(List<InRiverImportResource> resources);
+        void ImportResources(List<InRiverImportResource> resources);
 
         bool ImportUpdateCompleted(ImportUpdateCompletedData data);
 

@@ -38,6 +38,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
+        public async Task<HttpResponseMessage> PostAsJsonAsync<T>(string url, T value)
+        {
+            return await HttpClient.PostAsJsonAsync(url, value);
+        }
+
         public string Post<T>(string url, T message)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");

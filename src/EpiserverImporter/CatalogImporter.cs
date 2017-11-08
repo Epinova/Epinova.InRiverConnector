@@ -402,112 +402,69 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 });
         }
 
-        public bool ImportResources(List<InRiverImportResource> resources)
+        public void ImportResources(List<InRiverImportResource> resources)
         {
-            if (resources == null)
+            if (resources == null || !resources.Any())
             {
-                _logger.Debug("Received resource list that is NULL");
-                return false;
+                _logger.Debug("Received empty resource list.");
+                return;
             }
 
-            List<IInRiverImportResource> resourcesImport = resources.Cast<IInRiverImportResource>().ToList();
+            var importResources = resources.Cast<IInRiverImportResource>().ToList();
 
             _logger.Debug("Received list of {resourcesImport.Count} resources to import");
+                    
+            ImportStatusContainer.Instance.Message = "importing";
+            ImportStatusContainer.Instance.IsImporting = true;
+                    
+            try
+            {
+                var importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
 
-            Task importTask = Task.Run(
-                () =>
+                if (RunIResourceImporterHandlers)
                 {
-                    try
+                    foreach (IResourceImporterHandler handler in importerHandlers)
                     {
-                        ImportStatusContainer.Instance.Message = "importing";
-                        ImportStatusContainer.Instance.IsImporting = true;
-
-                        List<IResourceImporterHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
-
-                        if (RunIResourceImporterHandlers)
-                        {
-                            foreach (IResourceImporterHandler handler in importerHandlers)
-                            {
-                                handler.PreImport(resourcesImport);
-                            }
-                        }
-
-                        try
-                        {
-                            foreach (IInRiverImportResource resource in resources)
-                            {
-                                bool found = false;
-                                int count = 0;
-                                while (!found && count < 10 && resource.Action != "added")
-                                {
-                                    count++;
-
-                                    try
-                                    {
-                                        MediaData existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(resource.ResourceId));
-                                        if (existingMediaData != null)
-                                        {
-                                            found = true;
-                                        }
-                                    }
-                                    catch (Exception)
-                                    {
-                                        _logger.Debug($"Waiting ({count}/10) for resource {resource.ResourceId} to be ready.");
-                                        Thread.Sleep(500);
-                                    }
-                                }
-
-                                _logger.Debug($"Working with resource {resource.ResourceId} from {resource.Path} with action: {resource.Action}");
-
-                                if (resource.Action == "added" || resource.Action == "updated")
-                                {
-                                    ImportImageAndAttachToEntry(resource);
-                                }
-                                else if (resource.Action == "deleted")
-                                {
-                                    _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
-                                    HandleDelete(resource);
-                                }
-                                else if (resource.Action == "unlinked")
-                                {
-                                    HandleUnlink(resource);
-                                }
-                                else
-                                {
-                                    _logger.Debug($"Got unknown action for resource id: {resource.ResourceId}, {resource.Action}");
-                                }
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            ImportStatusContainer.Instance.IsImporting = false;
-                            _logger.Error("Resource Import Failed", exception);
-                            ImportStatusContainer.Instance.Message = "ERROR: " + exception.Message;
-                            return;
-                        }
-
-                        _logger.Debug($"Imported {resources.Count} resources");
-
-                        if (RunIResourceImporterHandlers)
-                        {
-                            foreach (IResourceImporterHandler handler in importerHandlers)
-                            {
-                                handler.PostImport(resourcesImport);
-                            }
-                        }
+                        handler.PreImport(importResources);
                     }
-                    catch (Exception ex)
+                }
+                       
+                foreach (IInRiverImportResource resource in resources)
+                {
+                    if (resource.Action == "added" || resource.Action == "updated")
                     {
-                        ImportStatusContainer.Instance.IsImporting = false;
-                        _logger.Error("Resource Import Failed", ex);
-                        ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
+                        ImportImageAndAttachToEntry(resource);
                     }
+                    else if (resource.Action == "deleted")
+                    {
+                        _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
+                        HandleDelete(resource);
+                    }
+                    else if (resource.Action == "unlinked")
+                    {
+                        HandleUnlink(resource);
+                    }
+                }
+                      
+                _logger.Debug($"Imported/deleted/updated {resources.Count} resources");
 
-                    ImportStatusContainer.Instance.Message = "Resource Import successful";
-                    ImportStatusContainer.Instance.IsImporting = false;
-                });
+                if (RunIResourceImporterHandlers)
+                {
+                    foreach (IResourceImporterHandler handler in importerHandlers)
+                    {
+                        handler.PostImport(importResources);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ImportStatusContainer.Instance.IsImporting = false;
+                _logger.Error("Resource Import Failed", ex);
+                ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
+            }
 
-            return importTask.Status != TaskStatus.RanToCompletion;
+            ImportStatusContainer.Instance.Message = "Resource Import successful";
+            ImportStatusContainer.Instance.IsImporting = false;
         }
 
         public bool ImportUpdateCompleted(ImportUpdateCompletedData data)
