@@ -340,7 +340,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         }
         public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Entity linkEntity, Dictionary<int, Entity> channelEntities = null)
         {
-            
             string name = _mappingHelper.GetAssociationName(structureEntity, linkEntity);
             string description = structureEntity.LinkEntityId == null ? 
                                         structureEntity.LinkTypeIdFromParent : 
