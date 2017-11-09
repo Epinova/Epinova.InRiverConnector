@@ -81,6 +81,7 @@
     <Compile Include="Poco\ResourceMetaFields.cs" />
     <Compile Include="Poco\Resources.cs" />
     <Compile Include="Poco\Type.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Utilities\AddUtility.cs" />
     <Compile Include="Utilities\DeleteUtility.cs" />
     <Compile Include="Helpers\DocumentFileHelper.cs" />

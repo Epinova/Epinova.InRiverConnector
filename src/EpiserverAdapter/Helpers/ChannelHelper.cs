@@ -353,7 +353,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channel.Id, link.Target.Id, link.Source.Id);
 
-                if (!_mappingHelper.IsRelation(link.LinkType.SourceEntityTypeId, link.LinkType.TargetEntityTypeId, link.LinkType.Index))
+                if (!_mappingHelper.IsRelation(link.LinkType))
                 {
                     foreach (StructureEntity structureEntity in structureEntityList)
                     {

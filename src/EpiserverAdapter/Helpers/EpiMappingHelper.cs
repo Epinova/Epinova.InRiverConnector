@@ -48,16 +48,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return "CatalogEntry";
         }
 
-        public bool IsRelation(string sourceEntityTypeId, string targetEntityTypeId, int sortOrder)
+        /// <summary>
+        /// A LinkType is a relation if it represents a product-item, bundle, package or dynamic package in Episerver
+        /// </summary>
+        public bool IsRelation(LinkType linkType)
         {
-            if ((_config.BundleEntityTypes.Contains(sourceEntityTypeId) && !_config.BundleEntityTypes.Contains(targetEntityTypeId)) ||
-                (_config.PackageEntityTypes.Contains(sourceEntityTypeId) && !_config.PackageEntityTypes.Contains(targetEntityTypeId)) || 
-                (_config.DynamicPackageEntityTypes.Contains(sourceEntityTypeId) && !_config.DynamicPackageEntityTypes.Contains(targetEntityTypeId)))
+            if ((_config.BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.BundleEntityTypes.Contains(linkType.TargetEntityTypeId)) ||
+                (_config.PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.PackageEntityTypes.Contains(linkType.TargetEntityTypeId)) || 
+                (_config.DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId)))
             {
                 return true;
             }
 
-            return sourceEntityTypeId.Equals("Product") && targetEntityTypeId.Equals("Item") && sortOrder == FirstProductItemLinkType;
+            return linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && linkType.Index == FirstProductItemLinkType;
         }
 
         public bool IsRelation(string linkTypeId)
