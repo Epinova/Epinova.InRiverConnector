@@ -373,7 +373,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                         addedRelations.Add(relationName);
 
-                        IntegrationLogger.Write(LogLevel.Debug, string.Format("Adding relation to channelNode {0}", entity.Id));
+                        IntegrationLogger.Write(LogLevel.Debug, $"Adding relation to channelNode {entity.Id}");
                     }
                 }
             }
@@ -427,13 +427,68 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             {
                 if (_epiMappingHelper.IsRelation(linkType))
                 {
-                    AddRelationElements(addedRelations, epiElements, linkType, distinctStructureEntity, structureEntity, skuId, parentId);
+                    AddNodeEntryRelationElement(addedRelations, epiElements, linkType, distinctStructureEntity, structureEntity, skuId);
+                    AddEntryRelationElement(structureEntity, skuId, addedRelations, epiElements, linkType);
                 }
                 else
                 {
                     AddAssociationElements(epiElements, linkType, distinctStructureEntity, structureEntity, skuId);
                 }
             }
+        }
+
+        private void AddEntryRelationElement(StructureEntity structureEntity, 
+                                          string skuCode, 
+                                          List<string> addedRelations,
+                                          Dictionary<string, List<XElement>> epiElements,
+                                          LinkType linkType)
+        {
+            var parentProduct = _channelHelper.GetParentProduct(structureEntity);
+            var parentCode = _catalogCodeGenerator.GetEpiserverCode(parentProduct);
+            
+            if (skuCode == parentCode)
+                return;
+
+            var addedRelationsName = "EntryRelation_" + _catalogCodeGenerator.GetRelationName(skuCode, parentCode);
+
+            if (addedRelations.Contains(addedRelationsName))
+                return;
+
+            var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(parentCode, linkType.SourceEntityTypeId, skuCode, structureEntity.SortOrder);
+
+            epiElements["Relations"].Add(entryRelationElement);
+
+            addedRelations.Add(addedRelationsName);
+
+            IntegrationLogger.Write(LogLevel.Debug, $"Added EntryRelation for {skuCode} to product {parentCode}. Relation name: {addedRelationsName}.");
+
+        }
+
+        private void AddNodeEntryRelationElement(List<string> addedRelations,
+                                                 Dictionary<string, List<XElement>> epiElements,
+                                                 LinkType linkType,
+                                                 StructureEntity distinctStructureEntity,
+                                                 StructureEntity structureEntity,
+                                                 string skuCode)
+        {
+            IntegrationLogger.Write(LogLevel.Debug, $"For SKU {skuCode}: Found relation between {linkType.SourceEntityTypeId} and {linkType.TargetEntityTypeId} called {linkType.Id}");
+
+            var parentNode = _channelHelper.GetParentChannelNode(structureEntity); // TODO: Kan en sånn sjekk hindre Entries uten tilhørighet noe sted å bli med også?
+            if (parentNode == null)
+                return;
+
+            var parentCode = _catalogCodeGenerator.GetEpiserverCode(parentNode);
+            var relationName = "NodeEntryRelation_" + _catalogCodeGenerator.GetRelationName(skuCode, parentCode);
+
+            if (addedRelations.Contains(relationName))
+                return;
+
+            var relationElement = _epiElementFactory.CreateNodeEntryRelation(parentCode, skuCode, distinctStructureEntity.SortOrder);
+            epiElements["Relations"].Add(relationElement);
+
+            addedRelations.Add(relationName);
+
+            IntegrationLogger.Write(LogLevel.Debug, $"Added NodeEntryRelation for EntryCode {skuCode}. Relation name: {relationName}.");
         }
 
         private void AddAssociationElements(Dictionary<string, List<XElement>> epiElements, 
@@ -668,52 +723,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
         }
 
-        private void AddRelationElements(List<string> addedRelations, 
-                                         Dictionary<string, List<XElement>> epiElements, 
-                                         LinkType linkType,
-                                         StructureEntity distinctStructureEntity,
-                                         StructureEntity structureEntity, 
-                                         string skuCode, 
-                                         int parentId)
-        {
-            IntegrationLogger.Write(LogLevel.Debug, $"For SKU {skuCode}: Found relation between {linkType.SourceEntityTypeId} and {linkType.TargetEntityTypeId} called {linkType.Id}");
-
-            var parentNode = _channelHelper.GetParentChannelNode(structureEntity); // TODO: Kan en sånn sjekk hindre Entries uten tilhørighet noe sted å bli med også?
-            if (parentNode == null)
-                return;
-
-            var relationName = "NodeEntryRelation_" + _catalogCodeGenerator.GetRelationName(skuCode, parentNode.Id);
-
-            if (!addedRelations.Contains(relationName))
-            {
-                var relationElement = _epiElementFactory.CreateNodeEntryRelation(_catalogCodeGenerator.GetEpiserverCode(parentNode), skuCode, distinctStructureEntity.SortOrder);
-                epiElements["Relations"].Add(relationElement);
-
-                addedRelations.Add(relationName);
-
-                IntegrationLogger.Write(LogLevel.Debug, $"Added Relation for EntryCode {skuCode}");
-            }
-
-            var parentCode = _catalogCodeGenerator.GetEpiserverCode(distinctStructureEntity.ParentId);
-
-            if (parentId == 0 || skuCode == parentCode)
-                return;
-
-            var addedRelationsName = "EntryRelation_" + _catalogCodeGenerator.GetRelationName(skuCode, parentNode.Id);
-
-            if (addedRelations.Contains(addedRelationsName))
-                return;
-
-            var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(
-                                            parentCode,
-                                            linkType.SourceEntityTypeId,
-                                            skuCode,
-                                            distinctStructureEntity.SortOrder);
-
-            epiElements["Relations"].Add(entryRelationElement);
-            addedRelations.Add(addedRelationsName);
-
-            IntegrationLogger.Write(LogLevel.Debug, $"Added entry relation for ChildEntryCode {skuCode}");
-        }
+        
     }
 }

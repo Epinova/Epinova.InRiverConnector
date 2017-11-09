@@ -69,6 +69,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new Guid(data);
         }
 
+        public Entity GetParentProduct(StructureEntity structureEntity)
+        {
+            var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "Product");
+            var entity = channelNodesInPath.LastOrDefault();
+            return entity != null ? RemoteManager.DataService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
+        }
+
         public Entity GetParentChannelNode(StructureEntity structureEntity)
         {
             var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "ChannelNode");

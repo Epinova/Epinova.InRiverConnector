@@ -42,9 +42,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return GetPrefixedValue(entity.Id);
         }
 
-        public string GetRelationName(string skuId, int parentEntityId)
+        public string GetRelationName(string skuId, string parentCode)
         {
-            return $"{_config.ChannelIdPrefix}_{skuId}_{parentEntityId}";
+            return $"{_config.ChannelIdPrefix}_{skuId}_{parentCode}";
         }
 
         public string GetRelationName(int entityId, int parentEntityId)
