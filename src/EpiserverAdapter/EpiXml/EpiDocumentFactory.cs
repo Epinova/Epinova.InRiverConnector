@@ -174,7 +174,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 AddNodeElements(batch, addedNodes, addedRelations, epiElements);
                 AddEntryElements(batch, addedEntities, epiElements, allChannelStructureEntities.Where(x => x.Type == "Specification").ToList());
-                FillElements(batch, addedRelations, epiElements, allChannelStructureEntities);
+                AddRelationElements(batch, addedRelations, epiElements, allChannelStructureEntities);
 
                 totalLoaded += batch.Count;
 
@@ -189,7 +189,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             Dictionary<string, List<XElement>> epiElements,
             List<StructureEntity> specificationChannelStructureEntities)
         {
-            foreach (var structureEntity in batch)
+            foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId))
             {
                 if (structureEntity.LinkEntityId.HasValue)
                 {
@@ -264,62 +264,60 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         }
 
 
-        private void FillElements(List<StructureEntity> structureEntitiesBatch, 
-                                  List<string> addedRelations,
-                                  Dictionary<string, List<XElement>> epiElements,
-                                  List<StructureEntity> channelStructureEntities)
-        {
-            foreach (StructureEntity structureEntity in structureEntitiesBatch)
+        private void AddRelationElements(List<StructureEntity> structureEntitiesBatch, 
+                                         List<string> addedRelations,
+                                         Dictionary<string, List<XElement>> epiElements,
+                                         List<StructureEntity> allChannelStructureEntities)
+        {           
+            foreach (var structureEntity in structureEntitiesBatch.Where(x => x.EntityId != _config.ChannelId && x.Type != "Resource"))
             {
-                if (structureEntity.EntityId == _config.ChannelId || structureEntity.Type == "Resource")
-                    continue;
-
                 Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
-                
-                List<StructureEntity> existingStructureEntities = channelStructureEntities.FindAll(i => i.EntityId.Equals(entity.Id));
-                List<StructureEntity> filteredStructureEntities = new List<StructureEntity>();
-    
-                foreach (StructureEntity se in existingStructureEntities)
+
+                var distinctStructureEntities = GetDistinctStructureEntities(allChannelStructureEntities, entity);
+
+                foreach (var distinctEntity in distinctStructureEntities)
                 {
-                    if (!filteredStructureEntities.Exists(i => i.EntityId == se.EntityId && i.ParentId == se.ParentId))
-                    {
-                        filteredStructureEntities.Add(se);
-                    }
-                    else
-                    {
-                        if (se.LinkEntityId.HasValue)
-                        {
-                            if (!filteredStructureEntities.Exists(
-                                    i =>
-                                    i.EntityId == se.EntityId && i.ParentId == se.ParentId
-                                    && (i.LinkEntityId != null && i.LinkEntityId == se.LinkEntityId)))
-                            {
-                                filteredStructureEntities.Add(se);
-                            }
-                        }
-                    }
-                }
-    
-                foreach (StructureEntity existingStructureEntity in filteredStructureEntities)
-                {
-                    var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == existingStructureEntity.LinkTypeIdFromParent);
+                    var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == distinctEntity.LinkTypeIdFromParent);
 
                     if (linkType == null)
                     {
                         continue;
                     }
     
-                    AddRelations(addedRelations, epiElements, linkType, existingStructureEntity, structureEntity, entity);
+                    AddRelations(addedRelations, epiElements, linkType, distinctEntity, distinctEntity, entity);
                 }
             }
         }
 
-        private void AddNodeElements(List<StructureEntity> batch,
-            List<string> addedNodes,
-            List<string> addedRelations,
-            Dictionary<string, List<XElement>> epiElements)
+        private List<StructureEntity> GetDistinctStructureEntities(List<StructureEntity> allChannelStructureEntities, Entity entity)
         {
-            var nodeStructureEntities = batch.Where(x => x.Type == "ChannelNode");
+            List<StructureEntity> distinctStructureEntities = new List<StructureEntity>();
+
+            foreach (StructureEntity se in allChannelStructureEntities.FindAll(i => i.EntityId == entity.Id))
+            {
+                if (!distinctStructureEntities.Any(i => i.EntityId == se.EntityId && i.ParentId == se.ParentId))
+                {
+                    distinctStructureEntities.Add(se);
+                }
+                else
+                {
+                    if (!se.LinkEntityId.HasValue)
+                        continue;
+
+                    if (!distinctStructureEntities.Any(
+                        x => x.EntityId == se.EntityId && x.ParentId == se.ParentId && x.LinkEntityId != null &&
+                             x.LinkEntityId == se.LinkEntityId))
+                    {
+                        distinctStructureEntities.Add(se);
+                    }
+                }
+            }
+            return distinctStructureEntities;
+        }
+
+        private void AddNodeElements(List<StructureEntity> batch, List<string> addedNodes, List<string> addedRelations, Dictionary<string, List<XElement>> epiElements)
+        {
+            var nodeStructureEntities = batch.Where(x => x.Type == "ChannelNode" && x.EntityId != _config.ChannelId);
 
             foreach (var structureEntity in nodeStructureEntities)
             {
