@@ -38,6 +38,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly IContentRepository _contentRepository;
         private readonly ReferenceConverter _referenceConverter;
         private readonly Configuration _config;
+        private readonly IUrlSegmentGenerator _urlSegmentGenerator;
 
         public MediaImporter(ILogger logger,
                              IAssetService assetService,
@@ -48,7 +49,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                              ContentMediaResolver contentMediaResolver,
                              IContentRepository contentRepository,
                              ReferenceConverter referenceConverter,
-                             Configuration config)
+                             Configuration config,
+                             IUrlSegmentGenerator urlSegmentGenerator)
         {
             _logger = logger;
             _assetService = assetService;
@@ -60,6 +62,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _contentRepository = contentRepository;
             _referenceConverter = referenceConverter;
             _config = config;
+            _urlSegmentGenerator = urlSegmentGenerator;
         }
         
 
@@ -339,7 +342,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
                 }
 
-                editableMediaData.RouteSegment = UrlSegment.GetUrlFriendlySegment(rawFilename);
+                editableMediaData.RouteSegment = _urlSegmentGenerator.Create(rawFilename);
             }
 
             ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
