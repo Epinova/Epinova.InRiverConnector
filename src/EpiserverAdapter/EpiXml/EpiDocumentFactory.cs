@@ -191,19 +191,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                   List<StructureEntity> channelStructureEntities,
                                   Dictionary<int, Entity> channelEntities)
         {
-            var linkTypes = new Dictionary<string, LinkType>();
-
-            foreach (LinkType linkType in _config.LinkTypes)
-            {
-                if (!linkTypes.ContainsKey(linkType.Id))
-                {
-                    linkTypes.Add(linkType.Id, linkType);
-                }
-            }
-
             foreach (StructureEntity structureEntity in structureEntitiesBatch)
             {
-                if (structureEntity.EntityId == _config.ChannelId)
+                if (structureEntity.EntityId == _config.ChannelId || structureEntity.Type == "Resource")
                     continue;
                 
                 if (structureEntity.LinkEntityId.HasValue)
@@ -234,11 +224,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     }
                 }
     
-                if (structureEntity.Type == "Resource")
-                {
-                    continue;
-                }
-    
                 Entity entity;
                 int entityId = structureEntity.EntityId;
 
@@ -249,7 +234,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 else
                 {
                     entity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataOnly);
-
                     channelEntities.Add(entityId, entity);
                 }
     
@@ -404,14 +388,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
     
                 foreach (StructureEntity existingStructureEntity in filteredStructureEntities)
                 {
-                    //Parent.
-                    LinkType linkType = null;
-    
-                    if (linkTypes.ContainsKey(existingStructureEntity.LinkTypeIdFromParent))
-                    {
-                        linkType = linkTypes[existingStructureEntity.LinkTypeIdFromParent];
-                    }
-    
+                    var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == existingStructureEntity.LinkTypeIdFromParent);
+
                     if (linkType == null)
                     {
                         continue;

@@ -160,14 +160,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             Entity updatedEntity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataAndLinks);
 
-            if (updatedEntity == null)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"ChannelEntityUpdated, could not find entity with id: {entityId}");
-                ConnectorEventHelper.UpdateEvent(connectorEvent, $"ChannelEntityUpdated, could not find entity with id: {entityId}", -1, true);
-
-                return connectorEvent;
-            }
-
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
             bool resourceIncluded = false;

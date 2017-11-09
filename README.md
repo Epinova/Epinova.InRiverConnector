@@ -48,4 +48,3 @@ TODO: As of now there's a TODO to update all Episerver entities whenever a CVL v
 
 - No longer creates completely empty InRiverGenericMedia objects for resources in InRiver without a file attached to it.
 - No longer creates InRiverGenericMedia for file types not matching any of your implemented media types. If your Episerver site does not have a content type matching a file extension, no file will be created. 
-- Implementing `IInriverResource` is no longer required; it'll find the default matching content type if none of your types implements the interface. 

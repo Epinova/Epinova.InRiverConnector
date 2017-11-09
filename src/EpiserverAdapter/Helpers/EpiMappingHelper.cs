@@ -57,8 +57,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return true;
             }
 
-            return sourceEntityTypeId.Equals("Product") && targetEntityTypeId.Equals("Item")
-                   && sortOrder == FirstProductItemLinkType;
+            return sourceEntityTypeId.Equals("Product") && targetEntityTypeId.Equals("Item") && sortOrder == FirstProductItemLinkType;
         }
 
         public bool IsRelation(string linkTypeId)

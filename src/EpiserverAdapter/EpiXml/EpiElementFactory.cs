@@ -318,14 +318,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("SortOrder", sortOrder));
         }
 
-        public XElement CreateEntryRelationElement(int sourceId, string parentEntityType, int targetId, int sortOrder)
-        {
-            return CreateEntryRelationElement(_catalogCodeGenerator.GetEpiserverCode(sourceId),
-                                              parentEntityType,
-                                              _catalogCodeGenerator.GetEpiserverCode(targetId),
-                                              sortOrder);
-        }
-
         public XElement CreateEntryRelationElement(int sourceId, string parentEntityType, string targetSkuId, int sortOrder)
         {
             return CreateEntryRelationElement(_catalogCodeGenerator.GetEpiserverCode(sourceId), 
