@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
@@ -77,7 +76,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (resourcesForImport.Count == 0)
             {
-                IntegrationLogger.Write(LogLevel.Debug, "Nothing to tell server about.");
+                IntegrationLogger.Write(LogLevel.Debug, "No resources to import, no action taken.");
                 return true;
             }
 
@@ -128,20 +127,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private bool PostToEpiserver(List<InRiverImportResource> resourcesForImport)
         {
-            var listofLists = new List<List<InRiverImportResource>>();
-            var maxSize = 100;
-            for (var i = 0; i < resourcesForImport.Count; i += maxSize)
+            var batchSize = 100;
+            for (var i = 0; i < resourcesForImport.Count; i += batchSize)
             {
-                listofLists.Add(resourcesForImport.GetRange(i, Math.Min(maxSize, resourcesForImport.Count - i)));
-            }
+                IntegrationLogger.Write(LogLevel.Debug, $"Sending resources {i}-{i+batchSize} out of {resourcesForImport.Count} resources to Episerver");
 
-            foreach (var resourceList in listofLists)
-            {
-               IntegrationLogger.Write(LogLevel.Debug, $"Sending {resourceList.Count} of {resourcesForImport.Count} resources to Episerver");
+                var resourcesToPost = resourcesForImport.Skip(i).Take(batchSize);
 
-                var response = _httpClient.PostAsJsonAsync(_config.Endpoints.ImportResources, resourceList).Result;
+                var response = _httpClient.PostAsJsonAsync(_config.Endpoints.ImportResources, resourcesToPost).Result;
                 response.EnsureSuccessStatusCode();
-                
+
                 var result = response.Content.ReadAsAsync<bool>().Result;
                 if (!result)
                     continue;

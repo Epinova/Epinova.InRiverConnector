@@ -244,7 +244,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     var importer = new ResourceImporter(_config, _httpClient);
                     importer.ImportResources(manifest, baseFilePpath);
 
-                    IntegrationLogger.Write(LogLevel.Information, $"Resource file {manifest} imported to EPi Server Commerce.");
+                    IntegrationLogger.Write(LogLevel.Information, $"Resource file {manifest} imported to Episerver.");
                 }
                 catch (Exception exception)
                 {
