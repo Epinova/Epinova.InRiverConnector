@@ -332,9 +332,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             if (!string.IsNullOrEmpty(parentEntityType))
             {
-                string sourceType = EpiMappingHelper.GetEntryType(parentEntityType, _config);
-
-                // Change it if needed.
+                var sourceType = EpiMappingHelper.GetEntryType(parentEntityType, _config);
                 switch (sourceType)
                 {
                     case "Package":

@@ -305,15 +305,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 if (_epiCodeMapping != null)
                     return _epiCodeMapping;
 
+                _epiCodeMapping = new Dictionary<string, string>();
+
                 if (!_settings.ContainsKey("EPI_CODE_FIELDS"))
                 {
-                    _epiCodeMapping = new Dictionary<string, string>();
                     return _epiCodeMapping;
                 }
 
                 var rawValue = _settings["EPI_CODE_FIELDS"];
 
-                _epiCodeMapping = new Dictionary<string, string>();
                 if (string.IsNullOrEmpty(rawValue))
                     return _epiCodeMapping;
 
