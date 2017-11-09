@@ -69,12 +69,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new Guid(data);
         }
 
-        public int GetParentChannelNode(StructureEntity structureEntity)
+        public Entity GetParentChannelNode(StructureEntity structureEntity)
         {
             var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "ChannelNode");
             var entity = channelNodesInPath.LastOrDefault();
-
-            return entity?.EntityId ?? 0;
+            return entity != null ? RemoteManager.DataService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
         }
 
         internal List<StructureEntity> FindEntitiesElementInStructure(List<StructureEntity> channelEntities, int sourceEntityId, int targetEntityId, string linktype)
@@ -375,20 +374,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 {
                     foreach (StructureEntity structureEntity in structureEntityList)
                     {
-                        int parentNodeId = GetParentChannelNode(structureEntity);
+                        var parentNode = GetParentChannelNode(structureEntity);
 
-                        if (parentNodeId == 0)
+                        if (parentNode == null)
                         {
                             continue;
                         }
 
                         string skuCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId);
-                        string parentNodeCode = _catalogCodeGenerator.GetEpiserverCode(parentNodeId);
+                        string parentNodeCode = _catalogCodeGenerator.GetEpiserverCode(parentNode);
 
                         if (!relationsElements.ContainsKey(skuCode + "_" + parentNodeCode))
                         {
                             relationsElements.Add(skuCode + "_" + parentNodeCode, 
-                                                  _epiElementFactory.CreateNodeEntryRelation(parentNodeId, structureEntity.EntityId, structureEntity.SortOrder));
+                                                  _epiElementFactory.CreateNodeEntryRelation(parentNode.Id, structureEntity.EntityId, structureEntity.SortOrder));
                         }
 
                         string parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);

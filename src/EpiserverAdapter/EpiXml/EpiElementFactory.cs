@@ -294,14 +294,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("SortOrder", sortOrder));
         }
 
-        public XElement CreateNodeRelation(int sourceId, string targetCode, int sortOrder)
-        {
-            return new XElement("NodeRelation",
-                new XElement("ChildNodeCode", targetCode),
-                new XElement("ParentNodeCode", _catalogCodeGenerator.GetEpiserverCode(sourceId)),
-                new XElement("SortOrder", sortOrder));
-        }
-
         public XElement CreateNodeEntryRelation(int sourceId, int targetId, int sortOrder)
         {
             return new XElement("NodeEntryRelation",
@@ -310,20 +302,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("SortOrder", sortOrder));
         }
 
-        public XElement CreateNodeEntryRelation(int sourceId, string skuId, int sortOrder)
+        public XElement CreateNodeEntryRelation(string nodeCode, string skuId, int sortOrder)
         {
             return new XElement("NodeEntryRelation",
                 new XElement("EntryCode", skuId),
-                new XElement("NodeCode", _catalogCodeGenerator.GetEpiserverCode(sourceId)),
+                new XElement("NodeCode", nodeCode),
                 new XElement("SortOrder", sortOrder));
-        }
-
-        public XElement CreateEntryRelationElement(int sourceId, string parentEntityType, string targetSkuId, int sortOrder)
-        {
-            return CreateEntryRelationElement(_catalogCodeGenerator.GetEpiserverCode(sourceId), 
-                                              parentEntityType, 
-                                              targetSkuId, 
-                                              sortOrder);
         }
 
         public XElement CreateEntryRelationElement(string parentCode, string parentEntityType, string childCode, int sortOrder)
