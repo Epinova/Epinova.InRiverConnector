@@ -359,8 +359,12 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             IEnumerable<Type> mediaTypes = _contentMediaResolver.ListAllMatching(fileInfo.Extension);
 
+            _logger.Debug($"Found {mediaTypes.Count()} matching media types for extension {fileInfo.Extension}.");
+
             var contentTypeType = mediaTypes.FirstOrDefault(x => x.GetInterfaces().Contains(typeof(IInRiverResource))) ??
                                   _contentMediaResolver.GetFirstMatching(fileInfo.Extension);
+
+            _logger.Debug($"Chosen content type-type is {contentTypeType.Name}.");
 
             var contentType = _contentTypeRepository.Load(contentTypeType);
 
@@ -482,21 +486,25 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
+        private static readonly object LockObject = new object();
+       
         /// <summary>
-        /// Returns a reference to the inRiver Resource folder. It will be created if it does not already exist.
+        /// Returns a reference to the inriver resource folder. It will be created if it does not already exist.
         /// </summary>
         /// <param name="fileInfo"></param>
         /// <param name="contentType"></param>
         protected ContentReference GetFolder(FileInfo fileInfo, ContentType contentType)
         {
-            var rootFolderName = ConfigurationManager.AppSettings["InRiverPimConnector.ResourceFolderName"];
-            var rootFolder = _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
+            lock(LockObject) { 
+                var rootFolderName = ConfigurationManager.AppSettings["InRiverPimConnector.ResourceFolderName"];
+                var rootFolder = _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
 
-            var firstLevelFolderName = fileInfo.Name[0].ToString().ToUpper();
-            var firstLevelFolder = _contentFolderCreator.CreateOrGetFolder(rootFolder, firstLevelFolderName);
+                var firstLevelFolderName = fileInfo.Name[0].ToString().ToUpper();
+                var firstLevelFolder = _contentFolderCreator.CreateOrGetFolder(rootFolder, firstLevelFolderName);
 
-            var secondLevelFolderName = contentType.DisplayName.Replace("File", "");
-            return _contentFolderCreator.CreateOrGetFolder(firstLevelFolder, secondLevelFolderName);
+                var secondLevelFolderName = contentType.Name.Replace("File", "");
+                return _contentFolderCreator.CreateOrGetFolder(firstLevelFolder, secondLevelFolderName);
+            }
         }
     }
 }
