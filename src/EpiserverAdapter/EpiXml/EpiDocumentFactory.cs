@@ -21,6 +21,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly ChannelHelper _channelHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
+        /// <summary>
+        /// These StructureEntity-LinkTypes should never be added as associations, as they live their own lives as Relations instead.
+        /// </summary>
+        private readonly List<string> _linkTypeIdsBannedAsAssociations = new List<string> { "ChannelNodeChannelNode", "ChannelNodeProduct" };
+
         public EpiDocumentFactory(Configuration config, 
             EpiApi epiApi, 
             EpiElementFactory epiElementFactory, 
@@ -257,11 +262,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (specificationEntry == null)
                 return null;
             
+            IntegrationLogger.Write(LogLevel.Debug, $"Found specification for entity {entityId}. Creating MetaField element.");
+
             XElement specificationMetaField = new XElement("MetaField",
                 new XElement("Name", "SpecificationField"),
                 new XElement("Type", "LongHtmlString"));
 
-            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+            foreach (var culturePair in _config.LanguageMapping)
             {
                 var htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entityId, culturePair.Value);
                 specificationMetaField.Add(
@@ -303,7 +310,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         private List<StructureEntity> GetDistinctStructureEntities(List<StructureEntity> allChannelStructureEntities, Entity entity)
         {
-            List<StructureEntity> distinctStructureEntities = new List<StructureEntity>();
+            var distinctStructureEntities = new List<StructureEntity>();
 
             foreach (StructureEntity se in allChannelStructureEntities.FindAll(i => i.EntityId == entity.Id))
             {
@@ -316,9 +323,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (!se.LinkEntityId.HasValue)
                         continue;
 
-                    if (!distinctStructureEntities.Any(
-                        x => x.EntityId == se.EntityId && x.ParentId == se.ParentId && x.LinkEntityId != null &&
-                             x.LinkEntityId == se.LinkEntityId))
+                    if (!distinctStructureEntities.Any(x => x.EntityId == se.EntityId && 
+                                                            x.ParentId == se.ParentId && 
+                                                            x.LinkEntityId != null &&
+                                                            x.LinkEntityId == se.LinkEntityId))
                     {
                         distinctStructureEntities.Add(se);
                     }
@@ -329,7 +337,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         private void AddNodeElements(List<StructureEntity> batch, List<string> addedNodes, List<string> addedRelations, Dictionary<string, List<XElement>> epiElements)
         {
-            var nodeStructureEntities = batch.Where(x => x.Type == "ChannelNode" && x.EntityId != _config.ChannelId);
+            var nodeStructureEntities = batch.Where(x => x.IsChannelNode() && x.EntityId != _config.ChannelId);
 
             foreach (var structureEntity in nodeStructureEntities)
             {
@@ -505,6 +513,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                             StructureEntity structureEntity, 
                                             string skuId)
         {
+            if (IsAssociationLinkType(distinctStructureEntity))
+                return;
+
             Entity linkEntity = null;
 
             if (distinctStructureEntity.LinkEntityId != null)
@@ -520,6 +531,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             {
                 AddNormalAssociations(epiElements, linkType, distinctStructureEntity, linkEntity);
             }
+        }
+
+        private bool IsAssociationLinkType(StructureEntity distinctStructureEntity)
+        {
+            return !_linkTypeIdsBannedAsAssociations.Contains(distinctStructureEntity.Type);
         }
 
         private void AddNormalAssociations(Dictionary<string, List<XElement>> epiElements, 
@@ -582,9 +598,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         XElement nameElement = a.Element("Name");
                         XElement entryCodeElement = a.Element("EntryCode");
                         XElement descriptionElement = a.Element("Description");
-                        return descriptionElement != null && entryCodeElement != null && nameElement != null &&
-                               nameElement.Value.Equals(associationName) && entryCodeElement.Value.Equals(
-                                   parentCode) && descriptionElement.Value.Equals(linkEntityId);
+                        return descriptionElement != null && 
+                               entryCodeElement != null && 
+                               nameElement != null &&
+                               nameElement.Value == associationName && 
+                               entryCodeElement.Value == parentCode && 
+                               descriptionElement.Value == linkEntityId;
                     });
             }
             else

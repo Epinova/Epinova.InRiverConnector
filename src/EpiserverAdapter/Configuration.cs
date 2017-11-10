@@ -389,12 +389,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _exportEnabledLinkTypes = new List<LinkType>();
                 List<LinkType> allLinkTypes = RemoteManager.ModelService.GetAllLinkTypes();
 
-                LinkType firstProdItemLink = allLinkTypes.Where(
-                        lt => lt.SourceEntityTypeId.Equals("Product") && lt.TargetEntityTypeId.Equals("Item"))
-                    .OrderBy(l => l.Index)
-                    .FirstOrDefault();
+                var productItemLink = allLinkTypes.Where(x => x.SourceEntityTypeId.Equals("Product") && x.TargetEntityTypeId.Equals("Item"))
+                                                  .OrderBy(l => l.Index)
+                                                  .FirstOrDefault();
 
-                foreach (LinkType linkType in allLinkTypes)
+                foreach (var linkType in allLinkTypes)
                 {
                     // ChannelNode links and  Product to item links are not associations
                     if (linkType.LinkEntityTypeId == null &&
@@ -402,17 +401,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                          || (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !BundleEntityTypes.Contains(linkType.TargetEntityTypeId))
                          || (PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !PackageEntityTypes.Contains(linkType.TargetEntityTypeId))
                          || (DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId))
-                         || (linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && firstProdItemLink != null && linkType.Id == firstProdItemLink.Id)))
+                         || (linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && productItemLink != null && linkType.Id == productItemLink.Id)))
                     {
                         continue;
                     }
 
-                    if (ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.SourceEntityTypeId))
-                        && ExportEnabledEntityTypes.Any(eee => eee.Id.Equals(linkType.TargetEntityTypeId)))
+                    if (ExportEnabledEntityTypes.Any(x => x.Id == linkType.SourceEntityTypeId) &&
+                        ExportEnabledEntityTypes.Any(x => x.Id == linkType.TargetEntityTypeId))
                     {
                         _exportEnabledLinkTypes.Add(linkType);
                     }
                 }
+
+                IntegrationLogger.Write(LogLevel.Debug, $"ExportEnabledLinkTypes: {string.Join(",", _exportEnabledLinkTypes)}.");
 
                 return _exportEnabledLinkTypes.ToArray();
             }
