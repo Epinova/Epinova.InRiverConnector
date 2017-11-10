@@ -94,6 +94,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public void DeleteCatalogNode(string catalogNodeId)
         {
+            // TODO: Bruk ContentRepository her.
+            // TODO: Slett alle underliggende catalog entries dersom de kun lever her.
+
             List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
             CatalogNode cn = CatalogContext.Current.GetCatalogNode(catalogNodeId);
 

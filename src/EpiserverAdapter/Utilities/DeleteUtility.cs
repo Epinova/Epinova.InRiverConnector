@@ -341,6 +341,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     }
 
                     break;
+
+                // default represents products, bundles, packages etc.
                 default:
                     _epiApi.DeleteCatalogEntry(deletedEntity);
                     deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
