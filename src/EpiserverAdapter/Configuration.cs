@@ -21,7 +21,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private string _channelDefaultCurrency;
         private string _channelWeightBase;
         private Dictionary<string, string> _epiCodeMapping;
-        private Dictionary<string, string> _resourceConfiugurationExtensions;
+        private Dictionary<string, string> _resourceConfiugExtensions;
         private Dictionary<CultureInfo, CultureInfo> _languageMapping;
         private Dictionary<string, string> _epiNameMapping;
         private List<LinkType> _exportEnabledLinkTypes;
@@ -58,27 +58,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (!_settings.ContainsKey("CHANNEL_ID"))
+                if (!_settings.ContainsKey(ConfigKeys.ChannelId))
                 {
                     return 0;
                 }
 
-                return int.Parse(_settings["CHANNEL_ID"]);
+                return int.Parse(_settings[ConfigKeys.ChannelId]);
             }
         }
         
-        public string PublicationsRootPath
-        {
-            get
-            {
-                if (!_settings.ContainsKey("PUBLISH_FOLDER"))
-                {
-                    return @"C:\temp\Publish\Epi";
-                }
-
-                return _settings["PUBLISH_FOLDER"];
-            }
-        }
+        public string PublicationsRootPath => !_settings.ContainsKey(ConfigKeys.PublishFolder) ? 
+                                                    @"C:\temp\Publish\Epi" : 
+                                                    _settings[ConfigKeys.PublishFolder];
 
         private List<EntityType> _exportEnabledEntityTypes;
         public List<EntityType> ExportEnabledEntityTypes
@@ -104,12 +95,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (!_settings.ContainsKey("HTTP_POST_URL"))
+                if (!_settings.ContainsKey(ConfigKeys.HttpPostUrl))
                 {
                     return null;
                 }
 
-                return _settings["HTTP_POST_URL"];
+                return _settings[ConfigKeys.HttpPostUrl];
             }
         }
 
@@ -117,59 +108,50 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (_languageMapping == null)
+                if (_languageMapping != null)
+                    return _languageMapping;
+
+                if (!_settings.ContainsKey(ConfigKeys.LanguageMapping))
                 {
-                    if (!_settings.ContainsKey("LANGUAGE_MAPPING"))
+                    return new Dictionary<CultureInfo, CultureInfo>();
+                }
+
+                string mappingXml = _settings[ConfigKeys.LanguageMapping];
+
+                _languageMapping = new Dictionary<CultureInfo, CultureInfo>();
+
+                XmlDocument doc = new XmlDocument();
+                doc.LoadXml(mappingXml);
+
+                List<CultureInfo> allLanguages = RemoteManager.UtilityService.GetAllLanguages();
+
+                if (doc.DocumentElement == null)
+                    return _languageMapping;
+
+                foreach (XmlNode languageNode in doc.DocumentElement)
+                {
+                    XmlElement epiLanguage = languageNode["epi"];
+                    XmlElement inriverLanguage = languageNode["inriver"];
+
+                    if (epiLanguage != null && inriverLanguage != null)
                     {
-                        return new Dictionary<CultureInfo, CultureInfo>();
-                    }
+                        var episerverCulture = new CultureInfo(epiLanguage.InnerText);
+                        var pimCulture = new CultureInfo(inriverLanguage.InnerText);
 
-                    string mappingXml = _settings["LANGUAGE_MAPPING"];
-
-                    Dictionary<CultureInfo, CultureInfo> languageMapping2 = new Dictionary<CultureInfo, CultureInfo>();
-
-                    XmlDocument doc = new XmlDocument();
-                    doc.LoadXml(mappingXml);
-
-                    List<CultureInfo> allLanguages = RemoteManager.UtilityService.GetAllLanguages();
-
-                    if (doc.DocumentElement != null)
-                    {
-                        foreach (XmlNode languageNode in doc.DocumentElement)
+                        if (!allLanguages.Exists(ci => ci.LCID == pimCulture.LCID))
                         {
-                            XmlElement epiLanguage = languageNode["epi"];
-                            XmlElement inriverLanguage = languageNode["inriver"];
-                            if (epiLanguage != null && inriverLanguage != null)
-                            {
-                                CultureInfo epiCi = new CultureInfo(epiLanguage.InnerText);
-                                CultureInfo pimCi = new CultureInfo(inriverLanguage.InnerText);
-
-                                if (!allLanguages.Exists(ci => ci.LCID == pimCi.LCID))
-                                {
-                                    throw new Exception(
-                                        string.Format(
-                                            "ERROR: Mapping Language incorrect, {0} is not a valid pim culture info",
-                                            inriverLanguage.InnerText));
-                                }
-
-                                languageMapping2.Add(epiCi, pimCi);
-                            }
-                            else
-                            {
-                                throw new Exception("ERROR: Mapping language is missing.");
-                            }
+                            throw new Exception($"ERROR: Mapping Language incorrect, {inriverLanguage.InnerText} is not a valid pim culture info");
                         }
-                    }
 
-                    _languageMapping = languageMapping2;
+                        _languageMapping.Add(episerverCulture, pimCulture);
+                    }
+                    else
+                    {
+                        throw new Exception("ERROR: Mapping language is missing.");
+                    }
                 }
 
                 return _languageMapping;
-            }
-
-            set
-            {
-                _languageMapping = value;
             }
         }
 
@@ -177,36 +159,33 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (_epiNameMapping == null)
+                if (_epiNameMapping != null)
+                    return _epiNameMapping;
+
+                _epiNameMapping = new Dictionary<string, string>();
+
+                if (!_settings.ContainsKey(ConfigKeys.EpiNameFields))
+                    return _epiNameMapping;
+                
+                var value = _settings[ConfigKeys.EpiNameFields];
+
+                if (string.IsNullOrEmpty(value))
+                    return _epiNameMapping;
+
+                List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
+
+                var values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach (var val in values)
                 {
-                    if (!_settings.ContainsKey("EPI_NAME_FIELDS"))
+                    if (string.IsNullOrEmpty(val))
+                        continue;
+
+                    var fieldType = fieldTypes.FirstOrDefault(fT => fT.Id.Equals(val, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (fieldType != null && !_epiNameMapping.ContainsKey(fieldType.EntityTypeId))
                     {
-                        _epiNameMapping = new Dictionary<string, string>();
-
-                        return _epiNameMapping;
-                    }
-
-                    string value = _settings["EPI_NAME_FIELDS"];
-
-                    _epiNameMapping = new Dictionary<string, string>();
-                    if (!string.IsNullOrEmpty(value))
-                    {
-                        List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
-
-                        string[] values = value.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-                        foreach (string val in values)
-                        {
-                            if (string.IsNullOrEmpty(val))
-                            {
-                                continue;
-                            }
-
-                            FieldType fieldType = fieldTypes.FirstOrDefault(fT => fT.Id.ToLower() == val.ToLower());
-                            if (fieldType != null && !_epiNameMapping.ContainsKey(fieldType.EntityTypeId))
-                            {
-                                _epiNameMapping.Add(fieldType.EntityTypeId, fieldType.Id);
-                            }
-                        }
+                        _epiNameMapping.Add(fieldType.EntityTypeId, fieldType.Id);
                     }
                 }
 
@@ -218,12 +197,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (!_settings.ContainsKey("PUBLISH_FOLDER_RESOURCES"))
+                if (!_settings.ContainsKey(ConfigKeys.ResourcesPublishFolder))
                 {
                     return @"C:\temp\Publish\Epi\Resources";
                 }
 
-                return _settings["PUBLISH_FOLDER_RESOURCES"];
+                return _settings[ConfigKeys.ResourcesPublishFolder];
             }
         }
 
@@ -231,25 +210,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (_useThreeLevelsInCommerce == null)
+                if (_useThreeLevelsInCommerce != null)
+                    return (bool) _useThreeLevelsInCommerce;
+
+                if (!_settings.ContainsKey(ConfigKeys.UseThreeLevelsInCommerce))
                 {
-                    if (!_settings.ContainsKey("USE_THREE_LEVELS_IN_COMMERCE"))
-                    {
-                        _useThreeLevelsInCommerce = false;
-                        return false;
-                    }
-
-                    string value = _settings["USE_THREE_LEVELS_IN_COMMERCE"];
-
-                    if (!string.IsNullOrEmpty(value))
-                    {
-                        _useThreeLevelsInCommerce = bool.Parse(value);
-                    }
-                    else
-                    {
-                        _useThreeLevelsInCommerce = false;
-                    }
+                    _useThreeLevelsInCommerce = false;
+                    return _useThreeLevelsInCommerce.Value;
                 }
+
+                var value = _settings[ConfigKeys.UseThreeLevelsInCommerce];
+
+                _useThreeLevelsInCommerce = !string.IsNullOrEmpty(value) && bool.Parse(value);
 
                 return (bool)_useThreeLevelsInCommerce;
             }
@@ -267,7 +239,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 if (string.IsNullOrEmpty(_channelDefaultCurrency))
                 {
-                    _channelDefaultCurrency = "usd";
+                    _channelDefaultCurrency = "USD";
                 }
                 
                 return _channelDefaultCurrency;
@@ -285,23 +257,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 _epiCodeMapping = new Dictionary<string, string>();
 
-                if (!_settings.ContainsKey("EPI_CODE_FIELDS"))
+                if (!_settings.ContainsKey(ConfigKeys.EpiCodeFields))
                 {
                     return _epiCodeMapping;
                 }
 
-                var rawValue = _settings["EPI_CODE_FIELDS"];
+                var rawValue = _settings[ConfigKeys.EpiCodeFields];
 
                 if (string.IsNullOrEmpty(rawValue))
                     return _epiCodeMapping;
 
-                List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
+                var fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
 
                 var values = rawValue.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
 
                 foreach (var val in values)
                 {
-                    FieldType fieldType = fieldTypes.FirstOrDefault(x => x.Id.Equals(val, StringComparison.InvariantCultureIgnoreCase));
+                    var fieldType = fieldTypes.FirstOrDefault(x => x.Id.Equals(val, StringComparison.InvariantCultureIgnoreCase));
                     if (fieldType != null && !_epiCodeMapping.ContainsKey(fieldType.EntityTypeId))
                     {
                         _epiCodeMapping.Add(fieldType.EntityTypeId, fieldType.Id);
@@ -334,25 +306,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (!_settings.ContainsKey("RESOURCE_CONFIGURATION"))
+                if (!_settings.ContainsKey(ConfigKeys.ResourceConfiguration))
                 {
                     return new string[0];
                 }
 
-                Dictionary<string, string> resourceConfWithExt = ParseResourceConfig(_settings["RESOURCE_CONFIGURATION"]);
+                var resourceConfWithExt = ParseResourceConfig(_settings[ConfigKeys.ResourceConfiguration]);
                 return resourceConfWithExt.Keys.ToArray();
             }
         }
 
-        public Dictionary<string, string> ResourceConfiugurationExtensions
-        {
-            get
-            {
-                return _resourceConfiugurationExtensions
-                       ?? (_resourceConfiugurationExtensions =
-                           ParseResourceConfig(_settings["RESOURCE_CONFIGURATION"]));
-            }
-        }
+        public Dictionary<string, string> ResourceConfiugurationExtensions => _resourceConfiugExtensions ?? 
+                            (_resourceConfiugExtensions = ParseResourceConfig(_settings[ConfigKeys.ResourceConfiguration]));
 
         public LinkType[] AssociationLinkTypes
         {
@@ -401,7 +366,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                string value = _settings["ITEM_TO_SKUs"];
+                var value = _settings[ConfigKeys.ItemToSkus];
                 if (!bool.TryParse(value, out _itemsToSkus))
                 {
                     _itemsToSkus = false;
@@ -415,10 +380,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (!_settings.ContainsKey("BATCH_SIZE"))
+                if (!_settings.ContainsKey(ConfigKeys.BatchSize))
                     return int.MaxValue;
 
-                var value = _settings["BATCH_SIZE"];
+                var value = _settings[ConfigKeys.BatchSize];
 
                 if (!int.TryParse(value, out _batchsize) || value == "0")
                 {
@@ -429,9 +394,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
-        public string[] BundleEntityTypes => SplitString("BUNDLE_ENTITYTYPES");
-        public string[] PackageEntityTypes => SplitString("PACKAGE_ENTITYTYPES");
-        public string[] DynamicPackageEntityTypes => SplitString("DYNAMIC_PACKAGE_ENTITYTYPES");
+        public string[] BundleEntityTypes => SplitString(ConfigKeys.BundleTypes);
+        public string[] PackageEntityTypes => SplitString(ConfigKeys.PackageTypes);
+        public string[] DynamicPackageEntityTypes => SplitString(ConfigKeys.DynamicPackageTypes);
 
         public HashSet<string> EPiFieldsIninRiver
         {
@@ -442,7 +407,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return _excludedFields;
                 }
 
-                if (!_settings.ContainsKey("EXCLUDE_FIELDS") || string.IsNullOrEmpty(_settings["EXCLUDE_FIELDS"]))
+                if (!_settings.ContainsKey(ConfigKeys.ExcludeFields) || string.IsNullOrEmpty(_settings[ConfigKeys.ExcludeFields]))
                 {
                     HashSet<string> excludedFieldTypes = new HashSet<string>();
                     foreach (string baseField in _epiFieldsIninRiver)
@@ -471,7 +436,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     
                     excludedFieldTypes.Add("skus");
                     
-                    string[] fields = _settings["EXCLUDE_FIELDS"].Split(',');
+                    var fields = _settings[ConfigKeys.ExcludeFields].Split(',');
                     foreach (string field in fields)
                     {
                         if (!excludedFieldTypes.Contains(field.ToLower()))
@@ -486,7 +451,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
-        public CVLDataMode ActiveCVLDataMode => !_settings.ContainsKey("CVL_DATA") ? CVLDataMode.Undefined : StringToCVLDataMode(_settings["CVL_DATA"]);
+        public CVLDataMode ActiveCVLDataMode => !_settings.ContainsKey(ConfigKeys.CvlData) ? CVLDataMode.Undefined : StringToCVLDataMode(_settings[ConfigKeys.CvlData]);
 
         private string[] SplitString(string settingKey)
         {
@@ -524,21 +489,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             setting = setting.Replace(" ", string.Empty);
 
-            string[] resouceConfs;
-            if (setting.Contains(','))
-            {
-                resouceConfs = setting.Split(',');
-            }
-            else
-            {
-                resouceConfs = new[] { setting };
-            }
-
-            foreach (string resouceConf in resouceConfs)
+            var resouceConfs = setting.Split(',');
+            
+            foreach (var resouceConf in resouceConfs)
             {
                 if (resouceConf.Contains(':'))
                 {
-                    string[] parts = resouceConf.Split(':');
+                    var parts = resouceConf.Split(':');
 
                     settingsDictionary.Add(parts[0], parts[1]);
                 }

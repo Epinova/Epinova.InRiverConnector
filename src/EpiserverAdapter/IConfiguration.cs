@@ -17,7 +17,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         string PublicationsRootPath { get; }
         List<EntityType> ExportEnabledEntityTypes { get; }
         string HttpPostUrl { get; }
-        Dictionary<CultureInfo, CultureInfo> LanguageMapping { get; set; }
+        Dictionary<CultureInfo, CultureInfo> LanguageMapping { get; }
         Dictionary<string, string> EpiNameMapping { get; }
         string ResourcesRootPath { get; }
         bool UseThreeLevelsInCommerce { get; }

@@ -262,7 +262,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public List<XElement> GetParentXElements(Entity parentEntity)
         {
-            List<XElement> elements = new List<XElement>();
+            var elements = new List<XElement>();
 
             if (parentEntity == null)
             {
