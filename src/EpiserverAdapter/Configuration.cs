@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Xml;
@@ -117,6 +118,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 var list = _settings[ConfigKeys.ExportEntities].Split(new[] {","}, StringSplitOptions.RemoveEmptyEntries).ToList();
                 var allEntityTypes = RemoteManager.ModelService.GetAllEntityTypes();
                 _exportEnabledEntityTypes = allEntityTypes.Where(x => list.Contains(x.Id)).ToList();
+                IntegrationLogger.Write(LogLevel.Debug, $"ExportEnabledEntityTypes: {string.Join(",", _exportEnabledEntityTypes)}.");
 
                 return _exportEnabledEntityTypes;
             }

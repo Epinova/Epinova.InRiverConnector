@@ -72,10 +72,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var zippedfileName = _documentFileHelper.SaveAndZipDocument(channel, doc, folderDateTime);
 
             IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
-                                                          $"Nodes: {epiElements["Nodes"].Count}" +
-                                                          $"Entries: {epiElements["Entries"].Count}" +
-                                                          $"Relations: {epiElements["Relations"].Count}" +
-                                                          $"Associations: {epiElements["Associations"].Count}");
+                                                          $"Nodes: {epiElements["Nodes"].Count}. " +
+                                                          $"Entries: {epiElements["Entries"].Count}. " +
+                                                          $"Relations: {epiElements["Relations"].Count}. " +
+                                                          $"Associations: {epiElements["Associations"].Count}. ");
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done generating catalog.xml. Generating Resource.xml and saving files to disk...", 26);
 
