@@ -13,10 +13,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class DocumentFileHelper
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly ChannelHelper _channelHelper;
 
-        public DocumentFileHelper(Configuration config, ChannelHelper channelHelper)
+        public DocumentFileHelper(IConfiguration config, ChannelHelper channelHelper)
         {
             _config = config;
             _channelHelper = channelHelper;
@@ -55,7 +55,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 IntegrationLogger.Write(LogLevel.Error, "Fail to verify the document: ", exception);
             }
 
-            string filePath = Path.Combine(dirPath, Configuration.ExportFileName);
+            string filePath = Path.Combine(dirPath, Constants.ExportFilename);
 
             var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
             IntegrationLogger.Write(LogLevel.Information, $"Saving verified document to path {filePath} for channel: {channelIdentifier}");

@@ -1,8 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Xml.Linq;
-using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using inRiver.Remoting;
 using inRiver.Remoting.Objects;
 
@@ -10,11 +7,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class EpiMappingHelper
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
+        private readonly BusinessHelper _businessHelper;
 
-        public EpiMappingHelper(Configuration config)
+        public EpiMappingHelper(IConfiguration config, BusinessHelper businessHelper)
         {
             _config = config;
+            _businessHelper = businessHelper;
         }
 
         private static int firstProductItemLinkType = -2;
@@ -84,7 +83,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 // Use the Link name + the display name to create a unique ASSOCIATION NAME in EPi Commerce
                 return link.LinkType.LinkEntityTypeId + '_'
-                       + BusinessHelper.GetDisplayNameFromEntity(link.LinkEntity, _config, -1).Replace(' ', '_');
+                       + _businessHelper.GetDisplayNameFromEntity(link.LinkEntity, -1).Replace(' ', '_');
             }
 
             return link.LinkType.Id;
@@ -100,7 +99,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             if (structureEntity.LinkEntityId != null)
             {
-                return linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, _config, -1).Replace(' ', '_');
+                return linkEntity.EntityType.Id + '_' + _businessHelper.GetDisplayNameFromEntity(linkEntity, -1).Replace(' ', '_');
             }
 
             return structureEntity.LinkTypeIdFromParent;
@@ -280,7 +279,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             string returnString = string.Empty;
             if (nameField == null || nameField.IsEmpty())
             {
-                returnString = BusinessHelper.GetDisplayNameFromEntity(entity, _config, maxLength);
+                returnString = _businessHelper.GetDisplayNameFromEntity(entity, maxLength);
             }
             else if (nameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
@@ -320,25 +319,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             return name;
         }
-        // TODO: Fjerne config-avhengigheten her
-        public static string GetEntryType(string entityTypeId, Configuration configuration)
+
+        public string GetEntryType(string entityTypeId)
         {
             if (entityTypeId.Equals("Item"))
             {
-                if (!(configuration.UseThreeLevelsInCommerce && configuration.ItemsToSkus))
+                if (!(_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
                 {
                     return "Variation";
                 }
             }
-            else if (configuration.BundleEntityTypes.Contains(entityTypeId))
+            else if (_config.BundleEntityTypes.Contains(entityTypeId))
             {
                 return "Bundle";
             }
-            else if (configuration.PackageEntityTypes.Contains(entityTypeId))
+            else if (_config.PackageEntityTypes.Contains(entityTypeId))
             {
                 return "Package";
             }
-            else if (configuration.DynamicPackageEntityTypes.Contains(entityTypeId))
+            else if (_config.DynamicPackageEntityTypes.Contains(entityTypeId))
             {
                 return "DynamicPackage";
             }

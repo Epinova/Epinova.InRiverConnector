@@ -21,7 +21,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             IntegrationLogger.Write(LogLevel.Debug, $"Static constructor running.");
         }
 
-        public HttpClientInvoker(Configuration config)
+        public HttpClientInvoker(IConfiguration config)
         {
             _isImportingAction = config.Endpoints.IsImporting;
             IntegrationLogger.Write(LogLevel.Debug, $"Initializing HttpClientInvoker. clientPropsSet: {_clientPropsSet}");

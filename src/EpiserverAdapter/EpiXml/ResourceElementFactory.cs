@@ -19,13 +19,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly ChannelHelper _channelHelper;
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
 
         public ResourceElementFactory(EpiElementFactory epiElementFactory, 
                                       EpiMappingHelper mappingHelper, 
                                       CatalogCodeGenerator catalogCodeGenerator, 
                                       ChannelHelper channelHelper,
-                                      Configuration config)
+                                      IConfiguration config)
         {
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
@@ -127,7 +127,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                        new XAttribute("action", action),
                        new XElement("ResourceFields", resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
                                                                      .Select(field => _epiElementFactory.GetMetaFieldValueElement(field))),
-                       GetInternalPathsInZip(resource, _config),
+                       GetInternalPathsInZip(resource),
                        new XElement(
                            "ParentEntries",
                                 parents.Select(parent =>
@@ -158,7 +158,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 List<Entity> resources = RemoteManager.DataService.GetEntities(resourceIds, LoadLevel.DataAndLinks);
                 foreach (Entity res in resources)
                 {
-                    SaveFileToDisk(res, _config, folderDateTime);
+                    SaveFileToDisk(res, folderDateTime);
                 }
 
                 resourceDocument = CreateResourceDocument(resources, resources, "added", true);
@@ -173,7 +173,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         
         internal XDocument HandleResourceUpdate(Entity updatedResource, string folderDateTime)
         {
-            SaveFileToDisk(updatedResource, _config, folderDateTime);
+            SaveFileToDisk(updatedResource, folderDateTime);
             List<Entity> channelResources = new List<Entity>();
             channelResources.Add(updatedResource);
 
@@ -189,7 +189,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             new XElement("Resource", new XAttribute("id", deletedResourceCode), new XAttribute("action", "deleted")))));
         }
 
-        internal XDocument HandleResourceUnlink(Entity resource, Entity parent, Configuration config)
+        internal XDocument HandleResourceUnlink(Entity resource, Entity parent)
         {
             XElement resourceElement = CreateResourceElement(resource, "unlinked");
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
@@ -226,7 +226,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                         resources.Select(res => CreateResourceElement(res, action)))));
         }
 
-        internal bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)
+        internal bool SaveFileToDisk(Entity resource, string folderDateTime)
         {
             try
             {
@@ -248,10 +248,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         return false;
                     }
 
-                    var fileName = GetResourceFileName(resource, resourceFileId, displayConfiguration, config);
+                    var fileName = GetResourceFileName(resource, resourceFileId, displayConfiguration);
 
                     string folder = GetFolderName(displayConfiguration, resource);
-                    string dir = Path.Combine(config.ResourcesRootPath, folderDateTime, folder);
+                    string dir = Path.Combine(_config.ResourcesRootPath, folderDateTime, folder);
 
                     if (!Directory.Exists(dir))
                     {
@@ -276,7 +276,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return true;
         }
 
-        internal XElement GetInternalPathsInZip(Entity resource, Configuration config)
+        internal XElement GetInternalPathsInZip(Entity resource)
         {
             int id = GetResourceFileId(resource);
 
@@ -289,7 +289,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             foreach (string displayConfiguration in GetDisplayConfigurations(resource))
             {
-                string fileName = GetResourceFileName(resource, id, displayConfiguration, config);
+                string fileName = GetResourceFileName(resource, id, displayConfiguration);
                 string folder = GetFolderName(displayConfiguration, resource);
                 paths.Add(new XElement("Path", string.Format("./{0}/{1}", folder, fileName)));
             }
@@ -308,7 +308,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return (int)resourceFileIdField.Data;
         }
 
-        private string GetResourceFileName(Entity resource, int resourceFileId, string displayConfiguration, Configuration config)
+        private string GetResourceFileName(Entity resource, int resourceFileId, string displayConfiguration)
         {
             Field resourceFileNameField = resource.GetField("ResourceFilename");
             string fileName = $"[{resourceFileId}].jpg";
@@ -318,9 +318,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 if (displayConfiguration != Configuration.OriginalDisplayConfiguration)
                 {
                     string extension = string.Empty;
-                    if (config.ResourceConfiugurationExtensions.ContainsKey(displayConfiguration))
+                    if (_config.ResourceConfiugurationExtensions.ContainsKey(displayConfiguration))
                     {
-                        extension = config.ResourceConfiugurationExtensions[displayConfiguration];
+                        extension = _config.ResourceConfiugurationExtensions[displayConfiguration];
                     }
                     
                     if (string.IsNullOrEmpty(extension))
@@ -367,7 +367,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 return displayConfiguration;
             }
 
-            Field mimeTypeField = resource.GetField(Configuration.MimeType);
+            Field mimeTypeField = resource.GetField(FieldNames.ResourceMimeType);
             if (mimeTypeField != null && !mimeTypeField.IsEmpty() && mimeTypeField.Data.ToString().Contains('/'))
             {
                 return mimeTypeField.Data.ToString().Split('/')[1];

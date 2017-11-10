@@ -19,7 +19,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class ChannelPublisher
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly ChannelHelper _channelHelper;
         private readonly EpiDocumentFactory _epiDocumentFactory;
         private readonly EpiElementFactory _epiElementFactory;
@@ -29,8 +29,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly AddUtility _addUtility;
         private readonly DeleteUtility _deleteUtility;
         private readonly DocumentFileHelper _documentFileHelper;
+        private readonly BusinessHelper _businessHelper;
 
-        public ChannelPublisher(Configuration config, 
+        public ChannelPublisher(IConfiguration config, 
                                 ChannelHelper channelHelper, 
                                 EpiDocumentFactory epiDocumentFactory, 
                                 EpiElementFactory epiElementFactory,
@@ -39,7 +40,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                 EpiMappingHelper mappingHelper,
                                 AddUtility addUtility,
                                 DeleteUtility deleteUtility,
-                                DocumentFileHelper documentFileHelper)
+                                DocumentFileHelper documentFileHelper,
+                                BusinessHelper businessHelper)
         {
             _config = config;
             _channelHelper = channelHelper;
@@ -51,6 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _addUtility = addUtility;
             _deleteUtility = deleteUtility;
             _documentFileHelper = documentFileHelper;
+            _businessHelper = businessHelper;
         }
 
         public ConnectorEvent Publish(Entity channel)
@@ -93,7 +96,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done generating/saving Resource.xml. Sending Catalog.xml to EPiServer...", 51);
 
-            var filePath = Path.Combine(_config.PublicationsRootPath, folderDateTime, Configuration.ExportFileName);
+            var filePath = Path.Combine(_config.PublicationsRootPath, folderDateTime, Constants.ExportFilename);
 
             _epiApi.Import(filePath, _channelHelper.GetChannelGuid(channel));
 
@@ -366,7 +369,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private void HandleChannelNodeUpdate(Entity channel, List<StructureEntity> structureEntities, ConnectorEvent entityUpdatedConnectorEvent)
         {
             _addUtility.Add(channel, entityUpdatedConnectorEvent, structureEntities);
-            _epiApi.ImportUpdateCompleted(BusinessHelper.GetDisplayNameFromEntity(channel, _config, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
+            _epiApi.ImportUpdateCompleted(_businessHelper.GetDisplayNameFromEntity(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
         }
 
         private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime, Entity channel)

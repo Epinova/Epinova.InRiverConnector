@@ -59,8 +59,10 @@
     <Compile Include="ChannelPublisher.cs" />
     <Compile Include="ConfigDefaults.cs" />
     <Compile Include="ConfigKeys.cs" />
+    <Compile Include="Constants.cs" />
     <Compile Include="EndpointCollection.cs" />
     <Compile Include="EntityService.cs" />
+    <Compile Include="FieldNames.cs" />
     <Compile Include="IConfiguration.cs" />
     <Compile Include="IEntityService.cs" />
     <Compile Include="SettingsValidator.cs" />

@@ -14,6 +14,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class BusinessHelper
     {
+        private readonly IConfiguration _config;
+
+        public BusinessHelper(IConfiguration config)
+        {
+            _config = config;
+        }
+
         private static List<CVLValue> cvlValues;
 
         private static List<CVL> cvls;
@@ -62,10 +69,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return "true";
         }
 
-        public static string GetDisplayTemplateEntity(Entity entity)
+        public string GetDisplayTemplateEntity(Entity entity)
         {
-            Field displayTemplateField =
-                entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("displaytemplate"));
+            Field displayTemplateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("displaytemplate"));
 
             if (displayTemplateField == null || displayTemplateField.IsEmpty())
             {
@@ -80,7 +86,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return cultureInfo.Select(ci => ci.Name.ToLower()).ToArray();
         }
 
-        public static string GetStartDateFromEntity(Entity entity)
+        public string GetStartDateFromEntity(Entity entity)
         {
             Field startDateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("startdate"));
 
@@ -92,7 +98,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return ((DateTime)startDateField.Data).ToUniversalTime().ToString("u");
         }
 
-        public static string GetEndDateFromEntity(Entity entity)
+        public string GetEndDateFromEntity(Entity entity)
         {
             Field endDateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("enddate"));
 
@@ -104,7 +110,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return ((DateTime)endDateField.Data).ToUniversalTime().ToString("u");
         }
 
-        public static string FieldIsUseInCompare(FieldType fieldType)
+        public string FieldIsUseInCompare(FieldType fieldType)
         {
             string value = "False";
 
@@ -120,7 +126,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return value;
         }
 
-        public static string GetDisplayNameFromEntity(Entity entity, Configuration config, int maxLength)
+        public string GetDisplayNameFromEntity(Entity entity, int maxLength)
         {
             Field displayNameField = entity.DisplayName;
 
@@ -133,13 +139,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             else if (displayNameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
                 LocaleString ls = (LocaleString)displayNameField.Data;
-                if (string.IsNullOrEmpty(ls[config.LanguageMapping[config.ChannelDefaultLanguage]]))
+                if (string.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
                     returnString = string.Format("[{0}]", entity.Id);
                 }
                 else
                 {
-                    returnString = ls[config.LanguageMapping[config.ChannelDefaultLanguage]];
+                    returnString = ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]];
                 }
             }
             else
@@ -159,7 +165,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return returnString;
         }
 
-        public static string GetSeoUriFromEntity(Entity entity, CultureInfo ci, Configuration configuration)
+        public string GetSeoUriFromEntity(Entity entity, CultureInfo ci)
         {
             Field seoUriField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seouri"));
 
@@ -170,13 +176,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (seoUriField.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                return configuration.ChannelIdPrefix + ((LocaleString)seoUriField.Data)[ci];
+                return _config.ChannelIdPrefix + ((LocaleString)seoUriField.Data)[ci];
             }
 
-            return configuration.ChannelIdPrefix + seoUriField.Data;
+            return _config.ChannelIdPrefix + seoUriField.Data;
         }
 
-        public static string GetSeoUriSegmentFromEntity(Entity entity, CultureInfo ci, Configuration config)
+        public string GetSeoUriSegmentFromEntity(Entity entity, CultureInfo ci)
         {
             Field seoUriSegmentField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seourisegment"));
 
@@ -187,13 +193,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (seoUriSegmentField.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                return config.ChannelIdPrefix + ((LocaleString)seoUriSegmentField.Data)[ci];
+                return _config.ChannelIdPrefix + ((LocaleString)seoUriSegmentField.Data)[ci];
             }
 
-            return config.ChannelIdPrefix + seoUriSegmentField.Data;
+            return _config.ChannelIdPrefix + seoUriSegmentField.Data;
         }
 
-        public static string GetSeoTitleFromEntity(Entity entity, CultureInfo ci)
+        public string GetSeoTitleFromEntity(Entity entity, CultureInfo ci)
         {
             Field seoTitleField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seotitle"));
 
@@ -210,7 +216,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return seoTitleField.Data.ToString();
         }
 
-        public static string GetSeoDescriptionFromEntity(Entity entity, CultureInfo ci)
+        public string GetSeoDescriptionFromEntity(Entity entity, CultureInfo ci)
         {
             Field seoDescriptionField =
                 entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seodescription"));
@@ -228,7 +234,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return seoDescriptionField.Data.ToString();
         }
 
-        public static string GetSeoKeywordsFromEntity(Entity entity, CultureInfo ci)
+        public string GetSeoKeywordsFromEntity(Entity entity, CultureInfo ci)
         {
             Field seoKeywordsField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seokeywords"));
 
@@ -245,7 +251,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return seoKeywordsField.Data.ToString();
         }
 
-        public static List<XElement> GetCVLValues(Field field, Configuration configuration)
+        public List<XElement> GetCVLValues(Field field)
         {
             var dataElements = new List<XElement>();
             if (field == null || field.IsEmpty())
@@ -257,35 +263,34 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (cvl.DataType == DataType.LocaleString)
             {
-                foreach (var language in configuration.LanguageMapping)
+                foreach (var language in _config.LanguageMapping)
                 {
-                    var dataElement = GetCvlDataElement(field, configuration, language.Key);
+                    var dataElement = GetCvlDataElement(field, language.Key);
                     dataElements.Add(dataElement);
                 }
             }
             else
             {
-                var dataElement = GetCvlDataElement(field, configuration, configuration.ChannelDefaultLanguage);
+                var dataElement = GetCvlDataElement(field, _config.ChannelDefaultLanguage);
                 dataElements.Add(dataElement);
             }
                 
             return dataElements;
         }
 
-        private static XElement GetCvlDataElement(Field field, Configuration configuration, CultureInfo language)
+        private XElement GetCvlDataElement(Field field, CultureInfo language)
         {
             var dataElement = new XElement(
                 "Data",
                 new XAttribute("language", language.Name.ToLower()),
-                new XAttribute("value", GetCvlFieldValue(field, language, configuration)));
+                new XAttribute("value", GetCvlFieldValue(field, language)));
 
             return dataElement;
         }
 
-        private static string GetCvlFieldValue(Field field, CultureInfo language, Configuration config)
+        private string GetCvlFieldValue(Field field, CultureInfo language)
         {
-            if (config.ActiveCVLDataMode.Equals(CVLDataMode.Keys) ||
-                FieldIsExcludedCatalogEntryMarkets(field))
+            if (_config.ActiveCVLDataMode.Equals(CVLDataMode.Keys) || FieldIsExcludedCatalogEntryMarkets(field))
             {
                 return field.Data.ToString();
             }
@@ -311,12 +316,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         return null;
 
                     var value = ls[language];
-                    finalizedValue = GetFinalizedValue(config, value, key);
+                    finalizedValue = GetFinalizedValue(value, key);
                 }
                 else
                 {
                     var value = cvlValue.Value.ToString();
-                    finalizedValue = GetFinalizedValue(config, value, key);
+                    finalizedValue = GetFinalizedValue(value, key);
                 }
 
                 returnValues.Add(finalizedValue);
@@ -331,16 +336,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                    field.FieldType.Settings["EPiMetaFieldName"].Equals("_ExcludedCatalogEntryMarkets");
         }
 
-        private static string GetFinalizedValue(Configuration config, string value, string key)
+        private string GetFinalizedValue(string value, string key)
         {
-            if (config.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
+            if (_config.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
             {
                 value = key + Configuration.CVLKeyDelimiter + value;
             }
             return value;
         }
 
-        public static string GetFlatFieldData(Field field, Configuration configuration)
+        public string GetFlatFieldData(Field field)
         {
             if (field == null || field.IsEmpty())
             {

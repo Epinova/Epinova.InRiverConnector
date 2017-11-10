@@ -15,12 +15,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ChannelHelper
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
-        public ChannelHelper(Configuration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
+        public ChannelHelper(IConfiguration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _epiElementFactory = epiElementFactory;

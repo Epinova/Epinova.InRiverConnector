@@ -19,9 +19,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         private readonly ResourceElementFactory _resourceElementFactory;
         private readonly ChannelHelper _channelHelper;
         private readonly DocumentFileHelper _documentFileHelper;
-        private readonly Configuration _connectorConfig;
+        private readonly IConfiguration _connectorConfig;
 
-        public AddUtility(Configuration config, 
+        public AddUtility(IConfiguration config, 
                           EpiApi epiApi, 
                           EpiDocumentFactory epiDocumentFactory, 
                           ResourceElementFactory resourceElementFactory, 
@@ -64,7 +64,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating/saving Resource.xml, sending Catalog.xml to EPiServer...", 50);
             IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-            var filePath = Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, Configuration.ExportFileName);
+            var filePath = Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, Constants.ExportFilename);
 
             var channelGuid = _channelHelper.GetChannelGuid(channel);
 

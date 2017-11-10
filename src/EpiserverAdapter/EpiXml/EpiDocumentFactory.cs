@@ -15,14 +15,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 {
     public class EpiDocumentFactory
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly EpiApi _epiApi;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _epiMappingHelper;
         private readonly ChannelHelper _channelHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
-        public EpiDocumentFactory(Configuration config, 
+        public EpiDocumentFactory(IConfiguration config, 
             EpiApi epiApi, 
             EpiElementFactory epiElementFactory, 
             EpiMappingHelper epiMappingHelper, 

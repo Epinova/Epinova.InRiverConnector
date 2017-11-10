@@ -10,7 +10,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ConnectorEventHelper
     {
-        internal static ConnectorEvent InitiateEvent(Configuration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
+        internal static ConnectorEvent InitiateEvent(IConfiguration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
         {
             ConnectorEvent connectorEvent = new ConnectorEvent
             {
@@ -43,7 +43,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return connectorEvent;
         }
 
-        internal static void CleanupOngoingEvents(Configuration configuration)
+        internal static void CleanupOngoingEvents(IConfiguration configuration)
         {
             List<ConnectorEventSession> sessions = RemoteManager.ChannelService.GetOngoingConnectorEventSessions(configuration.ChannelId, configuration.Id);
             foreach (ConnectorEventSession connectorEventSession in sessions)

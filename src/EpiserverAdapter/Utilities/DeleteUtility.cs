@@ -19,12 +19,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         private readonly EpiApi _epiApi;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly DocumentFileHelper _documentFileHelper;
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly ResourceElementFactory _resourceElementFactory;
         private readonly EpiElementFactory _epiElementFactory;
         private readonly ChannelHelper _channelHelper;
 
-        public DeleteUtility(Configuration config, 
+        public DeleteUtility(IConfiguration config, 
                              ResourceElementFactory resourceElementFactory, 
                              EpiElementFactory epiElementFactory, 
                              ChannelHelper channelHelper, 
@@ -226,7 +226,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
         private void DeleteResource(Entity targetEntity, Entity parentEnt, string channelIdentifier, string folderDateTime, string resourceZipFile)
         {
-            XDocument doc = _resourceElementFactory.HandleResourceUnlink(targetEntity, parentEnt, _config);
+            XDocument doc = _resourceElementFactory.HandleResourceUnlink(targetEntity, parentEnt);
 
             _documentFileHelper.SaveDocument(channelIdentifier, doc, folderDateTime);
             IntegrationLogger.Write(LogLevel.Debug, "Resource update-xml saved!");
@@ -279,7 +279,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     var unlinkFileToZip = Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml");
                     
                     Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
-                    var unlinkDoc = _resourceElementFactory.HandleResourceUnlink(deletedEntity, parentEnt, _config);
+                    var unlinkDoc = _resourceElementFactory.HandleResourceUnlink(deletedEntity, parentEnt);
 
                     _documentFileHelper.SaveDocument(channelIdentifier, unlinkDoc, folderDateTime);
                     var zipFileUnlink = $"resourceUnlink_{folderDateTime}{deletedEntity.Id}.zip";

@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Security.RightsManagement;
 using System.Xml;
 using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using inRiver.Integration.Logging;
@@ -18,29 +16,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly Dictionary<string, string> _settings;
 
         private readonly List<string> _epiFieldsIninRiver;
-
-        private Dictionary<CultureInfo, CultureInfo> _languageMapping;
-
-        private Dictionary<string, string> _epiNameMapping;
-
         private bool? _useThreeLevelsInCommerce;
-
         private CultureInfo _channelDefaultLanguage;
-
         private string _channelDefaultCurrency;
-
-       private Dictionary<string, string> _epiCodeMapping;
-
         private string _channelWeightBase;
-
+        private Dictionary<string, string> _epiCodeMapping;
         private Dictionary<string, string> _resourceConfiugurationExtensions;
-
+        private Dictionary<CultureInfo, CultureInfo> _languageMapping;
+        private Dictionary<string, string> _epiNameMapping;
         private List<LinkType> _exportEnabledLinkTypes;
-
         private bool _itemsToSkus;
-
         private HashSet<string> _excludedFields;
-
         private int _batchsize;
 
         public Configuration(string id)
@@ -61,21 +47,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public string EpiEndpoint => _settings[ConfigKeys.EpiEndpoint];
         public EndpointCollection Endpoints { get; set; }
 
-        public static string ExportFileName => "Catalog.xml";
-
-        public static string MimeType => "ResourceMimeType";
-
         public static string OriginalDisplayConfiguration => "Original";
-
         public static string CVLKeyDelimiter => "||";
-
         public static string EPiCommonField => "EPiMetaFieldName";
-
         public static string SKUFieldName => "SKUs";
-
         public static string SKUData => "Data";
 
-        public string Id { get; private set; }
+        public string Id { get; }
 
         public List<LinkType> LinkTypes { get; set; }
 
@@ -440,25 +418,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (_settings.ContainsKey("BATCH_SIZE"))
+                if (!_settings.ContainsKey("BATCH_SIZE"))
+                    return int.MaxValue;
+
+                var value = _settings["BATCH_SIZE"];
+
+                if (!int.TryParse(value, out _batchsize) || value == "0")
                 {
-                    string value = _settings["BATCH_SIZE"];
-
-                    if (!int.TryParse(value, out _batchsize) || value == "0")
-                    {
-                        _batchsize = int.MaxValue;
-                    }
-
-                    return _batchsize;
+                    _batchsize = int.MaxValue;
                 }
 
-                return int.MaxValue;
+                return _batchsize;
             }
         }
 
-        public string[] BundleEntityTypes => StringToStringArray("BUNDLE_ENTITYTYPES");
-        public string[] PackageEntityTypes => StringToStringArray("PACKAGE_ENTITYTYPES");
-        public string[] DynamicPackageEntityTypes => StringToStringArray("DYNAMIC_PACKAGE_ENTITYTYPES");
+        public string[] BundleEntityTypes => SplitString("BUNDLE_ENTITYTYPES");
+        public string[] PackageEntityTypes => SplitString("PACKAGE_ENTITYTYPES");
+        public string[] DynamicPackageEntityTypes => SplitString("DYNAMIC_PACKAGE_ENTITYTYPES");
 
         public HashSet<string> EPiFieldsIninRiver
         {
@@ -512,18 +488,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
             }
         }
-        
-        public CVLDataMode ActiveCVLDataMode
-        {
-            get
-            {
-                return !_settings.ContainsKey("CVL_DATA") ?
-                    CVLDataMode.Undefined : 
-                    StringToCVLDataMode(_settings["CVL_DATA"]);
-            }
-        }
 
-        private string[] StringToStringArray(string settingKey)
+        public CVLDataMode ActiveCVLDataMode => !_settings.ContainsKey("CVL_DATA") ? CVLDataMode.Undefined : StringToCVLDataMode(_settings["CVL_DATA"]);
+
+        private string[] SplitString(string settingKey)
         {
             if(!_settings.ContainsKey(settingKey))
                 return new string[0];

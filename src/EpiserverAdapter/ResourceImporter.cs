@@ -14,10 +14,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class ResourceImporter
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly HttpClientInvoker _httpClient;
 
-        public ResourceImporter(Configuration config, HttpClientInvoker httpClient)
+        public ResourceImporter(IConfiguration config, HttpClientInvoker httpClient)
         {
             _config = config;
             _httpClient = httpClient;

@@ -13,15 +13,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 {
     public class EpiElementFactory
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
+        private readonly BusinessHelper _businessHelper;
 
-        public EpiElementFactory(Configuration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
+        public EpiElementFactory(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, BusinessHelper businessHelper)
         {
             _config = config;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
+            _businessHelper = businessHelper;
         }
 
         public XElement InRiverEntityTypeToMetaClass(string name, string entityTypeName)
@@ -58,16 +60,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("MultiLanguageValue", BusinessHelper.FieldTypeIsMultiLanguage(fieldType)),
                 new XElement("IsSystem", "False"),
                 new XElement("Tag"),
-                new XElement(
-                    "Attributes",
-                    new XElement(
-                        "Attribute",
+                new XElement("Attributes",
+                    new XElement("Attribute",
                         new XElement("Key", "useincomparing"),
-                        new XElement("Value", BusinessHelper.FieldIsUseInCompare(fieldType)))),
+                        new XElement("Value", _businessHelper.FieldIsUseInCompare(fieldType)))),
                 new XElement("OwnerMetaClass", fieldType.EntityTypeId));
         }
 
-        public XElement EPiMustHaveMetaField(string name)
+        public XElement CreateEpiserverLongStringField(string name)
         {
             return new XElement(
                 "MetaField",
@@ -83,12 +83,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("MultiLanguageValue", "True"),
                 new XElement("IsSystem", "False"),
                 new XElement("Tag"),
-                new XElement(
-                    "Attributes",
+                new XElement("Attributes",
                     new XElement("Attribute", new XElement("Key", "useincomparing"), new XElement("Value", "True"))));
         }
 
-        public XElement EPiSpecificationField(string name)
+        public XElement CreateEpiserverLongHtmlField(string name)
         {
             return new XElement(
                 "MetaField",
@@ -119,39 +118,33 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XElement CreateCatalogElement(Entity channel)
         {
-            return new XElement(
-                "Catalog",
+            return new XElement("Catalog",
                 new XAttribute("name", _mappingHelper.GetNameForEntity(channel, 100)),
                 new XAttribute("lastmodified", channel.LastModified.ToString("O")),
-                new XAttribute("startDate", BusinessHelper.GetStartDateFromEntity(channel)),
-                new XAttribute("endDate", BusinessHelper.GetEndDateFromEntity(channel)),
+                new XAttribute("startDate", _businessHelper.GetStartDateFromEntity(channel)),
+                new XAttribute("endDate", _businessHelper.GetEndDateFromEntity(channel)),
                 new XAttribute("defaultCurrency", _config.ChannelDefaultCurrency),
                 new XAttribute("weightBase", _config.ChannelDefaultWeightBase),
                 new XAttribute("defaultLanguage", _config.ChannelDefaultLanguage.Name.ToLower()),
                 new XAttribute("sortOrder", 0),
                 new XAttribute("isActive", "True"),
-                new XAttribute(
-                    "languages",
-                    string.Join(",", BusinessHelper.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
+                new XAttribute("languages", string.Join(",", BusinessHelper.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
         }
 
         public XElement CreateNodeElement(Entity entity, int parentId, int sortOrder)
         {
-            return new XElement(
-                "Node",
+            return new XElement("Node",
                 new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
-                new XElement("StartDate", BusinessHelper.GetStartDateFromEntity(entity)),
-                new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
+                new XElement("StartDate", _businessHelper.GetStartDateFromEntity(entity)),
+                new XElement("EndDate", _businessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", !entity.EntityType.IsLinkEntityType),
                 new XElement("SortOrder", sortOrder),
-                new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
+                new XElement("DisplayTemplate", _businessHelper.GetDisplayTemplateEntity(entity)),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
                 new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
-                new XElement(
-                    "MetaData",
+                new XElement("MetaData",
                     new XElement("MetaClass", new XElement("Name", GetMetaClassForEntity(entity))),
-                    new XElement(
-                        "MetaFields",
+                    new XElement("MetaFields",
                         GetDisplayFieldElement(entity.DisplayName, "DisplayName"),
                         GetDisplayFieldElement(entity.DisplayDescription, "DisplayDescription"),
                         from f in entity.Fields
@@ -166,11 +159,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             XElement seoInfo = new XElement("SeoInfo");
             foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
             {
-                string uri = BusinessHelper.GetSeoUriFromEntity(entity, culturePair.Value, _config);
-                string title = BusinessHelper.GetSeoTitleFromEntity(entity, culturePair.Value);
-                string description = BusinessHelper.GetSeoDescriptionFromEntity(entity, culturePair.Value);
-                string keywords = BusinessHelper.GetSeoKeywordsFromEntity(entity, culturePair.Value);
-                string urisegment = BusinessHelper.GetSeoUriSegmentFromEntity(entity, culturePair.Value, _config);
+                
+                string uri = _businessHelper.GetSeoUriFromEntity(entity, culturePair.Value);
+                string title = _businessHelper.GetSeoTitleFromEntity(entity, culturePair.Value);
+                string description = _businessHelper.GetSeoDescriptionFromEntity(entity, culturePair.Value);
+                string keywords = _businessHelper.GetSeoKeywordsFromEntity(entity, culturePair.Value);
+                string urisegment = _businessHelper.GetSeoUriSegmentFromEntity(entity, culturePair.Value);
 
                 if (string.IsNullOrEmpty(uri) && string.IsNullOrEmpty(title) && string.IsNullOrEmpty(description)
                     && string.IsNullOrEmpty(keywords) && string.IsNullOrEmpty(urisegment))
@@ -179,8 +173,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
 
                 seoInfo.Add(
-                    new XElement(
-                        "Seo",
+                    new XElement("Seo",
                         new XElement("LanguageCode", culturePair.Key.Name.ToLower()),
                         new XElement("Uri", uri),
                         new XElement("Title", title),
@@ -196,12 +189,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             return new XElement("Entry",
                 new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
-                new XElement("StartDate", BusinessHelper.GetStartDateFromEntity(entity)),
-                new XElement("EndDate", BusinessHelper.GetEndDateFromEntity(entity)),
+                new XElement("StartDate", _businessHelper.GetStartDateFromEntity(entity)),
+                new XElement("EndDate", _businessHelper.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", "True"),
-                new XElement("DisplayTemplate", BusinessHelper.GetDisplayTemplateEntity(entity)),
+                new XElement("DisplayTemplate", _businessHelper.GetDisplayTemplateEntity(entity)),
                 new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
-                new XElement("EntryType", EpiMappingHelper.GetEntryType(entity.EntityType.Id, _config)),
+                new XElement("EntryType", _mappingHelper.GetEntryType(entity.EntityType.Id)),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
                 new XElement(
                     "MetaData",
@@ -261,15 +254,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             else if (field.FieldType.DataType.Equals(DataType.CVL))
             {
                 metaField.Add(
-                    new XElement("Data", 
-                        BusinessHelper.GetCVLValues(field, _config)));
+                    new XElement("Data",
+                        _businessHelper.GetCVLValues(field)));
             }
             else
             {
                 metaField.Add(
                     new XElement("Data",
                         new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
-                        new XAttribute("value", BusinessHelper.GetFlatFieldData(field, _config))));
+                        new XAttribute("value", _businessHelper.GetFlatFieldData(field))));
             }
 
             return metaField;
@@ -316,7 +309,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             if (!string.IsNullOrEmpty(parentEntityType))
             {
-                var sourceType = EpiMappingHelper.GetEntryType(parentEntityType, _config);
+                var sourceType = _mappingHelper.GetEntryType(parentEntityType);
                 switch (sourceType)
                 {
                     case "Package":
@@ -389,9 +382,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             List<XElement> metaClasses = new List<XElement>();
             List<XElement> metafields = new List<XElement>();
 
-            XElement diaplyNameElement = EPiMustHaveMetaField("DisplayName");
-            XElement displayDescriptionElement = EPiMustHaveMetaField("DisplayDescription");
-            XElement specification = EPiSpecificationField("SpecificationField");
+            XElement diaplyNameElement = CreateEpiserverLongStringField("DisplayName");
+            XElement displayDescriptionElement = CreateEpiserverLongStringField("DisplayDescription");
+            XElement specification = CreateEpiserverLongHtmlField("SpecificationField");
             bool addSpec = false;
 
             foreach (EntityType entityType in _config.ExportEnabledEntityTypes)

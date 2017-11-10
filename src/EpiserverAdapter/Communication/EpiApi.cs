@@ -13,16 +13,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class EpiApi
     {
-        private readonly Configuration _config;
+        private readonly IConfiguration _config;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
+        private readonly BusinessHelper _businessHelper;
         private readonly HttpClientInvoker _httpClient; 
 
-        public EpiApi(Configuration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
+        public EpiApi(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, BusinessHelper businessHelper)
         {
             _config = config;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
+            _businessHelper = businessHelper;
             _httpClient = new HttpClientInvoker(config);
         }
 
@@ -95,12 +97,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channel, _config, -1);
+                    string channelName = _businessHelper.GetDisplayNameFromEntity(channel, -1);
 
                     string parentEntryId = _catalogCodeGenerator.GetEpiserverCode(parentId);
                     string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCode(linkEntity);
 
-                    string dispName = linkEntity.EntityType.Id + '_' + BusinessHelper.GetDisplayNameFromEntity(linkEntity, _config, -1).Replace(' ', '_');
+                    string dispName = linkEntity.EntityType.Id + '_' + _businessHelper.GetDisplayNameFromEntity(linkEntity, -1).Replace(' ', '_');
 
                     LinkEntityUpdateData dataToSend = new LinkEntityUpdateData
                                                           {
@@ -129,7 +131,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 List<string> ids = new List<string>();
                 try
                 {
-                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, _config, -1);
+                    string channelName = _businessHelper.GetDisplayNameFromEntity(channelEntity, -1);
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
                                                                             {
@@ -180,7 +182,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                 try
                 {
-                    string channelName = BusinessHelper.GetDisplayNameFromEntity(channelEntity, _config, -1);
+                    string channelName = _businessHelper.GetDisplayNameFromEntity(channelEntity, -1);
                     List<string> removeFromChannelNodes = new List<string>();
                     foreach (KeyValuePair<string, bool> shouldExistInChannelNode in shouldExistInChannelNodes)
                     {
