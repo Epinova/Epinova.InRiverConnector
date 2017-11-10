@@ -26,7 +26,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         Dictionary<string, string> EpiCodeMapping { get; }
         string ChannelDefaultWeightBase { get; set; }
         string ChannelIdPrefix { get; set; }
-        Dictionary<string, string> ChannelMimeTypeMappings { get; set; }
         string[] ResourceConfigurations { get; }
         Dictionary<string, string> ResourceConfiugurationExtensions { get; }
         LinkType[] AssociationLinkTypes { get; }

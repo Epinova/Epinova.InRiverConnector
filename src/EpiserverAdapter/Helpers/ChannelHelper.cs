@@ -214,7 +214,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _config.ChannelDefaultCurrency = GetChannelDefaultCurrency(channel);
             _config.ChannelDefaultWeightBase = GetChannelDefaultWeightBase(channel);
             _config.ChannelIdPrefix = GetChannelPrefix(channel);
-            _config.ChannelMimeTypeMappings = GetChannelMimeTypeMappings(channel);
         }
 
         public string GetChannelPrefix(Entity channel)
@@ -226,38 +225,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return channelPrefixField.Data.ToString();
-        }
-
-        public Dictionary<string, string> GetChannelMimeTypeMappings(Entity channel)
-        {
-            Dictionary<string, string> channelMimeTypeMappings = new Dictionary<string, string>();
-            Field channelMimeTypeField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelmimetypemappings"));
-            if (channelMimeTypeField == null || channelMimeTypeField.IsEmpty())
-            {
-                return channelMimeTypeMappings;
-            }
-
-            string channelMapping = channelMimeTypeField.Data.ToString();
-
-            if (!channelMapping.Contains(','))
-            {
-                return channelMimeTypeMappings;
-            }
-
-            string[] mappings = channelMapping.Split(';');
-
-            foreach (string mapping in mappings)
-            {
-                if (!mapping.Contains(','))
-                {
-                    continue;
-                }
-
-                string[] map = mapping.Split(',');
-                channelMimeTypeMappings.Add(map[0].Trim(), map[1].Trim());
-            }
-
-            return channelMimeTypeMappings;
         }
 
         public CultureInfo GetChannelDefaultLanguage(Entity channel)

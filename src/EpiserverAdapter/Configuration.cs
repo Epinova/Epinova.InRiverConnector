@@ -355,9 +355,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public string ChannelIdPrefix { get; set; } = string.Empty;
 
-        public Dictionary<string, string> ChannelMimeTypeMappings { get; set; } = new Dictionary<string, string>();
-
-
         public string[] ResourceConfigurations
         {
             get
@@ -460,9 +457,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         }
 
         public string[] BundleEntityTypes => StringToStringArray("BUNDLE_ENTITYTYPES");
-
         public string[] PackageEntityTypes => StringToStringArray("PACKAGE_ENTITYTYPES");
-
         public string[] DynamicPackageEntityTypes => StringToStringArray("DYNAMIC_PACKAGE_ENTITYTYPES");
 
         public HashSet<string> EPiFieldsIninRiver

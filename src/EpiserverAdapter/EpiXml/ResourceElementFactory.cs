@@ -228,7 +228,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         internal bool SaveFileToDisk(Entity resource, Configuration config, string folderDateTime)
         {
-            string fileName = string.Empty;
             try
             {
                 var stopwatch = Stopwatch.StartNew();
@@ -240,7 +239,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     return false;
                 }
 
-                foreach (string displayConfiguration in GetDisplayConfigurations(resource, config))
+                foreach (string displayConfiguration in GetDisplayConfigurations(resource))
                 {
                     byte[] resourceData = RemoteManager.UtilityService.GetFile(resourceFileId, displayConfiguration);
                     if (resourceData == null)
@@ -249,9 +248,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         return false;
                     }
 
-                    fileName = GetResourceFileName(resource, resourceFileId, displayConfiguration, config);
+                    var fileName = GetResourceFileName(resource, resourceFileId, displayConfiguration, config);
 
-                    string folder = GetFolderName(displayConfiguration, resource, config);
+                    string folder = GetFolderName(displayConfiguration, resource);
                     string dir = Path.Combine(config.ResourcesRootPath, folderDateTime, folder);
 
                     if (!Directory.Exists(dir))
@@ -260,9 +259,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     }
                     
                     File.WriteAllBytes(Path.Combine(dir, fileName), resourceData);
+                    stopwatch.Stop();
+                    IntegrationLogger.Write(LogLevel.Debug, $"Saving Resource {resource.Id} to {fileName} took {stopwatch.GetElapsedTimeFormated()}");
                 }
-                stopwatch.Stop();
-                IntegrationLogger.Write(LogLevel.Debug, $"Saving Resource {resource.Id} to {fileName} took {stopwatch.GetElapsedTimeFormated()}");
             }
             catch (Exception ex)
             {
@@ -288,10 +287,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 return paths;
             }
 
-            foreach (string displayConfiguration in GetDisplayConfigurations(resource, config))
+            foreach (string displayConfiguration in GetDisplayConfigurations(resource))
             {
                 string fileName = GetResourceFileName(resource, id, displayConfiguration, config);
-                string folder = GetFolderName(displayConfiguration, resource, config);
+                string folder = GetFolderName(displayConfiguration, resource);
                 paths.Add(new XElement("Path", string.Format("./{0}/{1}", folder, fileName)));
             }
 
@@ -341,11 +340,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return fileName;
         }
 
-        private IEnumerable<string> GetDisplayConfigurations(Entity resource, Configuration config)
+        private IEnumerable<string> GetDisplayConfigurations(Entity resource)
         {
             if (IsImage(resource))
             {
-                return config.ResourceConfigurations;
+                return _config.ResourceConfigurations;
             }
 
             IntegrationLogger.Write(LogLevel.Debug, $"No image configuration found for Resource {resource.Id}. Original will be used");
@@ -361,13 +360,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return !string.IsNullOrWhiteSpace(fileEnding) && configsHasExtension;
         }
 
-        private string GetFolderName(string displayConfiguration, Entity resource, Configuration config)
+        private string GetFolderName(string displayConfiguration, Entity resource)
         {
-            if (!string.IsNullOrEmpty(displayConfiguration) && config.ChannelMimeTypeMappings.ContainsKey(displayConfiguration))
-            {
-                return config.ChannelMimeTypeMappings[displayConfiguration];
-            }
-
             if (!string.IsNullOrEmpty(displayConfiguration) && IsImage(resource))
             {
                 return displayConfiguration;
@@ -376,11 +370,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             Field mimeTypeField = resource.GetField(Configuration.MimeType);
             if (mimeTypeField != null && !mimeTypeField.IsEmpty() && mimeTypeField.Data.ToString().Contains('/'))
             {
-                if (config.ChannelMimeTypeMappings.ContainsKey(mimeTypeField.Data.ToString()))
-                {
-                    return config.ChannelMimeTypeMappings[mimeTypeField.Data.ToString()];
-                }
-
                 return mimeTypeField.Data.ToString().Split('/')[1];
             }
 
