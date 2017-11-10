@@ -93,9 +93,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public new void Stop()
         {
             base.Stop();
-
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Stop, "Connector is stopping", 0);
             _started = false;
-            _config = null;
             _epiApi = null;
             _epiElementFactory = null;
             _epiDocumentFactory = null;
@@ -106,8 +105,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _epiMappingHelper = null;
             _catalogCodeGenerator = null;
             _publisher = null;
+            _config = null;
 
-            ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Stop, "Connector is stopped", 100);
+            ConnectorEventHelper.UpdateEvent(connectorEvent, "Connector has stopped.", 100);
         }
 
         public new void InitConfigurationSettings()
@@ -134,13 +134,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ConfigurationManager.Instance.SetConnectorSetting(Id, "BATCH_SIZE", string.Empty);
         }
 
-        public new bool IsStarted()
-        {
-            return _started;
-        }
-
+        public new bool IsStarted => _started;
         
-
         public void Publish(int channelId)
         {
             DoWithInitCheck(channelId, ConnectorEventType.Publish, channelEntity => _publisher.Publish(channelEntity));

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Security.RightsManagement;
 using System.Xml;
 using Epinova.InRiverConnector.EpiserverAdapter.Enums;
 using inRiver.Integration.Logging;
@@ -381,7 +382,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
-        public LinkType[] ExportEnabledLinkTypes
+        public LinkType[] AssociationLinkTypes
         {
             get
             {
@@ -397,18 +398,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 foreach (var linkType in allLinkTypes)
                 {
-                    // ChannelNode links and  Product to item links are not associations
-                    if (linkType.LinkEntityTypeId == null &&
-                        (linkType.SourceEntityTypeId.Equals("ChannelNode")
-                         || (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !BundleEntityTypes.Contains(linkType.TargetEntityTypeId))
-                         || (PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !PackageEntityTypes.Contains(linkType.TargetEntityTypeId))
-                         || (DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId))
-                         || (linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && productItemLink != null && linkType.Id == productItemLink.Id)))
-                    {
+                    if (linkType.TargetEntityTypeId == "Specification")
                         continue;
-                    }
 
-                    if (ExportEnabledEntityTypes.Any(x => x.Id == linkType.SourceEntityTypeId) &&
+                    if (linkType.IsProductItemLink() && linkType.Id == productItemLink?.Id)
+                        continue;
+
+                    if (linkType.SourceEntityTypeIsChannelNode())
+                        continue;
+
+                    if (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) || 
+                        PackageEntityTypes.Contains(linkType.SourceEntityTypeId) ||
+                        DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId))
+                        continue;
+
+                    if (ExportEnabledEntityTypes.Any(x => x.Id == linkType.SourceEntityTypeId) && 
                         ExportEnabledEntityTypes.Any(x => x.Id == linkType.TargetEntityTypeId))
                     {
                         _exportEnabledLinkTypes.Add(linkType);

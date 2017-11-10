@@ -29,7 +29,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         Dictionary<string, string> ChannelMimeTypeMappings { get; set; }
         string[] ResourceConfigurations { get; }
         Dictionary<string, string> ResourceConfiugurationExtensions { get; }
-        LinkType[] ExportEnabledLinkTypes { get; }
+        LinkType[] AssociationLinkTypes { get; }
         bool ItemsToSkus { get; }
         int BatchSize { get; }
         string[] BundleEntityTypes { get; }

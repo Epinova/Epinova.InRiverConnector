@@ -18,5 +18,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             return linkType.SourceEntityTypeId == "ChannelNode";
         }
+
+        internal static bool IsProductItemLink(this LinkType linkType)
+        {
+            return linkType.SourceEntityTypeId == "Product" && linkType.TargetEntityTypeId == "Item";
+        }
     }
 }

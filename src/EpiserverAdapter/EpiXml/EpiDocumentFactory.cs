@@ -9,6 +9,7 @@ using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
+using Newtonsoft.Json;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 {
@@ -20,11 +21,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly EpiMappingHelper _epiMappingHelper;
         private readonly ChannelHelper _channelHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
-
-        /// <summary>
-        /// These StructureEntity-LinkTypes should never be added as associations, as they live their own lives as Relations instead.
-        /// </summary>
-        private readonly List<string> _linkTypeIdsBannedAsAssociations = new List<string> { "ChannelNodeChannelNode", "ChannelNodeProduct" };
 
         public EpiDocumentFactory(Configuration config, 
             EpiApi epiApi, 
@@ -160,7 +156,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XElement GetAssociationTypes()
         {
-            var associationTypeElements = _config.ExportEnabledLinkTypes.Select(_epiElementFactory.CreateAssociationTypeElement);
+            var associationTypeElements = _config.AssociationLinkTypes.Select(_epiElementFactory.CreateAssociationTypeElement);
             return new XElement("AssociationTypes", associationTypeElements);
         }
         
@@ -513,7 +509,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                             StructureEntity structureEntity, 
                                             string skuId)
         {
-            if (IsAssociationLinkType(distinctStructureEntity))
+            if (!IsAssociationLinkType(linkType))
                 return;
 
             Entity linkEntity = null;
@@ -533,9 +529,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
         }
 
-        private bool IsAssociationLinkType(StructureEntity distinctStructureEntity)
+        private bool IsAssociationLinkType(LinkType linkType)
         {
-            return !_linkTypeIdsBannedAsAssociations.Contains(distinctStructureEntity.Type);
+            return _config.AssociationLinkTypes.Any(x => x.Id == linkType.Id);
         }
 
         private void AddNormalAssociations(Dictionary<string, List<XElement>> epiElements, 
