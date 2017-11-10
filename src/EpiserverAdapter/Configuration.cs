@@ -49,9 +49,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public static string OriginalDisplayConfiguration => "Original";
         public static string CVLKeyDelimiter => "||";
-        public static string EPiCommonField => "EPiMetaFieldName";
-        public static string SKUFieldName => "SKUs";
-        public static string SKUData => "Data";
 
         public string Id { get; }
 

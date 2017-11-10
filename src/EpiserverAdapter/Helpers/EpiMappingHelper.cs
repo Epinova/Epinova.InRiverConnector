@@ -311,10 +311,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             string name = fieldType.Id;
 
             if (fieldType.Settings != null && 
-                fieldType.Settings.ContainsKey(Configuration.EPiCommonField) &&
-                !string.IsNullOrEmpty(fieldType.Settings[Configuration.EPiCommonField]))
+                fieldType.Settings.ContainsKey(FieldNames.EPiCommonField) &&
+                !string.IsNullOrEmpty(fieldType.Settings[FieldNames.EPiCommonField]))
             {
-                name = fieldType.Settings[Configuration.EPiCommonField];
+                name = fieldType.Settings[FieldNames.EPiCommonField];
             }
 
             return name;

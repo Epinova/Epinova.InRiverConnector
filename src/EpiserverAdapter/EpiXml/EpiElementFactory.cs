@@ -547,7 +547,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         entryTypeElement.Value = "Variation";
                     }
 
-                    XElement skuDataElement = sku.Element(Configuration.SKUData);
+                    XElement skuDataElement = sku.Element(FieldNames.SKUData);
                     if (skuDataElement != null)
                     {
                         foreach (XElement skuData in skuDataElement.Elements())
@@ -578,7 +578,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XDocument SkuFieldToDocument(Entity item)
         {
-            Field skuField = item.GetField(Configuration.SKUFieldName);
+            Field skuField = item.GetField(FieldNames.SKUFieldName);
             if (skuField == null || skuField.Data == null)
             {
                 XElement itemElement = InRiverEntityToEpiEntry(item);
@@ -591,7 +591,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public List<string> SkuItemIds(Entity item)
         {
-            Field skuField = item.GetField(Configuration.SKUFieldName);
+            Field skuField = item.GetField(FieldNames.SKUFieldName);
             if (skuField == null || skuField.IsEmpty())
             {
                 return new List<string> { item.Id.ToString(CultureInfo.InvariantCulture) };
