@@ -301,14 +301,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     break;
                 case "ChannelNode":
                     _epiApi.DeleteCatalogNode(deletedEntity.Id, channelEntity.Id);
-                    deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
-
-                    foreach (Link link in deletedEntity.OutboundLinks)
-                    {
-                        Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
-
-                        Delete(channelEntity, deletedEntity.Id, child, link.LinkType.Id);
-                    }
                     break;
                 case "Item":
                     if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)

@@ -9,7 +9,10 @@ using Epinova.InRiverConnector.EpiserverImporter.EventHandling;
 using Epinova.InRiverConnector.Interfaces;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
+using EPiServer.Commerce.Catalog.Linking;
+using EPiServer.Core;
 using EPiServer.Logging;
+using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Catalog.Dto;
@@ -25,16 +28,19 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly ReferenceConverter _referenceConverter;
         private readonly IContentRepository _contentRepository;
         private readonly Configuration _config;
+        private readonly IRelationRepository _relationRepository;
 
         public CatalogImporter(ILogger logger, 
-            ReferenceConverter referenceConverter, 
-            IContentRepository contentRepository,
-            Configuration config)
+                               ReferenceConverter referenceConverter, 
+                               IContentRepository contentRepository,
+                               Configuration config,
+                               IRelationRepository relationRepository)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
             _contentRepository = contentRepository;
             _config = config;
+            _relationRepository = relationRepository;
         }
 
         
@@ -92,40 +98,47 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
-        public void DeleteCatalogNode(string catalogNodeId)
+        public void DeleteCatalogNode(string code)
         {
-            // TODO: Bruk ContentRepository her.
-            // TODO: Slett alle underliggende catalog entries dersom de kun lever her.
-
-            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
-            CatalogNode cn = CatalogContext.Current.GetCatalogNode(catalogNodeId);
-
-            if (cn == null || cn.CatalogNodeId == 0)
+            var contentReference = _referenceConverter.GetContentLink(code);
+            if (!_contentRepository.TryGet(contentReference, out NodeContent nodeToDelete))
             {
-                _logger.Error($"Could not find catalog node with id: {catalogNodeId}. No node is deleted");
+                _logger.Error($"DeleteCatalogNode called with a code that doesn't exist or is not  a catalog node: {code}");
                 return;
             }
 
-            var catalogId = cn.CatalogId;
-            var nodeId = cn.CatalogNodeId;
+            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
             if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
-                    handler.PreDeleteCatalogNode(nodeId, catalogId);
+                    handler.PreDeleteCatalogNode(nodeToDelete);
                 }
             }
 
-            CatalogContext.Current.DeleteCatalogNode(cn.CatalogNodeId, cn.CatalogId);
+            var children = _contentRepository.GetChildren<EntryContentBase>(nodeToDelete.ContentLink);
+
+            foreach (var child in children.Where(ShouldDeleteChild))
+            {
+                _contentRepository.Delete(child.ContentLink, true, AccessLevel.NoAccess);
+            }
             
+            _contentRepository.Delete(nodeToDelete.ContentLink, true, AccessLevel.NoAccess);
+
             if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
-                    handler.PostDeleteCatalogNode(nodeId, catalogId);
+                    handler.PostDeleteCatalogNode(nodeToDelete);
                 }
             }
+        }
+
+        public bool ShouldDeleteChild(EntryContentBase child)
+        {
+            var nodeRelations = _relationRepository.GetParents<NodeRelation>(child.ContentLink);
+            return nodeRelations.Count() == 1;
         }
 
         public void CheckAndMoveNodeIfNeeded(string catalogNodeId)

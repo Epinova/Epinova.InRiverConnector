@@ -9,9 +9,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter.EventHandling
 
         void PostDeleteCatalog(int catalogId);
 
-        void PreDeleteCatalogNode(int catalogNodeId, int catalogId);
+        void PreDeleteCatalogNode(NodeContent node);
 
-        void PostDeleteCatalogNode(int catalogNodeId, int catalogId);
+        void PostDeleteCatalogNode(NodeContent node);
 
         void PreDeleteCatalogEntry(EntryContentBase entry);
 
