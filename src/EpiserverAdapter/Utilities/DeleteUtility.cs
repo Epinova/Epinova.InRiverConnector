@@ -42,7 +42,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _channelHelper = channelHelper;
         }
 
-        public void Delete(Entity channelEntity, int parentEntityId, Entity deletedEntity, string linkTypeId, List<int> productParentIds = null)
+        public void Delete(Entity channelEntity, int parentEntityId, Entity deletedEntity, string linkTypeId)
         {
             string channelIdentifier = _channelHelper.GetChannelIdentifier(channelEntity);
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
@@ -66,7 +66,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
             else
             {
-                DeleteEntity(channelEntity, parentEntityId, deletedEntity, channelIdentifier, folderDateTime, productParentIds);
+                DeleteEntity(channelEntity, parentEntityId, deletedEntity, channelIdentifier, folderDateTime);
             }
         }
 
@@ -247,8 +247,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                                   int parentEntityId,
                                   Entity deletedEntity, 
                                   string channelIdentifier, 
-                                  string folderDateTime,
-                                  List<int> productParentIds = null)
+                                  string folderDateTime)
         {
             XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", ImporterActions.Deleted)));
             Entity parentEntity = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
@@ -338,35 +337,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                 // default represents products, bundles, packages etc.
                 default:
                     _epiApi.DeleteCatalogEntry(deletedEntity);
-                    deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
-                    deletedEntity = RemoteManager.DataService.GetEntity(deletedEntity.Id, LoadLevel.DataAndLinks);
-
-                    foreach (Link link in deletedEntity.OutboundLinks)
-                    {
-                        if (link.Target.EntityType.Id == "Product")
-                        {
-                            if (productParentIds != null && productParentIds.Contains(link.Target.Id))
-                            {
-                                IntegrationLogger.Write(LogLevel.Information, $"Entity with id {link.Target.Id} has already been deleted, skipping it to avoid problems.");
-                                continue;
-                            }
-
-                            if (productParentIds == null)
-                            {
-                                productParentIds = new List<int>();
-                            }
-
-                            productParentIds.Add(deletedEntity.Id);
-                        }
-
-                        Entity child = RemoteManager.DataService.GetEntity(link.Target.Id, LoadLevel.DataAndLinks);
-
-                        if(deletedEntity.EntityType.Id == "Product")
-                            Delete(channelEntity, deletedEntity.Id, child, link.LinkType.Id, productParentIds);
-
-                        else
-                            Delete(channelEntity, parentEntityId, child, link.LinkType.Id);
-                    }
                     break;
             }
 

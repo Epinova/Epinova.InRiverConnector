@@ -65,6 +65,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
 
             _contentRepository.Delete(entry.ContentLink, true);
+            // TODO: Kan være både produkt, variant, og andre ting (bundles, packages etc)
+            // TODO: Dersom det er et produkt, slett også tilhørende varianter (med mindre de tilhører flere produkter)
+            // TODO: Slett også eventuelle Mediafiler som kun tilhører dette produktet/varianten/whatever
 
             if (_config.RunDeleteActionsHandlers)
             {
