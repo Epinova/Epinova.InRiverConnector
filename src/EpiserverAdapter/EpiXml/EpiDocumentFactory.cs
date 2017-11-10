@@ -167,13 +167,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             int totalLoaded = 0;
             int batchSize = _config.BatchSize;
+            var specifiactionEntries = allChannelStructureEntities.Where(x => x.Type == "Specification").ToList();
+            IntegrationLogger.Write(LogLevel.Debug, $"Found {specifiactionEntries.Count} specifications in channel structure.");
 
             do
             {
                 var batch = allChannelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
                 AddNodeElements(batch, addedNodes, addedRelations, epiElements);
-                AddEntryElements(batch, addedEntities, epiElements, allChannelStructureEntities.Where(x => x.Type == "Specification").ToList());
+                AddEntryElements(batch, addedEntities, epiElements, specifiactionEntries);
                 AddRelationElements(batch, addedRelations, epiElements, allChannelStructureEntities);
 
                 totalLoaded += batch.Count;
@@ -185,9 +187,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         }
 
         private void AddEntryElements(List<StructureEntity> batch, 
-            List<string> addedEntities, 
-            Dictionary<string, List<XElement>> epiElements,
-            List<StructureEntity> specificationChannelStructureEntities)
+                                      List<string> addedEntities, 
+                                      Dictionary<string, List<XElement>> epiElements,
+                                      List<StructureEntity> specificationChannelStructureEntities)
         {
             foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId))
             {
@@ -202,14 +204,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     {
                         epiElements["Entries"].Add(entryElement);
                         addedEntities.Add(codeElement.Value);
-
                         IntegrationLogger.Write(LogLevel.Debug, $"Added Entity {linkEntity.DisplayName} to Entries");
                     }
                 }
 
                 Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
 
-                if (structureEntity.Type == "Item" && _config.ItemsToSkus)
+                if (structureEntity.IsItem() && _config.ItemsToSkus)
                 {
                     List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity);
                     foreach (XElement sku in skus)
@@ -220,49 +221,57 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             epiElements["Entries"].Add(sku);
                             addedEntities.Add(codeElement.Value);
 
-                            IntegrationLogger.Write(LogLevel.Debug, string.Format("Added Item/SKU {0} to Entries", sku.Name.LocalName));
+                            IntegrationLogger.Write(LogLevel.Debug, $"Added Item/SKU {sku.Name.LocalName} to Entries");
                         }
                     }
                 }
 
-                if ((structureEntity.Type == "Item" && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce)
-                    || !(structureEntity.Type == "Item" && _config.ItemsToSkus))
+                if ((structureEntity.IsItem() && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !(structureEntity.IsItem() && _config.ItemsToSkus))
                 {
-                    XElement element = _epiElementFactory.InRiverEntityToEpiEntry(entity);
+                    var element = _epiElementFactory.InRiverEntityToEpiEntry(entity);
 
-                    var specificationEntry = specificationChannelStructureEntities.FirstOrDefault(s => s.ParentId == entity.Id);
+                    var codeElement = element.Element("Code");
+                    if (codeElement == null || addedEntities.Contains(codeElement.Value))
+                        continue;
 
-                    if (specificationEntry != null)
+                    var specificationField = GetSpecificationMetaField(specificationChannelStructureEntities, entity.Id);
+
+                    if (specificationField != null)
                     {
-                        XElement metaField = new XElement("MetaField",
-                            new XElement("Name", "SpecificationField"),
-                            new XElement("Type", "LongHtmlString"));
-
-                        foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
-                        {
-                            string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entity.Id, culturePair.Value);
-                            metaField.Add(
-                                new XElement("Data",
-                                    new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                    new XAttribute("value", htmlData)));
-                        }
-
                         XElement metaFieldsElement = element.Descendants().FirstOrDefault(f => f.Name == "MetaFields");
-                        metaFieldsElement?.Add(metaField);
+                        metaFieldsElement?.Add(specificationField);
                     }
 
-                    XElement codeElement = element.Element("Code");
-                    if (codeElement != null && !addedEntities.Contains(codeElement.Value))
-                    {
-                        epiElements["Entries"].Add(element);
-                        addedEntities.Add(codeElement.Value);
+                    epiElements["Entries"].Add(element);
+                    addedEntities.Add(codeElement.Value);
 
-                        IntegrationLogger.Write(LogLevel.Debug, $"Added Entity {entity.Id} to Entries");
-                    }
+                    IntegrationLogger.Write(LogLevel.Debug, $"Added Entity {entity.Id} to Entries");
                 }
             }
         }
 
+        private XElement GetSpecificationMetaField(List<StructureEntity> allSpecificationEntries, int entityId)
+        {
+            var specificationEntry = allSpecificationEntries.FirstOrDefault(s => s.ParentId == entityId);
+
+            if (specificationEntry == null)
+                return null;
+            
+            XElement specificationMetaField = new XElement("MetaField",
+                new XElement("Name", "SpecificationField"),
+                new XElement("Type", "LongHtmlString"));
+
+            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+            {
+                var htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entityId, culturePair.Value);
+                specificationMetaField.Add(
+                    new XElement("Data",
+                        new XAttribute("language", culturePair.Key.Name.ToLower()),
+                        new XAttribute("value", htmlData)));
+            }
+
+            return specificationMetaField;
+        }
 
         private void AddRelationElements(List<StructureEntity> structureEntitiesBatch, 
                                          List<string> addedRelations,
