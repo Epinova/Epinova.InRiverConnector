@@ -113,6 +113,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             Task.Run(
                 () =>
                 {
+                    _logger.Debug($"Received list of {resources.Count} resources to import");
+
                     _mediaImporter.ImportResources(resources);
                 });
         }

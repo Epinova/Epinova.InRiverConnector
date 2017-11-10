@@ -57,7 +57,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     }
                 }
 
-                if (resource.action != "deleted")
+                if (resource.action != ImporterActions.Deleted)
                 {
                     newRes.MetaFields = GenerateMetaFields(resource);
 

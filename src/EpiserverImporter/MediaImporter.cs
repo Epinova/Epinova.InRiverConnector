@@ -59,14 +59,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             if (resources == null || !resources.Any())
             {
-                _logger.Debug("Received empty resource list.");
                 return;
             }
 
             var importResources = resources.Cast<IInRiverImportResource>().ToList();
-
-            _logger.Debug($"Received list of {importResources.Count} resources to import");
-
+            
             ImportStatusContainer.Instance.Message = "importing";
             ImportStatusContainer.Instance.IsImporting = true;
 
@@ -74,7 +71,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             {
                 var importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
 
-                if (_config.RunIResourceImporterHandlers)
+                if (_config.RunResourceImporterHandlers)
                 {
                     foreach (IResourceImporterHandler handler in importerHandlers)
                     {
@@ -84,16 +81,16 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                 foreach (IInRiverImportResource resource in resources)
                 {
-                    if (resource.Action == "added" || resource.Action == "updated")
+                    if (resource.Action == ImporterActions.Added || resource.Action == ImporterActions.Updated)
                     {
                         ImportImageAndAttachToEntry(resource);
                     }
-                    else if (resource.Action == "deleted")
+                    else if (resource.Action == ImporterActions.Deleted)
                     {
                         _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
                         HandleDelete(resource);
                     }
-                    else if (resource.Action == "unlinked")
+                    else if (resource.Action == ImporterActions.Unlinked)
                     {
                         HandleUnlink(resource);
                     }
@@ -101,7 +98,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                 _logger.Debug($"Imported/deleted/updated {resources.Count} resources");
 
-                if (_config.RunIResourceImporterHandlers)
+                if (_config.RunResourceImporterHandlers)
                 {
                     foreach (IResourceImporterHandler handler in importerHandlers)
                     {
@@ -129,7 +126,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                 UpdateMetaData((IInRiverResource) existingMediaData, inriverResource);
 
-                if (inriverResource.Action == "added")
+                if (inriverResource.Action == ImporterActions.Added)
                 {
                     AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
                 }
@@ -157,7 +154,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     writableContent = (NodeContent)node.CreateWritableClone();
 
                 if (writableContent == null)
-                    throw new Exception();
+                {
+                    _logger.Error("Can't get a suitable content to add CommerceMedia to, meaning it's neither EntryContentBase nor NodeContent.");
+                    continue;
+                }
 
                 var existingMedia = writableContent.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.AssetLink));
                 if (existingMedia != null)
@@ -278,46 +278,20 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         private void HandleUnlink(IInRiverImportResource inriverResource)
         {
-            MediaData existingMediaData = null;
-            try
-            {
-                existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
-            }
-            catch (Exception)
-            {
-                _logger.Debug("Didn't find resource with Resource ID: {inriverResource.ResourceId}, can't unlink");
-            }
-
-            if (existingMediaData == null)
-            {
-                return;
-            }
+            var existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
 
             DeleteLinksBetweenMediaAndCodes(existingMediaData, inriverResource.Codes);
         }
 
         private void HandleDelete(IInRiverImportResource inriverResource)
         {
-            MediaData existingMediaData = null;
-            try
-            {
-                existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
-            }
-            catch (Exception)
-            {
-                _logger.Debug($"Didn't find resource with Resource ID: {inriverResource.ResourceId}, can't Delete");
-            }
+            var existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
 
-            if (existingMediaData == null)
-            {
-                return;
-            }
+            var importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
-            List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
-
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
-                foreach (IDeleteActionsHandler handler in importerHandlers)
+                foreach (var handler in importerHandlers)
                 {
                     handler.PreDeleteResource(inriverResource);
                 }
@@ -325,7 +299,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             _contentRepository.Delete(existingMediaData.ContentLink, true, AccessLevel.NoAccess);
 
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -336,29 +310,36 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         private void DeleteLinksBetweenMediaAndCodes(MediaData media, IEnumerable<string> codes)
         {
-            foreach (string code in codes)
+            foreach (var code in codes)
             {
-                var contentReference = _referenceConverter.GetContentLink(code);
-                if (ContentReference.IsNullOrEmpty(contentReference))
-                    continue;
-
-                EntryContentBase catalogEntry;
-                NodeContent nodeContent;
-                if (_contentRepository.TryGet(contentReference, out nodeContent))
-                {
-                    var writableClone = nodeContent.CreateWritableClone<NodeContent>();
-                    var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
-                    writableClone.CommerceMediaCollection.Remove(mediaToRemove);
-                    _contentRepository.Save(writableClone, AccessLevel.NoAccess);
-                }
-                else if (_contentRepository.TryGet(contentReference, out catalogEntry))
-                {
-                    var writableClone = nodeContent.CreateWritableClone<EntryContentBase>();
-                    var mediaToRemove = writableClone.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
-                    writableClone.CommerceMediaCollection.Remove(mediaToRemove);
-                    _contentRepository.Save(writableClone, AccessLevel.NoAccess);
-                }
+                DeleteMediaLink(media, code);
             }
+        }
+
+        /// <param name="media">The media to remove as link</param>
+        /// <param name="code">The code of the catalog content from which the <paramref name="media"/> should be removed.</param>
+        private void DeleteMediaLink(MediaData media, string code)
+        {
+            var contentReference = _referenceConverter.GetContentLink(code);
+            if (ContentReference.IsNullOrEmpty(contentReference))
+                return;
+
+            IAssetContainer writableContent = null;
+            if (_contentRepository.TryGet(contentReference, out NodeContent nodeContent))
+            {
+                writableContent = nodeContent.CreateWritableClone<NodeContent>();
+            }
+            else if (_contentRepository.TryGet(contentReference, out EntryContentBase catalogEntry))
+            {
+                writableContent = catalogEntry.CreateWritableClone<EntryContentBase>();
+            }
+
+            var mediaToRemove = writableContent?.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+            if (mediaToRemove == null)
+                return;
+
+            writableContent.CommerceMediaCollection.Remove(mediaToRemove);
+            _contentRepository.Save((IContent) writableContent, AccessLevel.NoAccess);
         }
 
         private static readonly object LockObject = new object();

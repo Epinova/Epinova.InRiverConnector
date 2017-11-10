@@ -50,7 +50,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 _logger.Warning($"Could not find catalog entry with id: {code}. No entry is deleted");
                 return;
             }
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in deleteHandlers)
                 {
@@ -60,7 +60,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             _contentRepository.Delete(entry.ContentLink, true);
 
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in deleteHandlers)
                 {
@@ -73,7 +73,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             List<IDeleteActionsHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IDeleteActionsHandler>().ToList();
 
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -83,7 +83,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             CatalogContext.Current.DeleteCatalog(catalogId);
           
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -109,7 +109,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             var catalogId = cn.CatalogId;
             var nodeId = cn.CatalogNodeId;
 
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -119,7 +119,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             CatalogContext.Current.DeleteCatalogNode(cn.CatalogNodeId, cn.CatalogId);
             
-            if (_config.RunIDeleteActionsHandlers)
+            if (_config.RunDeleteActionsHandlers)
             {
                 foreach (IDeleteActionsHandler handler in importerHandlers)
                 {
@@ -344,7 +344,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                         _logger.Information($"Importing catalog document from {path}");
                         List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
-                        if (catalogImportHandlers.Any() && _config.RunICatalogImportHandlers)
+                        if (catalogImportHandlers.Any() && _config.RunCatalogImportHandlers)
                         {
                             ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
                         }
@@ -368,7 +368,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public bool ImportUpdateCompleted(ImportUpdateCompletedData data)
         {
-            if (_config.RunIInRiverEventsHandlers)
+            if (_config.RunInRiverEventsHandlers)
             {
                 IEnumerable<IInRiverEventsHandler> eventsHandlers = ServiceLocator.Current.GetAllInstances<IInRiverEventsHandler>();
                 foreach (IInRiverEventsHandler handler in eventsHandlers)
@@ -384,7 +384,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public bool DeleteCompleted(DeleteCompletedData data)
         {
-            if (_config.RunIInRiverEventsHandlers)
+            if (_config.RunInRiverEventsHandlers)
             {
                 IEnumerable<IInRiverEventsHandler> eventsHandlers = ServiceLocator.Current.GetAllInstances<IInRiverEventsHandler>();
                 foreach (IInRiverEventsHandler handler in eventsHandlers)

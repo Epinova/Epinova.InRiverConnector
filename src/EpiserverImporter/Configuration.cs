@@ -5,10 +5,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class Configuration
     {
-        public bool RunICatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
-        public bool RunIDeleteActionsHandlers => GetBoolSetting("inRiver.RunIDeleteActionsHandlers");
-        public bool RunIInRiverEventsHandlers => GetBoolSetting("inRiver.RunIInRiverEventsHandlers");
-        public bool RunIResourceImporterHandlers => GetBoolSetting("inRiver.RunIResourceImporterHandlers");
+        public bool RunCatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
+        public bool RunDeleteActionsHandlers => GetBoolSetting("inRiver.RunIDeleteActionsHandlers");
+        public bool RunInRiverEventsHandlers => GetBoolSetting("inRiver.RunIInRiverEventsHandlers");
+        public bool RunResourceImporterHandlers => GetBoolSetting("inRiver.RunIResourceImporterHandlers");
 
         private bool GetBoolSetting(string key)
         {

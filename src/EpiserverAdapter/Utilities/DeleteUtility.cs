@@ -7,6 +7,7 @@ using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
@@ -249,7 +250,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                                   string folderDateTime,
                                   List<int> productParentIds = null)
         {
-            XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", "deleted")));
+            XDocument deleteXml = new XDocument(new XElement("xml", new XAttribute("action", ImporterActions.Deleted)));
             Entity parentEntity = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
 
             List<XElement> parentElements = _channelHelper.GetParentXElements(parentEntity);

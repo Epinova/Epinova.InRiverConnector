@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
@@ -161,7 +162,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     SaveFileToDisk(res, folderDateTime);
                 }
 
-                resourceDocument = CreateResourceDocument(resources, resources, "added", true);
+                resourceDocument = CreateResourceDocument(resources, resources, ImporterActions.Added, true);
             }
             catch (Exception ex)
             {
@@ -177,7 +178,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             List<Entity> channelResources = new List<Entity>();
             channelResources.Add(updatedResource);
 
-            return CreateResourceDocument(channelResources, new List<Entity> { updatedResource }, "updated", false);
+            return CreateResourceDocument(channelResources, new List<Entity> { updatedResource }, ImporterActions.Updated, false);
         }
 
         internal XDocument HandleResourceDelete(string deletedResourceCode)
@@ -186,12 +187,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XDocument(new XElement("Resources",
                         new XElement("ResourceMetaFields"),
                         new XElement("ResourceFiles",
-                            new XElement("Resource", new XAttribute("id", deletedResourceCode), new XAttribute("action", "deleted")))));
+                            new XElement("Resource", new XAttribute("id", deletedResourceCode), new XAttribute("action", ImporterActions.Deleted)))));
         }
 
         internal XDocument HandleResourceUnlink(Entity resource, Entity parent)
         {
-            XElement resourceElement = CreateResourceElement(resource, "unlinked");
+            XElement resourceElement = CreateResourceElement(resource, ImporterActions.Unlinked);
             XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
             if (resourceFieldsElement != null)
             {

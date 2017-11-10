@@ -47,6 +47,7 @@
     <Compile Include="EpiserverEntryIdentifier.cs" />
     <Compile Include="GetLinkEntityAssociationsForEntityData.cs" />
     <Compile Include="IInRiverImportResource.cs" />
+    <Compile Include="ImporterActions.cs" />
     <Compile Include="ImportUpdateCompletedData.cs" />
     <Compile Include="LinkEntityUpdateData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
