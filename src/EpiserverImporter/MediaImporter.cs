@@ -8,7 +8,6 @@ using Epinova.InRiverConnector.EpiserverImporter.ResourceModels;
 using Epinova.InRiverConnector.Interfaces;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
-using EPiServer.Commerce.Catalog.Linking;
 using EPiServer.Commerce.SpecializedProperties;
 using EPiServer.Core;
 using EPiServer.DataAbstraction;
@@ -18,19 +17,13 @@ using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
-using EPiServer.Web.Internal;
-using Mediachase.Commerce.Assets;
 using Mediachase.Commerce.Catalog;
-using Mediachase.Commerce.Catalog.Dto;
-using Mediachase.Commerce.Catalog.Managers;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class MediaImporter
     {
         private readonly ILogger _logger;
-        private readonly IAssetService _assetService;
-        private readonly ICatalogSystem _catalogSystem;
         private readonly IContentTypeRepository _contentTypeRepository;
         private readonly ContentFolderCreator _contentFolderCreator;
         private readonly IBlobFactory _blobFactory;
@@ -41,8 +34,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly IUrlSegmentGenerator _urlSegmentGenerator;
 
         public MediaImporter(ILogger logger,
-                             IAssetService assetService,
-                             ICatalogSystem catalogSystem,
                              IContentTypeRepository contentTypeRepository,
                              ContentFolderCreator contentFolderCreator,
                              IBlobFactory blobFactory,
@@ -53,8 +44,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                              IUrlSegmentGenerator urlSegmentGenerator)
         {
             _logger = logger;
-            _assetService = assetService;
-            _catalogSystem = catalogSystem;
             _contentTypeRepository = contentTypeRepository;
             _contentFolderCreator = contentFolderCreator;
             _blobFactory = blobFactory;
@@ -133,11 +122,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         private void ImportImageAndAttachToEntry(IInRiverImportResource inriverResource)
         {
-            MediaData existingMediaData = null;
-            
-            if (_contentRepository.TryGet(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId), out existingMediaData))
+            var mediaGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
+            if (_contentRepository.TryGet(mediaGuid, out MediaData existingMediaData))
             {
-                _logger.Debug("Found existing resource with Resource ID: {0}", inriverResource.ResourceId);
+                _logger.Debug($"Found existing resource with Resource ID: {inriverResource.ResourceId}");
 
                 UpdateMetaData((IInRiverResource) existingMediaData, inriverResource);
 
@@ -149,161 +137,45 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             else
             {
                 existingMediaData = CreateNewFile(inriverResource);
-
                 AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
             }
         }
 
         private void AddLinksFromMediaToCodes(MediaData contentMedia, List<EntryCode> codes)
         {
-            int sortOrder = 1;
-            CommerceMedia media = new CommerceMedia(contentMedia.ContentLink, "episerver.core.icontentmedia", "default", sortOrder);
-
+            var media = new CommerceMedia { AssetLink = contentMedia.ContentLink };
+            
             foreach (EntryCode entryCode in codes)
             {
-                CatalogEntryDto catalogEntry = GetCatalogEntryDto(entryCode.Code);
-                if (catalogEntry != null)
-                {
-                    AddLinkToCatalogEntry(contentMedia, media, catalogEntry, entryCode);
-                }
-                else
-                {
-                    CatalogNodeDto catalogNodeDto = GetCatalogNodeDto(entryCode.Code);
-                    if (catalogNodeDto != null)
-                    {
-                        AddLinkToCatalogNode(media, catalogNodeDto, entryCode);
-                    }
-                    else
-                    {
-                        _logger.Debug($"Could not find entry with code: {entryCode.Code}, can't create link");
-                    }
-                }
-            }
-        }
+                var contentReference = _referenceConverter.GetContentLink(entryCode.Code);
 
-        private void AddLinkToCatalogEntry(MediaData contentMedia, CommerceMedia media, CatalogEntryDto catalogEntry, EntryCode entryCode)
-        {
-            var newAssetRow = media.ToItemAssetRow(catalogEntry);
+                IAssetContainer writableContent = null;
+                if (_contentRepository.TryGet(contentReference, out EntryContentBase entry))
+                    writableContent = (EntryContentBase) entry.CreateWritableClone();
 
-            var catalogItemAssetRow = catalogEntry.CatalogItemAsset.FirstOrDefault(row => row.AssetKey == newAssetRow.AssetKey);
-            if (catalogItemAssetRow == null)
-            {
-                var list = new List<CatalogEntryDto.CatalogItemAssetRow>();
+                if (_contentRepository.TryGet(contentReference, out NodeContent node))
+                    writableContent = (NodeContent)node.CreateWritableClone();
+
+                if (writableContent == null)
+                    throw new Exception();
+
+                var existingMedia = writableContent.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.AssetLink));
+                if (existingMedia != null)
+                    writableContent.CommerceMediaCollection.Remove(existingMedia);
 
                 if (entryCode.IsMainPicture)
                 {
-                    _logger.Debug($"Adding '{contentMedia.Name}' as main picture on {entryCode.Code}");
-                    
-                    list.Add(newAssetRow);
-                    list.AddRange(catalogEntry.CatalogItemAsset.ToList());
+                    _logger.Debug($"Setting '{contentMedia.Name}' as main media on {entryCode.Code}");
+                    writableContent.CommerceMediaCollection.Insert(0, media);
                 }
                 else
                 {
-                    _logger.Debug($"Adding '{contentMedia.Name}' at end of list on  {entryCode.Code}");
-
-                    list.AddRange(catalogEntry.CatalogItemAsset.ToList());
-                    list.Add(newAssetRow);
-                }
-
-                // Set sort order correctly
-                for (int i = 0; i < list.Count; i++)
-                {
-                    list[i].SortOrder = i;
-                }
-
-                _assetService.CommitAssetsToEntry(list, catalogEntry);
-                _catalogSystem.SaveCatalogEntry(catalogEntry);
-            }
-            else
-            {
-                // Already in the list. Fix sort order if needed.
-                if (!entryCode.IsMainPicture)
-                    return;
-
-                bool needsSave = false;
-                // If more than one entry have sort order 0, we need to clean it up
-                int count = catalogEntry.CatalogItemAsset.Count(row => row.SortOrder.Equals(0));
-                if (count > 1)
-                {
-                    _logger.Debug($"Sorting and setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
-
-                    var assetRows = catalogEntry.CatalogItemAsset.ToList();
-                    
-                    // Keep existing sort order, but start at pos 1 since we will set the main picture to 0
-                    for (int i = 0; i < assetRows.Count; i++)
-                    {
-                        assetRows[i].SortOrder = i + 1;
-                    }
-                    
-                    catalogItemAssetRow.SortOrder = 0;
-                    needsSave = true;
-                }
-                else if (catalogItemAssetRow.SortOrder != 0)
-                {
-                    _logger.Debug($"Setting '{contentMedia.Name}' as main picture on {entryCode.Code}");
-
-                    int oldOrder = catalogItemAssetRow.SortOrder;
-                    catalogItemAssetRow.SortOrder = 0;
-                    catalogEntry.CatalogItemAsset[0].SortOrder = oldOrder;
-                    needsSave = true;
-                }
-
-                if (needsSave)
-                {
-                    _catalogSystem.SaveCatalogEntry(catalogEntry);
-                }
-            }
-        }
-
-        private void AddLinkToCatalogNode(CommerceMedia media, CatalogNodeDto catalogNodeDto, EntryCode entryCode)
-        {
-            var newAssetRow = media.ToItemAssetRow(catalogNodeDto);
-            
-            if (catalogNodeDto.CatalogItemAsset.FirstOrDefault(row => row.AssetKey == newAssetRow.AssetKey) == null)
-            {
-                var list = new List<CatalogNodeDto.CatalogItemAssetRow>();
-
-                if (entryCode.IsMainPicture)
-                {
-                    list.Add(newAssetRow);
-                    list.AddRange(catalogNodeDto.CatalogItemAsset.ToList());
-                }
-                else
-                {
-                    list.AddRange(catalogNodeDto.CatalogItemAsset.ToList());
-                    list.Add(newAssetRow);
-                }
-
-                for (int i = 0; i < list.Count; i++)
-                {
-                    list[i].SortOrder = i;
+                    _logger.Debug($"Adding '{contentMedia.Name}' as media on {entryCode.Code}");
+                    writableContent.CommerceMediaCollection.Add(media);
                 }
                 
-                _assetService.CommitAssetsToNode(list, catalogNodeDto);
-                _catalogSystem.SaveCatalogNode(catalogNodeDto);
+                _contentRepository.Save((IContent) writableContent);
             }
-        }
-
-        private CatalogNodeDto GetCatalogNodeDto(string code)
-        {
-            CatalogNodeDto catalogNodeDto = _catalogSystem.GetCatalogNodeDto(code, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.Assets));
-            if (catalogNodeDto == null || catalogNodeDto.CatalogNode.Count <= 0)
-            {
-                return null;
-            }
-
-            return catalogNodeDto;
-        }
-
-        private CatalogEntryDto GetCatalogEntryDto(string code)
-        {
-            CatalogEntryDto catalogEntry = _catalogSystem.GetCatalogEntryDto(code, new CatalogEntryResponseGroup(CatalogEntryResponseGroup.ResponseGroup.Assets));
-            if (catalogEntry == null || catalogEntry.CatalogEntry.Count <= 0)
-            {
-                return null;
-            }
-
-            return catalogEntry;
         }
 
         private void UpdateMetaData(IInRiverResource resource, IInRiverImportResource updatedResource)
