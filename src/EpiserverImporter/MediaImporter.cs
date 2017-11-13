@@ -117,6 +117,39 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             ImportStatusContainer.Instance.IsImporting = false;
         }
 
+        public void DeleteResource(DeleteResourceRequest request)
+        {
+            var mediaData = _contentRepository.Get<MediaData>(request.ResourceGuid);
+            var references = _contentRepository.GetReferencesToContent(mediaData.ContentLink, false).ToList();
+
+            if (request.EntryToRemoveFrom == null)
+            {
+                _logger.Debug($"Deleting resource with GUID {request.ResourceGuid}");
+                _logger.Debug($"Found {references.Count} references to mediacontent.");
+
+                foreach (var reference in references)
+                {
+                    var code = _referenceConverter.GetCode(reference.OwnerID);
+                    DeleteMediaLink(mediaData, code);
+                }
+                _contentRepository.Delete(mediaData.ContentLink, true, AccessLevel.NoAccess);
+            }
+            else
+            {
+                foreach (var reference in references)
+                {
+                    if (_contentRepository.TryGet(reference.OwnerID, out EntryContentBase content))
+                    {
+                        if (content.Code != request.EntryToRemoveFrom)
+                            continue;
+                    }
+                    _logger.Debug($"Removing resource {request.ResourceGuid} from entry with code {content.Code}.");
+
+                    DeleteMediaLink(mediaData, content.Code);
+                }
+            }
+        }
+
         private void ImportImageAndAttachToEntry(IInRiverImportResource inriverResource)
         {
             var mediaGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
@@ -334,11 +367,12 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 writableContent = catalogEntry.CreateWritableClone<EntryContentBase>();
             }
 
-            var mediaToRemove = writableContent?.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+            var writableMediaCollection = writableContent.CommerceMediaCollection.CreateWritableClone();
+            var mediaToRemove = writableMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
             if (mediaToRemove == null)
                 return;
 
-            writableContent.CommerceMediaCollection.Remove(mediaToRemove);
+            writableMediaCollection.Remove(mediaToRemove);
             _contentRepository.Save((IContent) writableContent, AccessLevel.NoAccess);
         }
 

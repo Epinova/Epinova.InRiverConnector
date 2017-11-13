@@ -279,11 +279,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
                 $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}", 0);
 
-            Entity deletedEntity = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
+            Entity removalTarget = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
+            Entity removalSource = RemoteManager.DataService.GetEntity(sourceEntityId, LoadLevel.DataAndLinks);
 
-            // TODO: ChanenlLinkDeleted: Fjern link mellom node/entry, evt entry/ressurs. Delete er noe annet - den skal alltid bare slette..
-            
-            
+            if (removalTarget.EntityType.Id == "Resource")
+            {
+                _deleteUtility.DeleteResourceLink(removalTarget, removalSource);
+            }
+            else
+            {
+                _deleteUtility.DeleteLink(removalSource, removalTarget);
+            }
+
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted);
 

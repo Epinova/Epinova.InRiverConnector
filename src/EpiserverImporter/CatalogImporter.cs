@@ -432,62 +432,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             return true;
         }
 
-        public void DeleteResource(DeleteResourceRequest request)
-        {
-            var mediaData = _contentRepository.Get<MediaData>(request.ResourceGuid);
-            var references = _contentRepository.GetReferencesToContent(mediaData.ContentLink, false).ToList();
-
-            if (request.EntryToRemoveFrom == null)
-            {
-                _logger.Debug($"Deleting resource with GUID {request.ResourceGuid}");
-                _logger.Debug($"Found {references.Count} references to mediacontent.");
-
-                foreach (var reference in references)
-                {
-                    RemoveAssetFromReference(reference, mediaData);
-                }
-                _contentRepository.Delete(mediaData.ContentLink, true, AccessLevel.NoAccess);
-            }
-            else
-            {
-                foreach (var reference in references)
-                {
-                    if (_contentRepository.TryGet(reference.OwnerID, out EntryContentBase content))
-                    {
-                        if (content.Code != request.EntryToRemoveFrom)
-                            continue;
-                    }
-                    _logger.Debug($"Removing resource {request.ResourceGuid} from entry with code {content.Code}.");
-
-                    RemoveAssetFromReference(reference, mediaData);
-                }
-            }
-        }
-
-        private void RemoveAssetFromReference(ReferenceInformation reference, MediaData mediaData)
-        {
-            if (!_contentRepository.TryGet(reference.OwnerID, out EntryContentBase content))
-                return;
-
-            var writableContent = content.CreateWritableClone<EntryContentBase>();
-            var writableCommerceMedia = writableContent.CommerceMediaCollection.CreateWritableClone();
-
-            CommerceMedia assetReferenceToRemove =
-                writableCommerceMedia.FirstOrDefault(x => x.AssetLink.Equals(mediaData.ContentLink));
-
-            writableCommerceMedia.Remove(assetReferenceToRemove);
-
-            _contentRepository.Save(writableContent, SaveAction.Publish, AccessLevel.NoAccess);
-
-            var entryDto = _catalogSystem.GetCatalogEntryDto(writableContent.Code);
-            if (entryDto != null)
-            {
-                var catalogItemAssetRow = assetReferenceToRemove.ToItemAssetRow(entryDto);
-                catalogItemAssetRow.Delete();
-                _catalogSystem.SaveCatalogEntry(entryDto);
-            }
-        }
-
         private void ImportCatalogXmlFromPath(string path)
         {
             _logger.Information("Starting importing the xml into EPiServer Commerce.");

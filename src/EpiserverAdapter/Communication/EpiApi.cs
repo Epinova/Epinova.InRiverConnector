@@ -349,5 +349,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 _httpClient.Post(_config.Endpoints.DeleteResource, new DeleteResourceRequest { ResourceGuid = resourceGuid });
             }
         }
+
+        public void DeleteLink(string sourceCode, string targetCode)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteLink(Guid resourceGuid, string targetCode)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

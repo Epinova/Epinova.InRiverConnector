@@ -25,7 +25,5 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         bool ImportUpdateCompleted(ImportUpdateCompletedData data);
 
         bool DeleteCompleted(DeleteCompletedData data);
-
-        void DeleteResource(DeleteResourceRequest request);
     }
 }

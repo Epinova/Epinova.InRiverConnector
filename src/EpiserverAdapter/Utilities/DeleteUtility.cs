@@ -44,15 +44,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
         public void Delete(Entity channelEntity, Entity deletedEntity)
         {
-            string channelIdentifier = _channelHelper.GetChannelIdentifier(channelEntity);
-
-            IntegrationLogger.Write(LogLevel.Debug, "Deleting entity that doesn't exist in channel.");
-
-            DeleteEntity(channelEntity, deletedEntity);
-        }
-
-        private void DeleteEntity(Entity channelEntity, Entity deletedEntity)
-        {
             switch (deletedEntity.EntityType.Id)
             {
                 case "Resource":
@@ -95,6 +86,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     _epiApi.DeleteCatalogEntry(deletedEntity);
                     break;
             }
+        }
+
+        public void DeleteResourceLink(Entity removedResource, Entity removalTarget)
+        {
+            var resourceGuid = EpiserverEntryIdentifier.EntityIdToGuid(removedResource.Id);
+            var targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
+
+            _epiApi.DeleteLink(resourceGuid, targetCode);
+        }
+
+        public void DeleteLink(Entity removalSource, Entity removalTarget)
+        {
+            var sourceCode = _catalogCodeGenerator.GetEpiserverCode(removalSource);
+            var targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
+
+            _epiApi.DeleteLink(sourceCode, targetCode);
         }
     }
 }

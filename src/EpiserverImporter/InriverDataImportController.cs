@@ -75,7 +75,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         public void DeleteResource(DeleteResourceRequest request)
         {
             _logger.Debug($"DeleteResource with ID {request.ResourceGuid}");
-            DoWithErrorHandling(() => _catalogImporter.DeleteResource(request));
+            DoWithErrorHandling(() => _mediaImporter.DeleteResource(request));
         }
 
         [HttpPost]

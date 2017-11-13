@@ -190,28 +190,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                             new XElement("Resource", new XAttribute("id", deletedResourceCode), new XAttribute("action", ImporterActions.Deleted)))));
         }
 
-        internal XDocument HandleResourceUnlink(Entity resource, Entity parent)
-        {
-            XElement resourceElement = CreateResourceElement(resource, ImporterActions.Unlinked);
-            XElement resourceFieldsElement = resourceElement.Element("ResourceFields");
-            if (resourceFieldsElement != null)
-            {
-                resourceFieldsElement.Remove();
-            }
-
-            XElement pathsElement = resourceElement.Element("Paths");
-            if (pathsElement != null)
-            {
-                pathsElement.Remove();
-            }
-
-            return
-                new XDocument(
-                    new XElement("Resources",
-                        new XElement("ResourceMetaFields"),
-                        new XElement("ResourceFiles", resourceElement)));
-        }
-
         internal XDocument CreateResourceDocument(List<Entity> channelResources, List<Entity> resources, string action, bool addMetadata)
         {
             XElement resourceMetaClasses = null;
