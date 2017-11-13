@@ -190,7 +190,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 XDocument doc = _epiDocumentFactory.CreateUpdateDocument(channel, updatedEntity);
 
-                if (_config.EpiCodeMapping.ContainsKey(updatedEntity.EntityType.Id) && data.Split(',').Contains(_config.EpiCodeMapping[updatedEntity.EntityType.Id]))
+                if (CodeFieldIsUpdated(data, updatedEntity))
                 {
                     _channelHelper.EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(doc, updatedEntity, channel);
                 }
@@ -210,8 +210,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _epiApi.SendHttpPost(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
             }
 
+            string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
             return connectorEvent;
+        }
+
+        private bool CodeFieldIsUpdated(string data, Entity updatedEntity)
+        {
+            return _config.EpiCodeMapping.ContainsKey(updatedEntity.EntityType.Id) && data.Split(',').Contains(_config.EpiCodeMapping[updatedEntity.EntityType.Id]);
         }
 
         public ConnectorEvent ChannelEntityDeleted(Entity channel, Entity deletedEntity)
