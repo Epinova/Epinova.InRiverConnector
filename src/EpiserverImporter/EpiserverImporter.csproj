@@ -204,12 +204,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CatalogImporter.cs" />
+    <Compile Include="CatalogService.cs" />
     <Compile Include="ContentFolderCreator.cs" />
     <Compile Include="EventHandling\ICatalogImporterHandler.cs" />
     <Compile Include="EventHandling\IDeleteActionsHandler.cs" />
     <Compile Include="EventHandling\IInRiverEventsHandler.cs" />
     <Compile Include="EventHandling\IResourceImporterHandler.cs" />
     <Compile Include="ICatalogImporter.cs" />
+    <Compile Include="ICatalogService.cs" />
     <Compile Include="ImporterExceptionFilterAttribute.cs" />
     <Compile Include="InriverDataImportController.cs" />
     <Compile Include="InRiverImportResource.cs" />

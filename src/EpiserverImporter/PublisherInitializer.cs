@@ -43,6 +43,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             context.StructureMap().Configure(x =>
             {
                 x.For<ICatalogImporter>().Use<CatalogImporter>();
+                x.For<ICatalogService>().Use<CatalogService>();
             });
         }
     }

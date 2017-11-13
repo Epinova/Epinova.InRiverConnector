@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,7 +9,6 @@ using Epinova.InRiverConnector.Interfaces;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.Catalog.Linking;
-using EPiServer.Core;
 using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
@@ -29,18 +27,21 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly IContentRepository _contentRepository;
         private readonly Configuration _config;
         private readonly IRelationRepository _relationRepository;
+        private readonly ICatalogService _catalogService;
 
         public CatalogImporter(ILogger logger, 
                                ReferenceConverter referenceConverter, 
                                IContentRepository contentRepository,
                                Configuration config,
-                               IRelationRepository relationRepository)
+                               IRelationRepository relationRepository, 
+                               ICatalogService catalogService)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
             _contentRepository = contentRepository;
             _config = config;
             _relationRepository = relationRepository;
+            _catalogService = catalogService;
         }
 
         
@@ -58,20 +59,29 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
             if (_config.RunDeleteActionsHandlers)
             {
-                foreach (IDeleteActionsHandler handler in deleteHandlers)
+                foreach (var handler in deleteHandlers)
                 {
                     handler.PreDeleteCatalogEntry(entry);
                 }
             }
 
-            _contentRepository.Delete(entry.ContentLink, true);
-            // TODO: Kan være både produkt, variant, og andre ting (bundles, packages etc)
-            // TODO: Dersom det er et produkt, slett også tilhørende varianter (med mindre de tilhører flere produkter)
-            // TODO: Slett også eventuelle Mediafiler som kun tilhører dette produktet/varianten/whatever
+            var relatedChildren = _catalogService.GetChildren(entry);
+            foreach (var child in relatedChildren)
+            {
+                var entryRelations = _catalogService.GetParents(child);
+                if (entryRelations.Count() > 1)
+                    continue;
+
+                _logger.Debug($"Deleting child with only one parent: {child.Code}.");
+                _contentRepository.Delete(child.ContentLink, true, AccessLevel.NoAccess);
+            }
+
+            _logger.Debug($"Deleting entry {entry.Code}.");
+            _contentRepository.Delete(entry.ContentLink, true, AccessLevel.NoAccess);
 
             if (_config.RunDeleteActionsHandlers)
             {
-                foreach (IDeleteActionsHandler handler in deleteHandlers)
+                foreach (var handler in deleteHandlers)
                 {
                     handler.PostDeleteCatalogEntry(entry);
                 }
