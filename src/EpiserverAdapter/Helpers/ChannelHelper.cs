@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
+using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
@@ -302,94 +303,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return dictionary;
-        }
-
-        // TODO: Hvafaen er det her slags navn? Fiks, for pokker.
-        // Blir kalt når Code oppdaterer seg, slik at relasjonene mellom ting må oppdateres. Men - er det nødvendig? SJekk Epi-basen, tror den kan endre code uten å gjøre noe med assosiasjoner osv.
-        public void EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(XDocument doc, Entity updatedEntity, Entity channel)
-        {
-            List<Link> links = new List<Link>();
-
-            if (updatedEntity.EntityType.IsLinkEntityType)
-            {
-                links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
-            }
-            else
-            {
-                links = RemoteManager.DataService.GetLinksForEntity(updatedEntity.Id);
-            }
-
-            var associationsElements = new List<XElement>();
-            var relationsElements = new Dictionary<string, XElement>();
-
-            foreach (Link link in links)
-            {
-                var structureEntityList = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channel.Id, link.Target.Id, link.Source.Id);
-
-                if (!_mappingHelper.IsRelation(link.LinkType))
-                {
-                    foreach (StructureEntity structureEntity in structureEntityList)
-                    {
-                        if (!structureEntity.LinkEntityId.HasValue)
-                        {
-                            associationsElements.Add(_epiElementFactory.CreateCatalogAssociationElement(
-                               structureEntity,
-                               null));
-                        }
-                        else
-                        {
-                            associationsElements.Add(_epiElementFactory.CreateCatalogAssociationElement(
-                               structureEntity,
-                               link.LinkEntity));
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (StructureEntity structureEntity in structureEntityList)
-                    {
-                        var parentNode = GetParentChannelNode(structureEntity);
-
-                        if (parentNode == null)
-                        {
-                            continue;
-                        }
-
-                        string skuCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId);
-                        string parentNodeCode = _catalogCodeGenerator.GetEpiserverCode(parentNode);
-
-                        if (!relationsElements.ContainsKey(skuCode + "_" + parentNodeCode))
-                        {
-                            relationsElements.Add(skuCode + "_" + parentNodeCode, 
-                                                  _epiElementFactory.CreateNodeEntryRelation(parentNode.Id, structureEntity.EntityId, structureEntity.SortOrder));
-                        }
-
-                        string parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);
-                        var relationName = skuCode + "_" + parentCode;
-
-                        if (!relationsElements.ContainsKey(relationName))
-                        {
-                            var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(
-                                                                            structureEntity.ParentId.ToString(CultureInfo.InvariantCulture),
-                                                                            link.LinkType.SourceEntityTypeId,
-                                                                            structureEntity.EntityId.ToString(),
-                                                                            structureEntity.SortOrder);
-                            relationsElements.Add(relationName, entryRelationElement);
-                        }
-                    }
-                }
-            }
-
-            if (relationsElements.Any())
-            {
-                doc.Descendants("Relations").ElementAt(0).Add(new XAttribute("totalCount", relationsElements.Count), relationsElements.Values);
-            }
-
-            if (associationsElements.Any())
-            {
-                doc.Descendants("Associations").ElementAt(0).Add(new XAttribute("totalCount", associationsElements.Count), associationsElements);
-            }
-
         }
     }
 }

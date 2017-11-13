@@ -8,12 +8,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     public class EpiMappingHelper
     {
         private readonly IConfiguration _config;
-        private readonly BusinessHelper _businessHelper;
+        private readonly PimFieldAdapter _pimFieldAdapter;
 
-        public EpiMappingHelper(IConfiguration config, BusinessHelper businessHelper)
+        public EpiMappingHelper(IConfiguration config, PimFieldAdapter pimFieldAdapter)
         {
             _config = config;
-            _businessHelper = businessHelper;
+            _pimFieldAdapter = pimFieldAdapter;
         }
 
         private static int firstProductItemLinkType = -2;
@@ -83,7 +83,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 // Use the Link name + the display name to create a unique ASSOCIATION NAME in EPi Commerce
                 return link.LinkType.LinkEntityTypeId + '_'
-                       + _businessHelper.GetDisplayNameFromEntity(link.LinkEntity, -1).Replace(' ', '_');
+                       + _pimFieldAdapter.GetDisplayNameFromEntity(link.LinkEntity, -1).Replace(' ', '_');
             }
 
             return link.LinkType.Id;
@@ -99,7 +99,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             if (structureEntity.LinkEntityId != null)
             {
-                return linkEntity.EntityType.Id + '_' + _businessHelper.GetDisplayNameFromEntity(linkEntity, -1).Replace(' ', '_');
+                return linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayNameFromEntity(linkEntity, -1).Replace(' ', '_');
             }
 
             return structureEntity.LinkTypeIdFromParent;
@@ -279,7 +279,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             string returnString = string.Empty;
             if (nameField == null || nameField.IsEmpty())
             {
-                returnString = _businessHelper.GetDisplayNameFromEntity(entity, maxLength);
+                returnString = _pimFieldAdapter.GetDisplayNameFromEntity(entity, maxLength);
             }
             else if (nameField.FieldType.DataType.Equals(DataType.LocaleString))
             {

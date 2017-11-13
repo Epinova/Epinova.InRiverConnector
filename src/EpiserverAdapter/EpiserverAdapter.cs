@@ -30,7 +30,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private EpiMappingHelper _epiMappingHelper;
         private CatalogCodeGenerator _catalogCodeGenerator;
         private ChannelPublisher _publisher;
-        private BusinessHelper _businessHelper;
+        private PimFieldAdapter _pimFieldAdapter;
 
         public new void Start()
         {
@@ -52,10 +52,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 var entityService = new EntityService();
 
                 _catalogCodeGenerator = new CatalogCodeGenerator(_config, entityService);
-                _businessHelper = new BusinessHelper(_config);
-                _epiMappingHelper = new EpiMappingHelper(_config, _businessHelper);
-                _epiApi = new EpiApi(_config, _epiMappingHelper, _catalogCodeGenerator, _businessHelper);
-                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _businessHelper);
+                _pimFieldAdapter = new PimFieldAdapter(_config);
+                _epiMappingHelper = new EpiMappingHelper(_config, _pimFieldAdapter);
+                _epiApi = new EpiApi(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
+                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
                 _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _catalogCodeGenerator);
                 _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
                 _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _channelHelper, _config);
@@ -75,7 +75,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _addUtility,
                                                   _deleteUtility,
                                                   documentFileHelper,
-                                                  _businessHelper);
+                                                  _pimFieldAdapter);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 

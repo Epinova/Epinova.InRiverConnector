@@ -12,11 +12,11 @@ using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
-    public class BusinessHelper
+    public class PimFieldAdapter
     {
         private readonly IConfiguration _config;
 
-        public BusinessHelper(IConfiguration config)
+        public PimFieldAdapter(IConfiguration config)
         {
             _config = config;
         }

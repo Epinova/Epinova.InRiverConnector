@@ -29,7 +29,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly AddUtility _addUtility;
         private readonly DeleteUtility _deleteUtility;
         private readonly DocumentFileHelper _documentFileHelper;
-        private readonly BusinessHelper _businessHelper;
+        private readonly PimFieldAdapter _pimFieldAdapter;
 
         public ChannelPublisher(IConfiguration config, 
                                 ChannelHelper channelHelper, 
@@ -41,7 +41,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                 AddUtility addUtility,
                                 DeleteUtility deleteUtility,
                                 DocumentFileHelper documentFileHelper,
-                                BusinessHelper businessHelper)
+                                PimFieldAdapter pimFieldAdapter)
         {
             _config = config;
             _channelHelper = channelHelper;
@@ -53,7 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _addUtility = addUtility;
             _deleteUtility = deleteUtility;
             _documentFileHelper = documentFileHelper;
-            _businessHelper = businessHelper;
+            _pimFieldAdapter = pimFieldAdapter;
         }
 
         public ConnectorEvent Publish(Entity channel)
@@ -166,8 +166,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
             bool resourceIncluded = false;
-            string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-
+            
             var structureEntities = _channelHelper.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
             if (updatedEntity.EntityType.Id.Equals("Resource"))
@@ -189,12 +188,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
 
                 XDocument doc = _epiDocumentFactory.CreateUpdateDocument(channel, updatedEntity);
-
-                if (CodeFieldIsUpdated(data, updatedEntity))
-                {
-                    _channelHelper.EpiCodeFieldUpdatedAddAssociationAndRelationsToDocument(doc, updatedEntity, channel);
-                }
-
+                
                 if (updatedEntity.EntityType.IsLinkEntityType)
                 {
                     List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
@@ -213,11 +207,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
             return connectorEvent;
-        }
-
-        private bool CodeFieldIsUpdated(string data, Entity updatedEntity)
-        {
-            return _config.EpiCodeMapping.ContainsKey(updatedEntity.EntityType.Id) && data.Split(',').Contains(_config.EpiCodeMapping[updatedEntity.EntityType.Id]);
         }
 
         public ConnectorEvent ChannelEntityDeleted(Entity channel, Entity deletedEntity)
@@ -357,7 +346,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
 
             List<XElement> skusToDelete, skusToAdd;
-            BusinessHelper.CompareAndParseSkuXmls(oldXml, newXml, out skusToAdd, out skusToDelete);
+            PimFieldAdapter.CompareAndParseSkuXmls(oldXml, newXml, out skusToAdd, out skusToDelete);
 
             foreach (XElement skuToDelete in skusToDelete)
             {
@@ -375,7 +364,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private void HandleChannelNodeUpdate(Entity channel, List<StructureEntity> structureEntities, ConnectorEvent entityUpdatedConnectorEvent)
         {
             _addUtility.Add(channel, entityUpdatedConnectorEvent, structureEntities);
-            _epiApi.ImportUpdateCompleted(_businessHelper.GetDisplayNameFromEntity(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
+            _epiApi.ImportUpdateCompleted(_pimFieldAdapter.GetDisplayNameFromEntity(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
         }
 
         private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime, Entity channel)
