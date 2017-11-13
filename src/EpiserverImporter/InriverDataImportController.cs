@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
 using Epinova.InRiverConnector.Interfaces;
@@ -7,7 +8,6 @@ using log4net;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
-    [ImporterExceptionFilter]
     public class InriverDataImportController : SecuredApiController
     {
         private readonly ICatalogImporter _catalogImporter;
@@ -72,6 +72,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
+        public void DeleteResource(DeleteResourceRequest request)
+        {
+            _logger.Debug($"DeleteResource with ID {request.ResourceGuid}");
+            DoWithErrorHandling(() => _catalogImporter.DeleteResource(request));
+        }
+
+        [HttpPost]
         public void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
         {
             _logger.Debug("UpdateLinkEntityData");
@@ -131,7 +138,19 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public void DeleteCompleted(DeleteCompletedData data)
         {
-            _catalogImporter.DeleteCompleted(data);
+            DoWithErrorHandling(() => _catalogImporter.DeleteCompleted(data));
+        }
+
+        private void DoWithErrorHandling(Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error when receiving import/deletion data from PIM.", ex);
+            }
         }
     }
 }

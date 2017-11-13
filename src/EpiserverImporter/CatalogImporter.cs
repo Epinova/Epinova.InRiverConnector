@@ -9,9 +9,14 @@ using Epinova.InRiverConnector.Interfaces;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.Catalog.Linking;
+using EPiServer.Commerce.SpecializedProperties;
+using EPiServer.Core;
+using EPiServer.DataAbstraction;
+using EPiServer.DataAccess;
 using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
+using Mediachase.Commerce.Assets;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Catalog.Dto;
 using Mediachase.Commerce.Catalog.ImportExport;
@@ -28,13 +33,15 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly Configuration _config;
         private readonly IRelationRepository _relationRepository;
         private readonly ICatalogService _catalogService;
+        private readonly ICatalogSystem _catalogSystem;
 
         public CatalogImporter(ILogger logger, 
                                ReferenceConverter referenceConverter, 
                                IContentRepository contentRepository,
                                Configuration config,
                                IRelationRepository relationRepository, 
-                               ICatalogService catalogService)
+                               ICatalogService catalogService,
+                               ICatalogSystem catalogSystem)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
@@ -42,6 +49,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _config = config;
             _relationRepository = relationRepository;
             _catalogService = catalogService;
+            _catalogSystem = catalogSystem;
         }
 
         
@@ -422,6 +430,62 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
 
             return true;
+        }
+
+        public void DeleteResource(DeleteResourceRequest request)
+        {
+            var mediaData = _contentRepository.Get<MediaData>(request.ResourceGuid);
+            var references = _contentRepository.GetReferencesToContent(mediaData.ContentLink, false).ToList();
+
+            if (request.EntryToRemoveFrom == null)
+            {
+                _logger.Debug($"Deleting resource with GUID {request.ResourceGuid}");
+                _logger.Debug($"Found {references.Count} references to mediacontent.");
+
+                foreach (var reference in references)
+                {
+                    RemoveAssetFromReference(reference, mediaData);
+                }
+                _contentRepository.Delete(mediaData.ContentLink, true, AccessLevel.NoAccess);
+            }
+            else
+            {
+                foreach (var reference in references)
+                {
+                    if (_contentRepository.TryGet(reference.OwnerID, out EntryContentBase content))
+                    {
+                        if (content.Code != request.EntryToRemoveFrom)
+                            continue;
+                    }
+                    _logger.Debug($"Removing resource {request.ResourceGuid} from entry with code {content.Code}.");
+
+                    RemoveAssetFromReference(reference, mediaData);
+                }
+            }
+        }
+
+        private void RemoveAssetFromReference(ReferenceInformation reference, MediaData mediaData)
+        {
+            if (!_contentRepository.TryGet(reference.OwnerID, out EntryContentBase content))
+                return;
+
+            var writableContent = content.CreateWritableClone<EntryContentBase>();
+            var writableCommerceMedia = writableContent.CommerceMediaCollection.CreateWritableClone();
+
+            CommerceMedia assetReferenceToRemove =
+                writableCommerceMedia.FirstOrDefault(x => x.AssetLink.Equals(mediaData.ContentLink));
+
+            writableCommerceMedia.Remove(assetReferenceToRemove);
+
+            _contentRepository.Save(writableContent, SaveAction.Publish, AccessLevel.NoAccess);
+
+            var entryDto = _catalogSystem.GetCatalogEntryDto(writableContent.Code);
+            if (entryDto != null)
+            {
+                var catalogItemAssetRow = assetReferenceToRemove.ToItemAssetRow(entryDto);
+                catalogItemAssetRow.Delete();
+                _catalogSystem.SaveCatalogEntry(entryDto);
+            }
         }
 
         private void ImportCatalogXmlFromPath(string path)

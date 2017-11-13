@@ -52,6 +52,7 @@
     <Compile Include="ImportUpdateCompletedData.cs" />
     <Compile Include="LinkEntityUpdateData.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="DeleteResourceRequest.cs" />
     <Compile Include="ResourceMetaField.cs" />
     <Compile Include="UpdateCodeFieldRequest.cs" />
     <Compile Include="UpdateRelationData.cs" />

@@ -1,4 +1,7 @@
-﻿using System.Web.Http;
+﻿using System.Linq;
+using System.Web.Http;
+using System.Web.Http.ExceptionHandling;
+using System.Web.Mvc;
 using EPiServer.Framework;
 using EPiServer.Framework.Initialization;
 using EPiServer.ServiceLocation;
@@ -23,7 +26,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             //// For debug purposes, turn this on. This should be done in the web project
             //// and not in a packaged library.
             config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
-
             config.Routes.MapHttpRoute(
                 "inRiverApi",
                 "inriverapi/{controller}/{action}/{id}",

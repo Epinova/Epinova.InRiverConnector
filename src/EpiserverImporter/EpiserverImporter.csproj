@@ -212,7 +212,6 @@
     <Compile Include="EventHandling\IResourceImporterHandler.cs" />
     <Compile Include="ICatalogImporter.cs" />
     <Compile Include="ICatalogService.cs" />
-    <Compile Include="ImporterExceptionFilterAttribute.cs" />
     <Compile Include="InriverDataImportController.cs" />
     <Compile Include="InRiverImportResource.cs" />
     <Compile Include="MediaImporter.cs" />

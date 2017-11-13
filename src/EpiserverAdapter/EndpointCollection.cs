@@ -21,5 +21,6 @@
         public string ImportCatalogXml => _baseUrl + "ImportCatalogXml";
         public string ImportUpdateCompleted => _baseUrl + "ImportUpdateCompleted";
         public string DeleteCompleted => _baseUrl + "DeleteCompleted";
+        public string DeleteResource => _baseUrl + "DeleteResource";
     }
 }
