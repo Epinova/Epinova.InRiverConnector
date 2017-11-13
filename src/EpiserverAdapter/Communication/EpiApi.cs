@@ -186,57 +186,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void UpdateEntryRelations(string catalogEntryId, 
-                                           int channelId,
-                                           Entity channelEntity,
-                                           string parentId,
-                                           Dictionary<string, bool> shouldExistInChannelNodes,
-                                           string linkTypeId, 
-                                           List<string> linkEntityIdsToRemove)
-        {
-            lock (EpiLockObject.Instance)
-            {
-                string parentEntryId = parentId;
-
-                try
-                {
-                    string channelName = _pimFieldAdapter.GetDisplayNameFromEntity(channelEntity, -1);
-                    List<string> removeFromChannelNodes = new List<string>();
-                    foreach (KeyValuePair<string, bool> shouldExistInChannelNode in shouldExistInChannelNodes)
-                    {
-                        if (!shouldExistInChannelNode.Value)
-                        {
-                            removeFromChannelNodes.Add(shouldExistInChannelNode.Key);
-                        }
-                    }
-
-                    string channelIdEpified = _catalogCodeGenerator.GetEpiserverCode(channelId);
-                    bool relation = _mappingHelper.IsRelation(linkTypeId);
-                    bool parentExistsInChannelNodes = shouldExistInChannelNodes.Keys.Contains(parentId);
-
-                    var updateEntryRelationData = new UpdateRelationData
-                                                {
-                                                    ParentEntryId = parentEntryId,
-                                                    CatalogEntryIdString = catalogEntryId,
-                                                    ChannelIdEpified = channelIdEpified,
-                                                    ChannelName = channelName,
-                                                    RemoveFromChannelNodes = removeFromChannelNodes,
-                                                    LinkEntityIdsToRemove = linkEntityIdsToRemove,
-                                                    LinkTypeId = linkTypeId,
-                                                    IsRelation = relation,
-                                                    ParentExistsInChannelNodes = parentExistsInChannelNodes
-                                                };
-
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.UpdateEntryRelations, updateEntryRelationData);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to update entry relations between parent entry id {parentEntryId} and child entry id {catalogEntryId}.", exception);
-                    throw;
-                }
-            }
-        }
-
         internal void Import(string filePath, Guid guid)
         {
             lock (EpiLockObject.Instance)
