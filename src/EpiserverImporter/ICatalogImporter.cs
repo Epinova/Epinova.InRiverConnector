@@ -25,5 +25,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         bool ImportUpdateCompleted(ImportUpdateCompletedData data);
 
         bool DeleteCompleted(DeleteCompletedData data);
+        void DeleteRelation(string sourceCode, string targetCode);
+        void DeleteAssociation(string sourceCode, string targetCode);
     }
 }

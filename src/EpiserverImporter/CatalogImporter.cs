@@ -33,7 +33,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly Configuration _config;
         private readonly IRelationRepository _relationRepository;
         private readonly ICatalogService _catalogService;
-        private readonly ICatalogSystem _catalogSystem;
+        private readonly IAssociationRepository _associationRepository;
 
         public CatalogImporter(ILogger logger, 
                                ReferenceConverter referenceConverter, 
@@ -41,7 +41,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                                Configuration config,
                                IRelationRepository relationRepository, 
                                ICatalogService catalogService,
-                               ICatalogSystem catalogSystem)
+                               IAssociationRepository associationRepository)
         {
             _logger = logger;
             _referenceConverter = referenceConverter;
@@ -49,7 +49,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _config = config;
             _relationRepository = relationRepository;
             _catalogService = catalogService;
-            _catalogSystem = catalogSystem;
+            _associationRepository = associationRepository;
         }
 
         
@@ -430,6 +430,32 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
 
             return true;
+        }
+
+        public void DeleteAssociation(string sourceCode, string targetCode)
+        {
+            _logger.Debug($"Deleting association between {sourceCode} and {targetCode}.");
+            var sourceReference = _referenceConverter.GetContentLink(sourceCode);
+            var targetReference = _referenceConverter.GetContentLink(targetCode);
+
+            var associations = _associationRepository.GetAssociations(sourceReference);
+            var existingAssociation = associations.FirstOrDefault(x => x.Target.Equals(targetReference));
+
+            _associationRepository.RemoveAssociation(existingAssociation);
+        }
+
+        public void DeleteRelation(string sourceCode, string targetCode)
+        {
+            _logger.Debug($"Deleting relation between {sourceCode} and {targetCode}.");
+            var sourceReference = _referenceConverter.GetContentLink(sourceCode);
+            var targetReference = _referenceConverter.GetContentLink(targetCode);
+
+            var entryRelations = _relationRepository.GetChildren<EntryRelation>(sourceReference);
+            var relation = entryRelations.FirstOrDefault(x => x.Child.Equals(targetReference));
+            if (relation != null)
+            {
+                _relationRepository.RemoveRelation(relation);
+            }
         }
 
         private void ImportCatalogXmlFromPath(string path)
