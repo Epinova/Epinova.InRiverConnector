@@ -512,65 +512,65 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             List<XElement> skuElements = new List<XElement>();
             XElement skuElement = skuDoc.Element("SKUs");
-            if (skuElement != null)
+            if (skuElement == null)
+                return skuElements;
+            
+            foreach (XElement sku in skuElement.Elements())
             {
-                foreach (XElement sku in skuElement.Elements())
+                string skuId = sku.Attribute("id").Value;
+                if (string.IsNullOrEmpty(skuId))
                 {
-                    string skuId = sku.Attribute("id").Value;
-                    if (string.IsNullOrEmpty(skuId))
-                    {
-                        IntegrationLogger.Write(LogLevel.Information, $"Could not find the id for the SKU data for item: {item.Id}");
-                        continue;
-                    }
+                    IntegrationLogger.Write(LogLevel.Information, $"Could not find the id for the SKU data for item: {item.Id}");
+                    continue;
+                }
 
-                    XElement itemElement = InRiverEntityToEpiEntry(item);
-                    XElement nameElement = sku.Element("Name");
-                    if (nameElement != null)
+                XElement itemElement = InRiverEntityToEpiEntry(item);
+                XElement nameElement = sku.Element("Name");
+                if (nameElement != null)
+                {
+                    string name = (!string.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
+                    XElement itemElementName = itemElement.Element("Name");
+                    if (itemElementName != null)
                     {
-                        string name = (!string.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
-                        XElement itemElementName = itemElement.Element("Name");
-                        if (itemElementName != null)
-                        {
-                            itemElementName.Value = name;
-                        }
+                        itemElementName.Value = name;
                     }
+                }
 
-                    XElement codeElement = itemElement.Element("Code");
-                    if (codeElement != null)
-                    {
-                        codeElement.Value = _catalogCodeGenerator.GetPrefixedCode(skuId);
-                    }
+                XElement codeElement = itemElement.Element("Code");
+                if (codeElement != null)
+                {
+                    codeElement.Value = _catalogCodeGenerator.GetPrefixedCode(skuId);
+                }
 
-                    XElement entryTypeElement = itemElement.Element("EntryType");
-                    if (entryTypeElement != null)
-                    {
-                        entryTypeElement.Value = "Variation";
-                    }
+                XElement entryTypeElement = itemElement.Element("EntryType");
+                if (entryTypeElement != null)
+                {
+                    entryTypeElement.Value = "Variation";
+                }
 
-                    XElement skuDataElement = sku.Element(FieldNames.SKUData);
-                    if (skuDataElement != null)
-                    {
-                        foreach (XElement skuData in skuDataElement.Elements())
-                        {
-                            XElement metaDataElement = itemElement.Element("MetaData");
-                            if (metaDataElement?.Element("MetaFields") != null)
-                            {
-                                metaDataElement.Element("MetaFields")?.Add(CreateSimpleMetaFieldElement(skuData.Name.LocalName, skuData.Value));
-                            }
-                        }
-                    }
-
-                    if (specificationMetaField != null)
+                XElement skuDataElement = sku.Element(FieldNames.SKUData);
+                if (skuDataElement != null)
+                {
+                    foreach (XElement skuData in skuDataElement.Elements())
                     {
                         XElement metaDataElement = itemElement.Element("MetaData");
                         if (metaDataElement?.Element("MetaFields") != null)
                         {
-                            metaDataElement.Element("MetaFields")?.Add(specificationMetaField);
+                            metaDataElement.Element("MetaFields")?.Add(CreateSimpleMetaFieldElement(skuData.Name.LocalName, skuData.Value));
                         }
                     }
-
-                    skuElements.Add(itemElement);
                 }
+
+                if (specificationMetaField != null)
+                {
+                    XElement metaDataElement = itemElement.Element("MetaData");
+                    if (metaDataElement?.Element("MetaFields") != null)
+                    {
+                        metaDataElement.Element("MetaFields")?.Add(specificationMetaField);
+                    }
+                }
+
+                skuElements.Add(itemElement);
             }
 
             return skuElements;

@@ -309,36 +309,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)
                     {
                         _epiApi.DeleteCatalogEntry(deletedEntity);
-
-                        deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(deletedEntity)));
                     }
 
                     if (_config.ItemsToSkus)
                     {
-                        var entitiesToDelete = new List<Entity>();
+                        var entitiesToDelete = new List<string>();
 
-                        List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity);
+                        var skuElements = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity);
 
-                        foreach (XElement sku in skus)
+                        foreach (XElement sku in skuElements)
                         {
                             XElement skuCodElement = sku.Element("Code");
                             if (skuCodElement != null)
                             {
-                                entitiesToDelete.Add(deletedEntity);
+                                entitiesToDelete.Add(skuCodElement.Value);
                             }
                         }
 
-                        foreach (var entity in entitiesToDelete)
-                        {
-                            _epiApi.DeleteCatalogEntry(entity);
-
-                            deleteXml.Root?.Add(new XElement("entry", _catalogCodeGenerator.GetEpiserverCode(entity)));
-                        }
+                        _epiApi.DeleteSkus(entitiesToDelete);
                     }
 
                     break;
-
-                // default represents products, bundles, packages etc.
                 default:
                     _epiApi.DeleteCatalogEntry(deletedEntity);
                     break;

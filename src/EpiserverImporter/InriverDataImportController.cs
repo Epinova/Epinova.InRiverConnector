@@ -37,11 +37,14 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public void DeleteCatalogEntry([FromBody] string catalogEntryId)
+        public void DeleteCatalogEntry(DeleteRequest request)
         {
             _logger.Debug("DeleteCatalogEntry");
 
-            _catalogImporter.DeleteCatalogEntry(catalogEntryId);
+            foreach (var code in request.Codes)
+            {
+                _catalogImporter.DeleteCatalogEntry(code);
+            }
         }
 
         [HttpPost]

@@ -79,17 +79,32 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
         internal void DeleteCatalogEntry(Entity entity)
         {
-            string catalogEntryId = _catalogCodeGenerator.GetEpiserverCode(entity);
+            var code = _catalogCodeGenerator.GetEpiserverCode(entity);
 
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, catalogEntryId);
+                    _httpClient.Post(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code));
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry with catalog entry ID: {catalogEntryId}", exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry with catalog entry ID: {code}", exception);
+                }
+            }
+        }
+
+        internal void DeleteSkus(List<string> skuIds)
+        {
+            lock (EpiLockObject.Instance)
+            {
+                try
+                {
+                    _httpClient.Post(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(skuIds));
+                }
+                catch (Exception exception)
+                {
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete skus: {string.Join(",", skuIds)}", exception);
                 }
             }
         }
@@ -283,7 +298,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal bool DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
+        internal void DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
         {
             lock (EpiLockObject.Instance)
             {
@@ -295,15 +310,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                    EventType = eventType
                                };
 
-                    string result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCompleted, data);
-                    IntegrationLogger.Write(LogLevel.Debug, $"DeleteCompleted returned: {result}");
-                    return true;
+                    _httpClient.Post(_config.Endpoints.DeleteCompleted, data);
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error,
-                        $"Failed to fire DeleteCompleted for catalog {catalogName}.", exception);
-                    return false;
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to fire DeleteCompleted for catalog {catalogName}.", exception);
+                    throw;
                 }
             }
         }

@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DeleteCompletedData.cs" />
+    <Compile Include="DeleteRequest.cs" />
     <Compile Include="EntryCode.cs" />
     <Compile Include="Enums\DeleteCompletedEventType.cs" />
     <Compile Include="Enums\ImportUpdateCompletedEventType.cs" />
