@@ -288,7 +288,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
             else
             {
-                _deleteUtility.DeleteLink(removalSource, removalTarget);
+                
+                _deleteUtility.DeleteLink(removalSource, removalTarget, linkTypeId);
             }
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);

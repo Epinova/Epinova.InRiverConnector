@@ -350,14 +350,29 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        public void DeleteLink(string sourceCode, string targetCode)
+        public void DeleteLink(string sourceCode, string targetCode, bool isRelation)
         {
-            throw new NotImplementedException();
+            lock (EpiLockObject.Instance)
+            {
+                _httpClient.Post(_config.Endpoints.DeleteLink, new DeleteLinkRequest
+                {
+                    SourceCode = sourceCode,
+                    TargetCode = targetCode,
+                    IsRelation = isRelation
+                });
+            }
         }
 
         public void DeleteLink(Guid resourceGuid, string targetCode)
         {
-            throw new NotImplementedException();
+            lock (EpiLockObject.Instance)
+            {
+                _httpClient.Post(_config.Endpoints.DeleteResource, new DeleteResourceRequest
+                {
+                    ResourceGuid = resourceGuid,
+                    EntryToRemoveFrom = targetCode
+                });
+            }
         }
     }
 }

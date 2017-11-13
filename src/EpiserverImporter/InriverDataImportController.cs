@@ -79,6 +79,20 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
+        public void DeleteLink(DeleteLinkRequest request)
+        {
+            _logger.Debug($"Deleting link between {request.SourceCode} and {request.TargetCode}.");
+            DoWithErrorHandling(() =>
+                {
+                    if (request.IsRelation)
+                        _catalogImporter.DeleteRelation(request.SourceCode, request.TargetCode);
+                    else
+                        _catalogImporter.DeleteAssociation(request.SourceCode, request.TargetCode);
+                }
+            );
+        }
+
+        [HttpPost]
         public void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
         {
             _logger.Debug("UpdateLinkEntityData");

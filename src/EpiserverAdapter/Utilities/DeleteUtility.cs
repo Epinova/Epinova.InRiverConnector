@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.IO;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.Interfaces;
-using inRiver.Integration.Logging;
-using inRiver.Remoting;
-using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
@@ -19,27 +12,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
     {
         private readonly EpiApi _epiApi;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
-        private readonly DocumentFileHelper _documentFileHelper;
+        private readonly EpiMappingHelper _epiMappingHelper;
         private readonly IConfiguration _config;
-        private readonly ResourceElementFactory _resourceElementFactory;
         private readonly EpiElementFactory _epiElementFactory;
-        private readonly ChannelHelper _channelHelper;
 
         public DeleteUtility(IConfiguration config, 
-                             ResourceElementFactory resourceElementFactory, 
                              EpiElementFactory epiElementFactory, 
-                             ChannelHelper channelHelper, 
                              EpiApi epiApi,
                              CatalogCodeGenerator catalogCodeGenerator,
-                             DocumentFileHelper documentFileHelper)
+                             EpiMappingHelper epiMappingHelper)
         {
             _config = config;
-            _resourceElementFactory = resourceElementFactory;
             _epiApi = epiApi;
             _catalogCodeGenerator = catalogCodeGenerator;
-            _documentFileHelper = documentFileHelper;
+            _epiMappingHelper = epiMappingHelper;
             _epiElementFactory = epiElementFactory;
-            _channelHelper = channelHelper;
         }
 
         public void Delete(Entity channelEntity, Entity deletedEntity)
@@ -96,12 +83,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _epiApi.DeleteLink(resourceGuid, targetCode);
         }
 
-        public void DeleteLink(Entity removalSource, Entity removalTarget)
+        public void DeleteLink(Entity removalSource, Entity removalTarget, string linkTypeId)
         {
+            var isRelation = _epiMappingHelper.IsRelation(linkTypeId);
+
             var sourceCode = _catalogCodeGenerator.GetEpiserverCode(removalSource);
             var targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
 
-            _epiApi.DeleteLink(sourceCode, targetCode);
+            _epiApi.DeleteLink(sourceCode, targetCode, isRelation);
         }
     }
 }

@@ -22,5 +22,6 @@
         public string ImportUpdateCompleted => _baseUrl + "ImportUpdateCompleted";
         public string DeleteCompleted => _baseUrl + "DeleteCompleted";
         public string DeleteResource => _baseUrl + "DeleteResource";
+        public string DeleteLink => _baseUrl + "DeleteLink";
     }
 }
