@@ -211,12 +211,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public ConnectorEvent ChannelEntityDeleted(Entity channel, Entity deletedEntity)
         {
-            IntegrationLogger.Write(LogLevel.Debug, $"Received entity deleted for entity {deletedEntity.Id} in channel {channel.DisplayName}");
-            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityDeleted, $"Received entity deleted for entity {deletedEntity.Id} in channel {channel.DisplayName}", 0);
+            var channelName = _mappingHelper.GetNameForEntity(channel, 100);
+            IntegrationLogger.Write(LogLevel.Debug, $"Received entity deleted for entity {deletedEntity.Id} in channel {channelName}");
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, 
+                                            ConnectorEventType.ChannelEntityDeleted, 
+                                            $"Received entity deleted for entity {deletedEntity.Id} in channel {channelName}", 0);
 
             _deleteUtility.Delete(channel, -1, deletedEntity, string.Empty);
-
-            var channelName = _mappingHelper.GetNameForEntity(channel, 100);
+            
             _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.EntitiyDeleted);
 
             return connectorEvent;

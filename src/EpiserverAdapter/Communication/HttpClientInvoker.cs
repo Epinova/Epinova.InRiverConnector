@@ -43,7 +43,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             return await HttpClient.PostAsJsonAsync(url, value);
         }
 
-        public string Post<T>(string url, T message)
+
+        public void Post<T>(string url, T message)
+        {
+            IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
+
+            var response = HttpClient.PostAsJsonAsync(url, message).Result;
+            response.EnsureSuccessStatusCode();
+        }
+
+        public string PostWithAsyncStatusCheck<T>(string url, T message)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
@@ -51,6 +60,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             if (response.IsSuccessStatusCode)
             {
                 var parsedResponse = response.Content.ReadAsAsync<string>().Result;
+
                 int tries = 0;
                 
                 while (parsedResponse == "importing")

@@ -37,7 +37,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    _httpClient.Post(_config.Endpoints.DeleteCatalog, catalogId);
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalog, catalogId);
                 }
                 catch (Exception exception)
                 {
@@ -46,18 +46,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void DeleteCatalogNode(int catalogNodeId, int catalogId)
+        internal void DeleteCatalogNode(Entity catalogNode, int catalogId)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    string catalogNode = _catalogCodeGenerator.GetEpiserverCode(catalogNodeId);
-                    _httpClient.Post(_config.Endpoints.DeleteCatalogNode, catalogNode);
+                    var code = _catalogCodeGenerator.GetEpiserverCode(catalogNode);
+                    _httpClient.Post(_config.Endpoints.DeleteCatalogNode, code);
                 }
                 catch (Exception ex)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalogNode with id: {catalogNodeId} for channel: {catalogId}", ex);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}", ex);
                 }
             }
         }
@@ -68,7 +68,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    _httpClient.Post(_config.Endpoints.DeleteCatalogEntry, skuId);
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, skuId);
                 }
                 catch (Exception exception)
                 {
@@ -85,7 +85,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    _httpClient.Post(_config.Endpoints.DeleteCatalogEntry, catalogEntryId);
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, catalogEntryId);
                 }
                 catch (Exception exception)
                 {
@@ -115,7 +115,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                               ParentEntryId = parentEntryId
                                                           };
 
-                    _httpClient.Post(_config.Endpoints.UpdateLinkEntityData, dataToSend);
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.UpdateLinkEntityData, dataToSend);
                 }
                 catch (Exception exception)
                 {
@@ -162,7 +162,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 try
                 {
                     string entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
-                    _httpClient.Post(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
                 }
                 catch (Exception exception)
                 {
@@ -212,7 +212,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                                     ParentExistsInChannelNodes = parentExistsInChannelNodes
                                                 };
 
-                    _httpClient.Post(_config.Endpoints.UpdateEntryRelations, updateEntryRelationData);
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.UpdateEntryRelations, updateEntryRelationData);
                 }
                 catch (Exception exception)
                 {
@@ -228,7 +228,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string result = _httpClient.Post(_config.Endpoints.ImportCatalogXml, filePath);
+                    string result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml, filePath);
 
                     IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
                 }
@@ -272,7 +272,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                     ResourcesIncluded = resourceIncluded
                                 };
 
-                    string result = _httpClient.Post(_config.Endpoints.ImportUpdateCompleted, data);
+                    string result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportUpdateCompleted, data);
                     IntegrationLogger.Write(LogLevel.Debug, $"ImportUpdateCompleted returned: {result}");
                 }
                 catch (Exception exception)
@@ -295,7 +295,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                                    EventType = eventType
                                };
 
-                    string result = _httpClient.Post(_config.Endpoints.DeleteCompleted, data);
+                    string result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCompleted, data);
                     IntegrationLogger.Write(LogLevel.Debug, $"DeleteCompleted returned: {result}");
                     return true;
                 }

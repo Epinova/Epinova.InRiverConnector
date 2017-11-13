@@ -51,6 +51,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             if (RemoteManager.ChannelService.EntityExistsInChannel(channelEntity.Id, deletedEntity.Id))
             {
+                IntegrationLogger.Write(LogLevel.Debug, "Deleting entity that exists in channel.");
+
                 var structureEntitiesToDelete = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelEntity.Id, deletedEntity.Id);
 
                 Entity parentEnt = RemoteManager.DataService.GetEntity(parentEntityId, LoadLevel.DataOnly);
@@ -66,6 +68,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             }
             else
             {
+                IntegrationLogger.Write(LogLevel.Debug, "Deleting entity that doesn't exist in channel.");
+
                 DeleteEntity(channelEntity, parentEntityId, deletedEntity, channelIdentifier, folderDateTime);
             }
         }
@@ -299,7 +303,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
                     _epiApi.DeleteCatalog(deletedEntity.Id);
                     break;
                 case "ChannelNode":
-                    _epiApi.DeleteCatalogNode(deletedEntity.Id, channelEntity.Id);
+                    _epiApi.DeleteCatalogNode(deletedEntity, channelEntity.Id);
                     break;
                 case "Item":
                     if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)

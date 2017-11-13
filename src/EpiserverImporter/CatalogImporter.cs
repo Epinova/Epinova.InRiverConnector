@@ -103,10 +103,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public void DeleteCatalogNode(string code)
         {
-            var contentReference = _referenceConverter.GetContentLink(code);
+            var contentReference = _referenceConverter.GetContentLink(code, CatalogContentType.CatalogNode);
             if (!_contentRepository.TryGet(contentReference, out NodeContent nodeToDelete))
             {
-                _logger.Error($"DeleteCatalogNode called with a code that doesn't exist or is not  a catalog node: {code}");
+                _logger.Error($"DeleteCatalogNode called with a code that doesn't exist or is not a catalog node: {code}");
                 return;
             }
 

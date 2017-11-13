@@ -178,7 +178,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public void ChannelEntityDeleted(int channelId, Entity deletedEntity)
         {
             DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityDeleted, channel => _publisher.ChannelEntityDeleted(channel, deletedEntity));
-            
         }
 
         public void ChannelEntityFieldSetUpdated(int channelId, int entityId, string fieldSetId)
