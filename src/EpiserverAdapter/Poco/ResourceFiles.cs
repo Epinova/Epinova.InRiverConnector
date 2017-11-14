@@ -5,7 +5,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
 {
 	public class ResourceFiles
 	{		
-		// ELEMENTS
 		[XmlElement("Resource")]
 		public List<Resource> Resource { get; set; }
 	}

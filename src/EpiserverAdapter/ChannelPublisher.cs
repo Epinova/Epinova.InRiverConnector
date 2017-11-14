@@ -59,7 +59,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public ConnectorEvent Publish(Entity channel)
         {
             var publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channel.DisplayName.Data}", 0);
-          ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
+            ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
 
             var channelStructureEntities = _channelHelper.GetAllStructureEntitiesInChannel(_config.ExportEnabledEntityTypes);
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities. Generating catalog.xml...", 10);
@@ -102,7 +102,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.SendHttpPost(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
+            _epiApi.PostFilePath(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedfileName));
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Sending Resources to EPiServer...", 76);
 
@@ -113,7 +113,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var resourceZipFilePath = Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile);
             
-            _epiApi.SendHttpPost(resourceZipFilePath);
+            _epiApi.PostFilePath(resourceZipFilePath);
 
             var channelName = _mappingHelper.GetNameForEntity(channel, 100);
 
@@ -201,7 +201,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
                 var channelGuid = _channelHelper.GetChannelGuid(channel);
                 _epiApi.Import(Path.Combine(_config.PublicationsRootPath, folderDateTime, "Catalog.xml"), channelGuid);
-                _epiApi.SendHttpPost(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
+                _epiApi.PostFilePath(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
             }
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
@@ -393,7 +393,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
 
             _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime));
-            _epiApi.SendHttpPost(Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
+            _epiApi.PostFilePath(Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
             resourceIncluded = true;
 
             return resourceIncluded;

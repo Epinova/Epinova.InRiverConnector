@@ -54,7 +54,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _catalogCodeGenerator = new CatalogCodeGenerator(_config, entityService);
                 _pimFieldAdapter = new PimFieldAdapter(_config);
                 _epiMappingHelper = new EpiMappingHelper(_config, _pimFieldAdapter);
-                _epiApi = new EpiApi(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
+                _epiApi = new EpiApi(_config, _catalogCodeGenerator, _pimFieldAdapter);
                 _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
                 _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _catalogCodeGenerator);
                 _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);

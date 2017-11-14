@@ -72,7 +72,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.SendHttpPost(Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, zippedfileName));
+            _epiApi.PostFilePath(Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, zippedfileName));
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Sending Resources to EPiServer...", 76);
 
@@ -80,7 +80,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Resources to EPiServer...", 99);
 
-            _epiApi.SendHttpPost(Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, zipFileName));
+            _epiApi.PostFilePath(Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, zipFileName));
         }
 
         private static void LogSaveStatement(Dictionary<string, List<XElement>> epiElements)

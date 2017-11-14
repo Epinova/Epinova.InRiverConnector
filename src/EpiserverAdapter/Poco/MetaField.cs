@@ -3,11 +3,8 @@ using System.Xml.Serialization;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
 {
-	
 	public class MetaField
 	{
-		
-		// ELEMENTS
 		[XmlElement("Name")]
 		public Name Name { get; set; }
 		
@@ -16,9 +13,5 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
 		
 		[XmlElement("Data")]
 		public List<Data> Data { get; set; }
-		
-		// CONSTRUCTOR
-		public MetaField()
-		{}
 	}
 }

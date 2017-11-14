@@ -4,7 +4,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
 {
 	public class Resources
 	{		
-		// ELEMENTS
 		[XmlElement("ResourceMetaFields")]
 		public ResourceMetaFields ResourceMetaFields { get; set; }
 		

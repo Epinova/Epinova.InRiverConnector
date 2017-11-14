@@ -5,7 +5,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
 {
 	public class ParentEntries
 	{		
-		// ELEMENTS
 		[XmlElement("EntryCode")]
 		public List<EntryCode> EntryCode { get; set; }
 	}

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.Interfaces;
@@ -14,18 +13,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
     public class EpiApi
     {
         private readonly IConfiguration _config;
-        private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly PimFieldAdapter _pimFieldAdapter;
         private readonly HttpClientInvoker _httpClient; 
 
         public EpiApi(IConfiguration config, 
-                      EpiMappingHelper mappingHelper, 
                       CatalogCodeGenerator catalogCodeGenerator, 
                       PimFieldAdapter pimFieldAdapter)
         {
             _config = config;
-            _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
             _pimFieldAdapter = pimFieldAdapter;
             _httpClient = new HttpClientInvoker(config);
@@ -269,7 +265,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void SendHttpPost(string filepath)
+        internal void PostFilePath(string filepath)
         {
             if (string.IsNullOrEmpty(_config.HttpPostUrl))
             {
