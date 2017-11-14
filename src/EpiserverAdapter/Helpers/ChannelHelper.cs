@@ -11,6 +11,7 @@ using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
+using Newtonsoft.Json;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
@@ -70,11 +71,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new Guid(data);
         }
 
-        public Entity GetParentProduct(StructureEntity structureEntity)
+        public Entity GetParentProduct(StructureEntity itemStructureEntity)
         {
-            var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "Product");
-            var entity = channelNodesInPath.LastOrDefault();
-            return entity != null ? RemoteManager.DataService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
+            var inboundLinks = RemoteManager.DataService.GetInboundLinksForEntity(itemStructureEntity.EntityId);
+            var relationLink = inboundLinks.FirstOrDefault(x => _mappingHelper.IsRelation(x.LinkType));
+
+            return relationLink != null ? RemoteManager.DataService.GetEntity(relationLink.Source.Id, LoadLevel.DataOnly) : null;
         }
 
         public Entity GetParentChannelNode(StructureEntity structureEntity)

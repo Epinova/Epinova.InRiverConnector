@@ -457,6 +457,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                           LinkType linkType)
         {
             var parentProduct = _channelHelper.GetParentProduct(structureEntity);
+            if (parentProduct == null)
+                return;
+
             var parentCode = _catalogCodeGenerator.GetEpiserverCode(parentProduct);
             
             if (skuCode == parentCode)
