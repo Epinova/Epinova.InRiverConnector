@@ -39,6 +39,7 @@ TODO: As of now there's a TODO to update all Episerver entities whenever a CVL v
 - `MODIFY_FILTER_BEHAVIOR` has been removed. Invisible and undocumented, poorly named and probably never used.
 - Support for `EPiDataType` field setting has been removed, as it's utterly pointless and can never do anything but create harm.
 - `EXPORT_ENTITIES` is new. It should contain all the entity types you want to export. Defaults to `Product,Item`, but you can add in anything really. These will be created as catalog entities, so adding things like milestones or activites will not make sense. Create your own integration for such things.
+- `FORCE_INCLUDE_LINKED_CONTENT` - new setting. Set to `True` if you want to include everything linked to the channel via upsell/accessories and such, as well as via Product-Item-links or ChannelNode-Product links. Set to 'False' to only include those entities which directly belongs to a Product/Bundle/Package or a Channel Node. Defaults to False.
 
 - Support for `ChannelMimeTypeMappings` on your channel entity is removed. There's simply no need to increase complexity by tweaking internal workings of the connector.
 - Setting `AllowsSearch` on your field type (with values `True` or `False`), tells the built in search index in CommerceManager whether the field is searchable or not.
