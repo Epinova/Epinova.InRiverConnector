@@ -127,7 +127,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private bool PostToEpiserver(List<InRiverImportResource> resourcesForImport)
         {
-            var batchSize = 100;
+            var batchSize = 1000;
             for (var i = 0; i < resourcesForImport.Count; i += batchSize)
             {
                 IntegrationLogger.Write(LogLevel.Debug, $"Sending resources {i}-{i+batchSize} out of {resourcesForImport.Count} resources to Episerver");

@@ -66,7 +66,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             
             ImportStatusContainer.Instance.Message = "importing";
             ImportStatusContainer.Instance.IsImporting = true;
-
+            var errors = 0;
             try
             {
                 var importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
@@ -79,20 +79,16 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     }
                 }
 
-                foreach (IInRiverImportResource resource in resources)
+                foreach (var resource in resources)
                 {
-                    if (resource.Action == ImporterActions.Added || resource.Action == ImporterActions.Updated)
+                    try
                     {
-                        ImportImageAndAttachToEntry(resource);
+                        ImportResource(resource);
                     }
-                    else if (resource.Action == ImporterActions.Deleted)
+                    catch (Exception ex)
                     {
-                        _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
-                        HandleDelete(resource);
-                    }
-                    else if (resource.Action == ImporterActions.Unlinked)
-                    {
-                        HandleUnlink(resource);
+                        errors++;
+                        _logger.Error("Importing resource failed:", ex);
                     }
                 }
 
@@ -113,8 +109,28 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
             }
 
+            if(errors > 0) 
+                _logger.Warning($"Resource import successful, but {errors} errors occured during import. See log for details.");
+
             ImportStatusContainer.Instance.Message = "Resource Import successful";
             ImportStatusContainer.Instance.IsImporting = false;
+        }
+
+        private void ImportResource(IInRiverImportResource resource)
+        {
+            if (resource.Action == ImporterActions.Added || resource.Action == ImporterActions.Updated)
+            {
+                ImportImageAndAttachToEntry(resource);
+            }
+            else if (resource.Action == ImporterActions.Deleted)
+            {
+                _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
+                HandleDelete(resource);
+            }
+            else if (resource.Action == ImporterActions.Unlinked)
+            {
+                HandleUnlink(resource);
+            }
         }
 
         public void DeleteResource(DeleteResourceRequest request)
@@ -173,7 +189,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         private void AddLinksFromMediaToCodes(MediaData contentMedia, List<EntryCode> codes)
         {
-            var media = new CommerceMedia { AssetLink = contentMedia.ContentLink };
+            var media = new CommerceMedia { AssetLink = contentMedia.ContentLink, GroupName = "default", AssetType = "episerver.core.icontentmedia" };
             
             foreach (EntryCode entryCode in codes)
             {
