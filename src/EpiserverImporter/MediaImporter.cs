@@ -178,7 +178,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             foreach (EntryCode entryCode in codes)
             {
                 var contentReference = _referenceConverter.GetContentLink(entryCode.Code);
-
+                
                 IAssetContainer writableContent = null;
                 if (_contentRepository.TryGet(contentReference, out EntryContentBase entry))
                     writableContent = (EntryContentBase) entry.CreateWritableClone();
@@ -188,7 +188,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                 if (writableContent == null)
                 {
-                    _logger.Error("Can't get a suitable content to add CommerceMedia to, meaning it's neither EntryContentBase nor NodeContent.");
+                    _logger.Error($"Can't get a suitable content (with code {entryCode.Code} to add CommerceMedia to, meaning it's neither EntryContentBase nor NodeContent.");
                     continue;
                 }
 

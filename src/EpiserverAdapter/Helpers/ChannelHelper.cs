@@ -118,7 +118,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return channelIdentifier;
         }
 
-        public List<StructureEntity> GetAllEntitiesInChannel(List<EntityType> entityTypes)
+        public List<StructureEntity> GetAllStructureEntitiesInChannel(List<EntityType> entityTypes)
         {
             List<StructureEntity> result = new List<StructureEntity>();
             foreach (EntityType entityType in entityTypes)
@@ -130,11 +130,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return result;
         }
 
-        public List<StructureEntity> GetAllEntitiesInChannel(string type)
+        public List<StructureEntity> GetAllStructureEntitiesInChannel(string type)
         {
-            
             return RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, type);
         }
+
+
 
         public List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId)
         {

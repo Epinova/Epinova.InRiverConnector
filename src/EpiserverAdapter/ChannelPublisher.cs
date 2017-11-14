@@ -61,7 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channel.DisplayName.Data}", 0);
           ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
 
-            var channelStructureEntities = _channelHelper.GetAllEntitiesInChannel(_config.ExportEnabledEntityTypes);
+            var channelStructureEntities = _channelHelper.GetAllStructureEntitiesInChannel(_config.ExportEnabledEntityTypes);
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done fetching all channel entities. Generating catalog.xml...", 10);
 
             var epiElements = _epiDocumentFactory.GetEPiElements(channelStructureEntities);

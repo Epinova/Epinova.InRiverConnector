@@ -37,105 +37,80 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XElement CreateResourceElement(Entity resource, string action)
         {
-            var allResourceStructureEntities = _channelHelper.GetAllEntitiesInChannel("Resource");
-
-            string resourceFileId = "-1";
-            Field resourceFileIdField = resource.GetField("ResourceFileId");
-            if (resourceFileIdField != null && !resourceFileIdField.IsEmpty())
-            {
-                resourceFileId = resource.GetField("ResourceFileId").Data.ToString();
-            }
-
+            var allResourceStructureEntities = _channelHelper.GetAllStructureEntitiesInChannel("Resource");
+            IntegrationLogger.Write(LogLevel.Debug, $"{allResourceStructureEntities.Count} resource entities found.");
+            
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
+            
+            var allResourceLocations = allResourceStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
+            
+            var links = new List<Link>();
 
-            if (action == "unlinked")
+            foreach (Link inboundLink in resource.InboundLinks)
             {
-                // TODO: ResourceParents her: "ChannelEntities" opprinnelig. Finn alle foreldre-structure-entities til ressursen
-                // (Husk at det er Resource => Link => Parent, så to nivåer.
-                // <int, Entity> == <EntityId, Entity>. Finn en liste av entities ellerno i stedet, RemoteManager kan sikkert hjelpe.
-                var resourceParents = new Dictionary<int, Entity>().Where(i => !i.Key.Equals(resource.Id));
-
-                foreach (KeyValuePair<int, Entity> resourceParent in resourceParents)
+                if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
                 {
-                    var ids = new List<string>();
-
-                    if (_config.ItemsToSkus && resourceParent.Value.EntityType.Id == "Item")
-                    {
-                        var skuIds = _epiElementFactory.SkuItemIds(resourceParent.Value);
-                        ids.AddRange(skuIds);
-
-                        if (_config.UseThreeLevelsInCommerce)
-                            ids.Add(_catalogCodeGenerator.GetEpiserverCode(resourceParent.Value));
-                    }
-
-                    foreach (var id in ids)
-                    {
-                        if (parents.ContainsKey(id))
-                            continue;
-
-                        parents.Add(id, resourceParent.Value.MainPictureId);
-                    }
+                    links.Add(inboundLink);
                 }
             }
-            else
-            {
-                var allResourceLocations = allResourceStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
-                
-                List<Link> links = new List<Link>();
 
-                foreach (Link inboundLink in resource.InboundLinks)
+            foreach (Link link in links)
+            {
+                Entity linkedEntity = link.Source;
+                
+                var ids = new List<string> { _catalogCodeGenerator.GetEpiserverCode(linkedEntity) };
+
+                if (_config.UseThreeLevelsInCommerce)
                 {
-                    if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
+                    ids.Add(_catalogCodeGenerator.GetEpiserverCode(linkedEntity));
+                };
+
+                if (_config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
+                {
+                    List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity);
+                    foreach (string skuId in skuIds)
                     {
-                        links.Add(inboundLink);
+                        var prefixedSkuId = _catalogCodeGenerator.GetPrefixedCode(skuId);
+                        ids.Add(prefixedSkuId);
                     }
                 }
 
-                foreach (Link link in links)
+                foreach (var id in ids)
                 {
-                    Entity linkedEntity = link.Source;
-                    List<string> ids = new List<string>();
-
-                    if (_config.UseThreeLevelsInCommerce)
+                    if (!parents.ContainsKey(id))
                     {
-                        ids.Add(_catalogCodeGenerator.GetEpiserverCode(linkedEntity));
-                    };
-
-                    if (_config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
-                    {
-                        List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity);
-                        foreach (string skuId in skuIds)
-                        {
-                            var prefixedSkuId = _catalogCodeGenerator.GetPrefixedCode(skuId);
-                            ids.Add(prefixedSkuId);
-                        }
-                    }
-
-                    foreach (string id in ids)
-                    {
-                        if (!parents.ContainsKey(id))
-                        {
-                            parents.Add(id, linkedEntity.MainPictureId);
-                        }
+                        parents.Add(id, linkedEntity.MainPictureId);
                     }
                 }
             }
 
             var resourceId = _catalogCodeGenerator.GetEpiserverCode(resource);
-            
+
+            string resourceFileId = null;
+            var resourceFileIdField = resource.GetField(FieldNames.ResourceFileId);
+            if (resourceFileIdField != null && !resourceFileIdField.IsEmpty())
+            {
+                resourceFileId = resource.GetField(FieldNames.ResourceFileId).Data.ToString();
+            }
+
+            var metaFields = resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
+                                            .Select(field => _epiElementFactory.GetMetaFieldValueElement(field));
+
+            var parentEntries = parents.Select(parent => new XElement("EntryCode", parent.Key,
+                                                            new XAttribute("IsMainPicture", IsMainPicture(parent, resourceFileId))));
+
             return new XElement("Resource",
                        new XAttribute("id", resourceId),
                        new XAttribute("action", action),
-                       new XElement("ResourceFields", resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
-                                                                     .Select(field => _epiElementFactory.GetMetaFieldValueElement(field))),
+                       new XElement("ResourceFields", metaFields),
                        GetInternalPathsInZip(resource),
-                       new XElement(
-                           "ParentEntries",
-                                parents.Select(parent =>
-                                   new XElement("EntryCode", parent.Key, 
-                                       new XAttribute("IsMainPicture", parent.Value != null && parent.Value.ToString().Equals(resourceFileId))))));
+                       new XElement("ParentEntries", parentEntries));
         }
 
+        private static bool IsMainPicture(KeyValuePair<string, int?> parent, string resourceFileId)
+        {
+            return parent.Value != null && parent.Value.ToString().Equals(resourceFileId);
+        }
 
         public XDocument GetResourcesNodeForChannelEntities(List<StructureEntity> channelEntities, string folderDateTime)
         {

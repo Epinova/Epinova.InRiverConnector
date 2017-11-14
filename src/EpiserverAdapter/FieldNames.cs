@@ -6,5 +6,6 @@
         public static string EPiCommonField = "EPiMetaFieldName";
         public static string SKUFieldName = "SKUs";
         public static string SKUData = "Data";
+        public static string ResourceFileId = "ResourceFileId";
     }
 }
