@@ -8,9 +8,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     public class EpiMappingHelper
     {
         private readonly IConfiguration _config;
-        private readonly PimFieldAdapter _pimFieldAdapter;
+        private readonly IPimFieldAdapter _pimFieldAdapter;
 
-        public EpiMappingHelper(IConfiguration config, PimFieldAdapter pimFieldAdapter)
+        public EpiMappingHelper(IConfiguration config, IPimFieldAdapter pimFieldAdapter)
         {
             _config = config;
             _pimFieldAdapter = pimFieldAdapter;
@@ -300,6 +300,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return "Product";
+        }
+
+        public bool IsChannelNodeLink(string linkTypeId)
+        {
+            var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == linkTypeId);
+
+            return linkType?.SourceEntityTypeId == "ChannelNode" ||
+                   (linkType?.SourceEntityTypeId == "Channel" && linkType?.TargetEntityTypeId == "ChannelNode");
         }
     }
 }

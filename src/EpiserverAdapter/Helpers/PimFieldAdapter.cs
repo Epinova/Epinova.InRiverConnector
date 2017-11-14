@@ -11,7 +11,7 @@ using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
-    public class PimFieldAdapter
+    public class PimFieldAdapter : IPimFieldAdapter
     {
         private readonly IConfiguration _config;
 

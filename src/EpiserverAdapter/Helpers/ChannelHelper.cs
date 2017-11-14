@@ -103,8 +103,28 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 List<StructureEntity> response = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, entityType.Id);
                 result.AddRange(response);
             }
+            return result.Where(x => FilterLinkedContentNotBelongingToChannelNode(x, result)).ToList();
+        }
 
-            return result;
+        /// <summary>
+        /// Tells you whether or not a structure entity belongs in the channel, based on it's links.
+        /// True for any entity that has a direct relation with either a product/bundle/package, or a channel node. False for 
+        /// anything that's ONLY included in the channel as upsell/accessories and the like (typically item-item-links or product-product-links).
+        /// </summary>
+        /// <param name="structureEntity">The StructureEntity to query.</param>
+        /// <param name="allStructureEntities">Everything in the channel.</param>
+        private bool FilterLinkedContentNotBelongingToChannelNode(StructureEntity structureEntity, List<StructureEntity> allStructureEntities)
+        {
+            var sameEntityStructureEntities = allStructureEntities.Where(x => x.EntityId == structureEntity.EntityId);
+            return sameEntityStructureEntities.Any(BelongsInChannel);
+        }
+
+        private bool BelongsInChannel(StructureEntity arg)
+        {
+            var isRelation = _mappingHelper.IsRelation(arg.LinkTypeIdFromParent);
+            var isChannelNodeLink = _mappingHelper.IsChannelNodeLink(arg.LinkTypeIdFromParent);
+
+            return isRelation || isChannelNodeLink;
         }
 
         public List<StructureEntity> GetAllStructureEntitiesInChannel(string type)

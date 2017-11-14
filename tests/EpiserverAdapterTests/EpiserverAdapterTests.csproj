@@ -73,6 +73,7 @@
     <Compile Include="EntityFactory.cs" />
     <Compile Include="FieldFactory.cs" />
     <Compile Include="CatalogCodeGeneratorTests.cs" />
+    <Compile Include="Helpers\EpiMappingHelperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
