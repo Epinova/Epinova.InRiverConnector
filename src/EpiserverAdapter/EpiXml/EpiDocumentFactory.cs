@@ -168,15 +168,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             int totalLoaded = 0;
             int batchSize = _config.BatchSize;
-            var specifiactionEntries = allChannelStructureEntities.Where(x => x.Type == "Specification").ToList();
-            IntegrationLogger.Write(LogLevel.Debug, $"Found {specifiactionEntries.Count} specifications in channel structure.");
 
             do
             {
                 var batch = allChannelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
                 AddNodeElements(batch, addedNodes, addedRelations, epiElements);
-                AddEntryElements(batch, addedEntities, epiElements, specifiactionEntries);
+                AddEntryElements(batch, addedEntities, epiElements);
                 AddRelationElements(batch, addedRelations, epiElements, allChannelStructureEntities);
 
                 totalLoaded += batch.Count;
@@ -187,10 +185,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
           
         }
 
-        private void AddEntryElements(List<StructureEntity> batch, 
-                                      List<string> addedEntities, 
-                                      Dictionary<string, List<XElement>> epiElements,
-                                      List<StructureEntity> specificationChannelStructureEntities)
+        private void AddEntryElements(List<StructureEntity> batch, List<string> addedEntities, Dictionary<string, List<XElement>> epiElements)
         {
             foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId))
             {
@@ -209,7 +204,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     }
                 }
 
-                Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
+                Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataAndLinks);
 
                 if (structureEntity.IsItem() && _config.ItemsToSkus)
                 {
@@ -235,7 +230,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (codeElement == null || addedEntities.Contains(codeElement.Value))
                         continue;
 
-                    var specificationField = GetSpecificationMetaField(specificationChannelStructureEntities, entity.Id);
+                    var specificationField = GetSpecificationMetaField(entity);
 
                     if (specificationField != null)
                     {
@@ -251,14 +246,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
         }
 
-        private XElement GetSpecificationMetaField(List<StructureEntity> allSpecificationEntries, int entityId)
+        private XElement GetSpecificationMetaField(Entity entity)
         {
-            var specificationEntry = allSpecificationEntries.FirstOrDefault(s => s.ParentId == entityId);
+            var specificationLink = entity.OutboundLinks.FirstOrDefault(IsSpecificationLink);
 
-            if (specificationEntry == null)
+            if (specificationLink == null)
                 return null;
-            
-            IntegrationLogger.Write(LogLevel.Debug, $"Found specification for entity {entityId}. Creating MetaField element.");
+
+            IntegrationLogger.Write(LogLevel.Debug, $"Found specification for entity {entity}. Creating MetaField element.");
 
             XElement specificationMetaField = new XElement("MetaField",
                 new XElement("Name", "SpecificationField"),
@@ -266,7 +261,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             foreach (var culturePair in _config.LanguageMapping)
             {
-                var htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationEntry.EntityId, entityId, culturePair.Value);
+                var htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specificationLink.Target.Id, entity.Id, culturePair.Value);
                 specificationMetaField.Add(
                     new XElement("Data",
                         new XAttribute("language", culturePair.Key.Name.ToLower()),
@@ -274,6 +269,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
 
             return specificationMetaField;
+        }
+
+        private bool IsSpecificationLink(Link link)
+        {
+            return link.Target.EntityType.Id == "Specification";
         }
 
         private void AddRelationElements(List<StructureEntity> structureEntitiesBatch, 

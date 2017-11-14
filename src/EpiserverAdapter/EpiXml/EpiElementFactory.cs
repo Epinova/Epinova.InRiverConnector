@@ -165,8 +165,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 string keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
                 string urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
 
-                if (string.IsNullOrEmpty(uri) && string.IsNullOrEmpty(title) && string.IsNullOrEmpty(description)
-                    && string.IsNullOrEmpty(keywords) && string.IsNullOrEmpty(urisegment))
+                if (string.IsNullOrEmpty(uri) && 
+                    string.IsNullOrEmpty(title) && 
+                    string.IsNullOrEmpty(description) && 
+                    string.IsNullOrEmpty(keywords) && 
+                    string.IsNullOrEmpty(urisegment))
                 {
                     continue;
                 }
@@ -220,15 +223,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             XElement metaField = new XElement(
                 "MetaField",
                 new XElement("Name", _mappingHelper.GetEpiserverFieldName(field.FieldType)),
-                new XElement("Type", _mappingHelper.GetEpiserverDataType(field.FieldType)));
-
-           
+                new XElement("Type", _mappingHelper.GetEpiserverDataType(field.FieldType))
+            );
+            
             if (field.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                LocaleString ls = field.Data as LocaleString;
+                var ls = field.Data as LocaleString;
                 if (!field.IsEmpty())
                 {
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                    foreach (var culturePair in _config.LanguageMapping)
                     {
                         if (ls != null)
                         {
@@ -241,7 +244,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
                 else
                 {
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                    foreach (var culturePair in _config.LanguageMapping)
                     {
                         metaField.Add(
                             new XElement("Data",
