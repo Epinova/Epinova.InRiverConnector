@@ -207,7 +207,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     writableContent.CommerceMediaCollection.Add(media);
                 }
                 
-                _contentRepository.Save((IContent) writableContent);
+                _contentRepository.Save((IContent) writableContent, SaveAction.Publish, AccessLevel.NoAccess);
             }
         }
 

@@ -29,6 +29,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public string GetEpiserverCode(Entity entity)
         {
+            if (entity.LoadLevel < LoadLevel.DataOnly)
+                entity = _entityService.GetEntity(entity.Id, LoadLevel.DataOnly);
+
             var entityTypeId = entity.EntityType.Id;
             
             if (_config.EpiCodeMapping.ContainsKey(entityTypeId))
