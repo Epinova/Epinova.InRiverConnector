@@ -103,7 +103,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 List<StructureEntity> response = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, entityType.Id);
                 result.AddRange(response);
             }
-            return result.Where(x => FilterLinkedContentNotBelongingToChannelNode(x, result)).ToList();
+
+            return _config.ForceIncludeLinkedContent ? 
+                        result.ToList() : 
+                        result.Where(x => FilterLinkedContentNotBelongingToChannelNode(x, result)).ToList();
         }
 
         /// <summary>

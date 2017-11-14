@@ -45,6 +45,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public int EpiRestTimeout => int.Parse(_settings[ConfigKeys.EpiTimeout]);
         public string EpiApiKey => _settings[ConfigKeys.EpiApiKey];
         public string EpiEndpoint => _settings[ConfigKeys.EpiEndpoint];
+        public bool ForceIncludeLinkedContent => bool.Parse(_settings[ConfigKeys.ForceIncludeLinkedContent]);
+
         public EndpointCollection Endpoints { get; set; }
 
         public static string OriginalDisplayConfiguration => "Original";

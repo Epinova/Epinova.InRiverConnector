@@ -14,6 +14,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ValidateSettings()
         {
+            if (SettingHasValue(ConfigKeys.ForceIncludeLinkedContent))
+            {
+                if(!bool.TryParse(_settings[ConfigKeys.ForceIncludeLinkedContent], out bool _))
+                    throw new ConfigurationErrorsException($"Setting FORCE_INCLUDE_LINKED_CONTENT has invalid value. Set it to True or False. Default is {ConfigDefaults.ForceIncludeLinkedContent}");
+            }
+
             if (!SettingHasValue("EPI_APIKEY"))
             {
                 throw new ConfigurationErrorsException("Missing EPI_APIKEY setting on connector. It needs to be defined to else the calls will fail. Please see the documentation.");

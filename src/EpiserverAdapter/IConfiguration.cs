@@ -16,6 +16,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         int ChannelId { get; }
         string PublicationsRootPath { get; }
         List<EntityType> ExportEnabledEntityTypes { get; }
+        bool ForceIncludeLinkedContent { get; }
         string HttpPostUrl { get; }
         Dictionary<CultureInfo, CultureInfo> LanguageMapping { get; }
         Dictionary<string, string> EpiNameMapping { get; }

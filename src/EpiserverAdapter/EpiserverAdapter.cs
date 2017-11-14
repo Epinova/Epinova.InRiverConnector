@@ -135,6 +135,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiTimeout, "1");
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExportEntities, ConfigDefaults.ExportEntities);
             ConfigurationManager.Instance.SetConnectorSetting(Id, "BATCH_SIZE", string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ForceIncludeLinkedContent, ConfigDefaults.ForceIncludeLinkedContent);
         }
 
         public new bool IsStarted => _started;

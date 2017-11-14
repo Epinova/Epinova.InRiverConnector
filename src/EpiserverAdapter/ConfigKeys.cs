@@ -22,5 +22,6 @@
         public static string DynamicPackageTypes = "DYNAMIC_PACKAGE_ENTITYTYPES";
         public static string ExcludeFields = "EXCLUDE_FIELDS";
         public static string CvlData = "CVL_DATA";
+        public static string ForceIncludeLinkedContent = "FORCE_INCLUDE_LINKED_CONTENT";
     }
 }
