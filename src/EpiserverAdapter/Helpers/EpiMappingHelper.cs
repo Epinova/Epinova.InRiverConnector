@@ -65,28 +65,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         public bool IsRelation(string linkTypeId)
         {
             LinkType linktype = _config.LinkTypes.Find(lt => lt.Id == linkTypeId);
-
-            if ((_config.BundleEntityTypes.Contains(linktype.SourceEntityTypeId) && !_config.BundleEntityTypes.Contains(linktype.TargetEntityTypeId))
-                 || (_config.PackageEntityTypes.Contains(linktype.SourceEntityTypeId) && !_config.PackageEntityTypes.Contains(linktype.TargetEntityTypeId))
-                 || (_config.DynamicPackageEntityTypes.Contains(linktype.SourceEntityTypeId) && !_config.DynamicPackageEntityTypes.Contains(linktype.TargetEntityTypeId)))
-            {
-                return true;
-            }
-
-            return linktype.SourceEntityTypeId.Equals("Product") && linktype.TargetEntityTypeId.Equals("Item")
-                   && linktype.Index == FirstProductItemLinkType;
-        }
-
-        public string GetAssociationName(Link link)
-        {
-            if (link.LinkEntity != null)
-            {
-                // Use the Link name + the display name to create a unique ASSOCIATION NAME in EPi Commerce
-                return link.LinkType.LinkEntityTypeId + '_'
-                       + _pimFieldAdapter.GetDisplayNameFromEntity(link.LinkEntity, -1).Replace(' ', '_');
-            }
-
-            return link.LinkType.Id;
+            return IsRelation(linktype);
         }
 
         /// <summary>
@@ -244,28 +223,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return type;
-        }
-
-        public List<string> GetLocaleStringValues(object data)
-        {
-            List<string> localeStringValues = new List<string>();
-
-            if (data == null)
-            {
-                return localeStringValues;
-            }
-
-            LocaleString ls = (LocaleString)data;
-
-            foreach (var languageMap in _config.LanguageMapping)
-            {
-                if (!localeStringValues.Any(e => e.Equals(ls[languageMap.Value])))
-                {
-                    localeStringValues.Add(ls[languageMap.Value]);
-                }
-            }
-
-            return localeStringValues;
         }
 
         public string GetNameForEntity(Entity entity, int maxLength)

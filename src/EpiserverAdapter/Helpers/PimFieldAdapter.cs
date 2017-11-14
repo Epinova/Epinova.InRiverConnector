@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
@@ -37,29 +36,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             set => cvls = value;
         }
 
-        public static bool FieldTypeIsMultiLanguage(FieldType fieldType)
+        public bool FieldTypeIsMultiLanguage(FieldType fieldType)
         {
             if (fieldType.DataType.Equals(DataType.LocaleString))
             {
                 return true;
             }
 
-            if (fieldType.DataType.Equals(DataType.CVL))
-            {
-                CVL cvl = RemoteManager.ModelService.GetCVL(fieldType.CVLId);
+            if (!fieldType.DataType.Equals(DataType.CVL))
+                return false;
 
-                if (cvl == null)
-                {
-                    return false;
-                }
+            var cvl = RemoteManager.ModelService.GetCVL(fieldType.CVLId);
 
-                return cvl.DataType.Equals(DataType.LocaleString);
-            }
-
-            return false;
+            return cvl != null && cvl.DataType.Equals(DataType.LocaleString);
         }
         
-        public static string GetAllowSearch(FieldType fieldType)
+        public string GetAllowSearch(FieldType fieldType)
         {
             if (fieldType.Settings.ContainsKey("AllowsSearch"))
             {
@@ -69,19 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return "true";
         }
 
-        public string GetDisplayTemplateEntity(Entity entity)
-        {
-            Field displayTemplateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("displaytemplate"));
-
-            if (displayTemplateField == null || displayTemplateField.IsEmpty())
-            {
-                return null;
-            }
-
-            return displayTemplateField.Data.ToString();
-        }
-
-        public static IEnumerable<string> CultureInfosToStringArray(CultureInfo[] cultureInfo)
+        public IEnumerable<string> CultureInfosToStringArray(CultureInfo[] cultureInfo)
         {
             return cultureInfo.Select(ci => ci.Name.ToLower()).ToArray();
         }
@@ -164,91 +144,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             return returnString;
         }
-
-        public string GetSeoUriFromEntity(Entity entity, CultureInfo ci)
+        
+        public string GetFieldValue(Entity entity, string fieldName, CultureInfo ci)
         {
-            Field seoUriField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seouri"));
+            Field field = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains(fieldName));
 
-            if (seoUriField == null || seoUriField.IsEmpty())
+            if (field == null || field.IsEmpty())
             {
                 return string.Empty;
             }
 
-            if (seoUriField.FieldType.DataType.Equals(DataType.LocaleString))
+            if (field.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                return _config.ChannelIdPrefix + ((LocaleString)seoUriField.Data)[ci];
+                return _config.ChannelIdPrefix + ((LocaleString)field.Data)[ci];
             }
 
-            return _config.ChannelIdPrefix + seoUriField.Data;
-        }
-
-        public string GetSeoUriSegmentFromEntity(Entity entity, CultureInfo ci)
-        {
-            Field seoUriSegmentField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seourisegment"));
-
-            if (seoUriSegmentField == null || seoUriSegmentField.IsEmpty())
-            {
-                return string.Empty;
-            }
-
-            if (seoUriSegmentField.FieldType.DataType.Equals(DataType.LocaleString))
-            {
-                return _config.ChannelIdPrefix + ((LocaleString)seoUriSegmentField.Data)[ci];
-            }
-
-            return _config.ChannelIdPrefix + seoUriSegmentField.Data;
-        }
-
-        public string GetSeoTitleFromEntity(Entity entity, CultureInfo ci)
-        {
-            Field seoTitleField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seotitle"));
-
-            if (seoTitleField == null || seoTitleField.IsEmpty())
-            {
-                return string.Empty;
-            }
-
-            if (seoTitleField.FieldType.DataType.Equals(DataType.LocaleString))
-            {
-                return ((LocaleString)seoTitleField.Data)[ci];
-            }
-
-            return seoTitleField.Data.ToString();
-        }
-
-        public string GetSeoDescriptionFromEntity(Entity entity, CultureInfo ci)
-        {
-            Field seoDescriptionField =
-                entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seodescription"));
-
-            if (seoDescriptionField == null || seoDescriptionField.IsEmpty())
-            {
-                return string.Empty;
-            }
-
-            if (seoDescriptionField.FieldType.DataType.Equals(DataType.LocaleString))
-            {
-                return ((LocaleString)seoDescriptionField.Data)[ci];
-            }
-
-            return seoDescriptionField.Data.ToString();
-        }
-
-        public string GetSeoKeywordsFromEntity(Entity entity, CultureInfo ci)
-        {
-            Field seoKeywordsField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("seokeywords"));
-
-            if (seoKeywordsField == null || seoKeywordsField.IsEmpty())
-            {
-                return string.Empty;
-            }
-
-            if (seoKeywordsField.FieldType.DataType.Equals(DataType.LocaleString))
-            {
-                return ((LocaleString)seoKeywordsField.Data)[ci];
-            }
-
-            return seoKeywordsField.Data.ToString();
+            return field.Data.ToString();
         }
 
         public List<XElement> GetCVLValues(Field field)
@@ -352,31 +263,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return string.Empty;
             }
 
-            if (field.FieldType.DataType.Equals(DataType.Boolean))
+            var dataType = field.FieldType.DataType;
+            if (dataType == DataType.Boolean)
             {
                 return ((bool)field.Data).ToString();
             }
-            if (field.FieldType.DataType.Equals(DataType.DateTime))
+            if (dataType == DataType.DateTime)
             {
                 return ((DateTime)field.Data).ToString("O");
             }
-            if (field.FieldType.DataType.Equals(DataType.Double))
+            if (dataType == DataType.Double)
             {
                 return ((double)field.Data).ToString(CultureInfo.InvariantCulture);
             }
-            if (field.FieldType.DataType.Equals(DataType.File))
-            {
-                return field.Data.ToString();
-            }
-            if (field.FieldType.DataType.Equals(DataType.Integer))
-            {
-                return field.Data.ToString();
-            }
-            if (field.FieldType.DataType.Equals(DataType.String))
-            {
-                return field.Data.ToString();
-            }
-            if (field.FieldType.DataType.Equals(DataType.Xml))
+            if (dataType == DataType.File ||
+                dataType == DataType.Integer ||
+                dataType == DataType.String ||
+                dataType == DataType.Xml)
             {
                 return field.Data.ToString();
             }

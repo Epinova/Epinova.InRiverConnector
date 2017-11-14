@@ -6,12 +6,10 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
-using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
-using Newtonsoft.Json;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
@@ -86,29 +84,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return entity != null ? RemoteManager.DataService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
         }
 
-        internal List<StructureEntity> FindEntitiesElementInStructure(List<StructureEntity> channelEntities, int sourceEntityId, int targetEntityId, string linktype)
-        {
-            List<StructureEntity> structureEntities = new List<StructureEntity>();
-
-            structureEntities.AddRange(channelEntities.Where(e =>
-                                                        e.EntityId.Equals(targetEntityId) &&
-                                                        e.ParentId != 0 &&
-                                                        e.ParentId.Equals(sourceEntityId)));
-
-            return structureEntities;
-        }
-
-        internal bool LinkTypeHasLinkEntity(string linkTypeId)
-        {
-            LinkType linktype = RemoteManager.ModelService.GetLinkType(linkTypeId);
-            if (linktype.LinkEntityTypeId != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         public string GetChannelIdentifier(Entity channelEntity)
         {
             string channelIdentifier = channelEntity.Id.ToString(CultureInfo.InvariantCulture);
@@ -136,9 +111,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             return RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, type);
         }
-
-
-
+        
         public List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId)
         {
             var result = new List<StructureEntity>();
@@ -212,15 +185,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return structureEntities.Find(i => i.Path.Equals(parentPath) && i.EntityId.Equals(sourceEntityId));
         }
 
-        public void UpdateChannelSettings(Entity channel)
-        {
-            _config.ChannelDefaultLanguage = GetChannelDefaultLanguage(channel);
-            _config.ChannelDefaultCurrency = GetChannelDefaultCurrency(channel);
-            _config.ChannelDefaultWeightBase = GetChannelDefaultWeightBase(channel);
-            _config.ChannelIdPrefix = GetChannelPrefix(channel);
-        }
-
-        public string GetChannelPrefix(Entity channel)
+        private string GetChannelPrefix(Entity channel)
         {
             Field channelPrefixField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelprefix"));
             if (channelPrefixField == null || channelPrefixField.IsEmpty())
@@ -231,7 +196,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return channelPrefixField.Data.ToString();
         }
 
-        public CultureInfo GetChannelDefaultLanguage(Entity channel)
+        private CultureInfo GetChannelDefaultLanguage(Entity channel)
         {
             Field defaultLanguageField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultlanguage"));
             if (defaultLanguageField == null || defaultLanguageField.IsEmpty())
@@ -242,7 +207,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new CultureInfo(defaultLanguageField.Data.ToString());
         }
 
-        public string GetChannelDefaultCurrency(Entity channel)
+        private string GetChannelDefaultCurrency(Entity channel)
         {
             Field defaultCurrencyField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultcurrency"));
             if (defaultCurrencyField == null || defaultCurrencyField.IsEmpty())
@@ -306,6 +271,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return dictionary;
+        }
+
+        private void UpdateChannelSettings(Entity channel)
+        {
+            _config.ChannelDefaultLanguage = GetChannelDefaultLanguage(channel);
+            _config.ChannelDefaultCurrency = GetChannelDefaultCurrency(channel);
+            _config.ChannelDefaultWeightBase = GetChannelDefaultWeightBase(channel);
+            _config.ChannelIdPrefix = GetChannelPrefix(channel);
         }
     }
 }

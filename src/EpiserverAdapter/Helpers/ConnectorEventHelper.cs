@@ -4,7 +4,6 @@ using System.Linq;
 using inRiver.Integration.Reporting;
 using inRiver.Remoting;
 using inRiver.Remoting.Connect;
-using inRiver.Remoting.Exceptions;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
@@ -26,7 +25,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             ReportManager.Instance.WriteEvent(connectorEvent);
             return connectorEvent;
-            
         }
 
         internal static ConnectorEvent UpdateEvent(ConnectorEvent connectorEvent, string message, int percentage, bool error = false)

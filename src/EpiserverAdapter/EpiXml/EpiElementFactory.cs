@@ -56,8 +56,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Length", _mappingHelper.GetMetaFieldLength(fieldType)),
                 new XElement("AllowNulls", !fieldType.Mandatory),
                 new XElement("SaveHistory", "False"),
-                new XElement("AllowSearch", PimFieldAdapter.GetAllowSearch(fieldType)),
-                new XElement("MultiLanguageValue", PimFieldAdapter.FieldTypeIsMultiLanguage(fieldType)),
+                new XElement("AllowSearch", _pimFieldAdapter.GetAllowSearch(fieldType)),
+                new XElement("MultiLanguageValue", _pimFieldAdapter.FieldTypeIsMultiLanguage(fieldType)),
                 new XElement("IsSystem", "False"),
                 new XElement("Tag"),
                 new XElement("Attributes",
@@ -128,7 +128,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XAttribute("defaultLanguage", _config.ChannelDefaultLanguage.Name.ToLower()),
                 new XAttribute("sortOrder", 0),
                 new XAttribute("isActive", "True"),
-                new XAttribute("languages", string.Join(",", PimFieldAdapter.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
+                new XAttribute("languages", string.Join(",", _pimFieldAdapter.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
         }
 
         public XElement CreateNodeElement(Entity entity, int parentId, int sortOrder)
@@ -139,7 +139,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("EndDate", _pimFieldAdapter.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", !entity.EntityType.IsLinkEntityType),
                 new XElement("SortOrder", sortOrder),
-                new XElement("DisplayTemplate", _pimFieldAdapter.GetDisplayTemplateEntity(entity)),
+                new XElement("DisplayTemplate", string.Empty),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
                 new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
                 new XElement("MetaData",
@@ -159,12 +159,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             XElement seoInfo = new XElement("SeoInfo");
             foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
             {
-                
-                string uri = _pimFieldAdapter.GetSeoUriFromEntity(entity, culturePair.Value);
-                string title = _pimFieldAdapter.GetSeoTitleFromEntity(entity, culturePair.Value);
-                string description = _pimFieldAdapter.GetSeoDescriptionFromEntity(entity, culturePair.Value);
-                string keywords = _pimFieldAdapter.GetSeoKeywordsFromEntity(entity, culturePair.Value);
-                string urisegment = _pimFieldAdapter.GetSeoUriSegmentFromEntity(entity, culturePair.Value);
+                string uri = _pimFieldAdapter.GetFieldValue(entity, "seouri", culturePair.Value);
+                string title = _pimFieldAdapter.GetFieldValue(entity, "seotitle", culturePair.Value);
+                string description = _pimFieldAdapter.GetFieldValue(entity, "seodescription", culturePair.Value);
+                string keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
+                string urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
 
                 if (string.IsNullOrEmpty(uri) && string.IsNullOrEmpty(title) && string.IsNullOrEmpty(description)
                     && string.IsNullOrEmpty(keywords) && string.IsNullOrEmpty(urisegment))
@@ -192,7 +191,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("StartDate", _pimFieldAdapter.GetStartDateFromEntity(entity)),
                 new XElement("EndDate", _pimFieldAdapter.GetEndDateFromEntity(entity)),
                 new XElement("IsActive", "True"),
-                new XElement("DisplayTemplate", _pimFieldAdapter.GetDisplayTemplateEntity(entity)),
+                new XElement("DisplayTemplate", string.Empty),
                 new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
                 new XElement("EntryType", _mappingHelper.GetEntryType(entity.EntityType.Id)),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
