@@ -119,7 +119,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public ConnectorEvent ChannelEntityAdded(Entity channel, int entityId)
         {
-            IntegrationLogger.Write(LogLevel.Debug, $"Received entity added for entity {entityId} in channel {channel.Id}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityAdded, $"Received entity added for entity {entityId} in channel {channel.DisplayName}", 0);
 
             var structureEntities = new List<StructureEntity>();
@@ -267,9 +266,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public ConnectorEvent ChannelLinkDeleted(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            IntegrationLogger.Write(LogLevel.Debug, $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}");
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
-                $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}", 0);
+                $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName.Data}", 0);
 
             Entity removalTarget = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
             Entity removalSource = RemoteManager.DataService.GetEntity(sourceEntityId, LoadLevel.DataAndLinks);
@@ -366,7 +364,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private void HandleChannelNodeUpdate(Entity channel, List<StructureEntity> structureEntities, ConnectorEvent entityUpdatedConnectorEvent)
         {
             _addUtility.Add(channel, entityUpdatedConnectorEvent, structureEntities);
-            _epiApi.ImportUpdateCompleted(_pimFieldAdapter.GetDisplayNameFromEntity(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
+            _epiApi.ImportUpdateCompleted(_pimFieldAdapter.GetDisplayName(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
         }
 
         private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime, Entity channel)

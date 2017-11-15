@@ -13,7 +13,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     {
         internal static ConnectorEvent InitiateEvent(IConfiguration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
         {
-            IntegrationLogger.Write(LogLevel.Debug, message);
+            if(!error)
+                IntegrationLogger.Write(LogLevel.Debug, message);
 
             ConnectorEvent connectorEvent = new ConnectorEvent
             {

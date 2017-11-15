@@ -472,13 +472,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         }
 
-        private void AddNodeEntryRelationElement(LinkType linkType,
-                                                 StructureEntity distinctStructureEntity,
-                                                 string skuCode)
+        private void AddNodeEntryRelationElement(LinkType linkType, StructureEntity distinctStructureEntity, string skuCode)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"For SKU {skuCode}: Found relation between {linkType.SourceEntityTypeId} and {linkType.TargetEntityTypeId} called {linkType.Id}");
 
-            var parentNode = _channelHelper.GetParentChannelNode(distinctStructureEntity); // TODO: Kan en sånn sjekk hindre Entries uten tilhørighet noe sted å bli med også?
+            var parentNode = _channelHelper.GetParentChannelNode(distinctStructureEntity);
             if (parentNode == null)
                 return;
 

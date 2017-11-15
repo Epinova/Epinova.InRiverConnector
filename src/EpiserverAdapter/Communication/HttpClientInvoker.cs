@@ -116,7 +116,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 return response.Content.ReadAsAsync<List<string>>().Result;
             }
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
-            inRiver.Integration.Logging.IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }
     }

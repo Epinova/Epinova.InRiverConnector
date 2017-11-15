@@ -112,12 +112,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    string channelName = _pimFieldAdapter.GetDisplayNameFromEntity(channel, -1);
+                    string channelName = _pimFieldAdapter.GetDisplayName(channel, -1);
 
                     string parentEntryId = _catalogCodeGenerator.GetEpiserverCode(parentId);
                     string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCode(linkEntity);
 
-                    string dispName = linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayNameFromEntity(linkEntity, -1).Replace(' ', '_');
+                    string dispName = linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayName(linkEntity, -1).Replace(' ', '_');
 
                     LinkEntityUpdateData dataToSend = new LinkEntityUpdateData
                                                           {
@@ -146,7 +146,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 List<string> ids = new List<string>();
                 try
                 {
-                    string channelName = _pimFieldAdapter.GetDisplayNameFromEntity(channelEntity, -1);
+                    string channelName = _pimFieldAdapter.GetDisplayName(channelEntity, -1);
 
                     GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
                                                                             {

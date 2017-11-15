@@ -66,7 +66,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return cultureInfo.Select(ci => ci.Name.ToLower()).ToArray();
         }
 
-        public string GetStartDateFromEntity(Entity entity)
+        public string GetStartDate(Entity entity)
         {
             Field startDateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("startdate"));
 
@@ -78,7 +78,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return ((DateTime)startDateField.Data).ToUniversalTime().ToString("u");
         }
 
-        public string GetEndDateFromEntity(Entity entity)
+        public string GetEndDate(Entity entity)
         {
             Field endDateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("enddate"));
 
@@ -99,14 +99,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 value = fieldType.Settings["UseInComparing"];
                 if (!(value.ToLower().Equals("false") || value.ToLower().Equals("true")))
                 {
-                    IntegrationLogger.Write(LogLevel.Error, string.Format("Fieldtype with id {0} has invalid UseInComparing setting", fieldType.Id));
+                    IntegrationLogger.Write(LogLevel.Error, $"Fieldtype with id {fieldType.Id} has invalid UseInComparing setting");
                 }
             }
 
             return value;
         }
 
-        public string GetDisplayNameFromEntity(Entity entity, int maxLength)
+        public string GetDisplayName(Entity entity, int maxLength)
         {
             Field displayNameField = entity.DisplayName;
 
@@ -114,7 +114,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (displayNameField == null || displayNameField.IsEmpty())
             {
-                returnString = string.Format("[{0}]", entity.Id);
+                returnString = $"[{entity.Id}]";
             }
             else if (displayNameField.FieldType.DataType.Equals(DataType.LocaleString))
             {

@@ -89,7 +89,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             catch (Exception ex)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Error while starting connector", ex);
-                ConnectorEventHelper.UpdateEvent(startEvent, "Issue while starting, see log.", 100, true);
+                ConnectorEventHelper.UpdateEvent(startEvent, "Issue while starting connector, see log.", 100, true);
                 throw;
             }
         }
@@ -116,26 +116,26 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public new void InitConfigurationSettings()
         {
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "PUBLISH_FOLDER", @"C:\temp\Publish\Epi");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "PUBLISH_FOLDER_RESOURCES", @"C:\temp\Publish\Epi\Resources");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "RESOURCE_CONFIGURATION", "Preview");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "LANGUAGE_MAPPING", "<languages><language><epi>en</epi><inriver>en-us</inriver></language></languages>");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "ITEM_TO_SKUs", "false");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "CVL_DATA", "Keys|Values|KeysAndValues");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "BUNDLE_ENTITYTYPES", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "PACKAGE_ENTITYTYPES", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "DYNAMIC_PACKAGE_ENTITYTYPES", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "CHANNEL_ID", "123");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "EPI_CODE_FIELDS", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "EXCLUDE_FIELDS", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "EPI_NAME_FIELDS", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "USE_THREE_LEVELS_IN_COMMERCE", "false");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "HTTP_POST_URL", string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiEndpoint, "https://www.example.com/inriverapi/InriverDataImport/");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiApiKey, "SomeGreatKey123");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiTimeout, "1");
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.PublishFolder, ConfigDefaults.PublishFolder);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ResourcesPublishFolder, ConfigDefaults.ResourcesPublishFolder);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ResourceConfiguration, ConfigDefaults.ResourceConfiguration);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.LanguageMapping, ConfigDefaults.LanguageMapping);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ItemToSkus, ConfigDefaults.ItemToSkus);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.CvlData, ConfigDefaults.CvlData);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.BundleTypes, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.PackageTypes, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.DynamicPackageTypes, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ChannelId, "123");
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiCodeFields, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExcludeFields, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiNameFields, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.UseThreeLevelsInCommerce, ConfigDefaults.UseThreeLevelsinCommerce);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.HttpPostUrl, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiEndpoint, ConfigDefaults.EpiEndpoint);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiApiKey, ConfigDefaults.EpiApiKey);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiTimeout, ConfigDefaults.EpiTimeout);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExportEntities, ConfigDefaults.ExportEntities);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, "BATCH_SIZE", string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.BatchSize, string.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ForceIncludeLinkedContent, ConfigDefaults.ForceIncludeLinkedContent);
         }
 
@@ -254,7 +254,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
 
                 ConnectorEventHelper.UpdateEvent(connectorEvent, message, 100);
-                IntegrationLogger.Write(LogLevel.Information, message);
             }
             catch (Exception ex)
             {

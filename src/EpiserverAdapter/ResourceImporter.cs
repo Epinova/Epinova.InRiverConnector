@@ -86,40 +86,41 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private List<ResourceMetaField> GenerateMetaFields(Resource resource)
         {
             List<ResourceMetaField> metaFields = new List<ResourceMetaField>();
-            if (resource.ResourceFields != null)
+            if (resource.ResourceFields == null)
+                return metaFields;
+
+            foreach (var metaField in resource.ResourceFields.MetaField)
             {
-                foreach (MetaField metaField in resource.ResourceFields.MetaField)
+                var resourceMetaField = new ResourceMetaField { Id = metaField.Name.Value };
+                var values = new List<Value>();
+
+                foreach (var data in metaField.Data)
                 {
-                    ResourceMetaField resourceMetaField = new ResourceMetaField { Id = metaField.Name.Value };
-                    List<Value> values = new List<Value>();
-                    foreach (Data data in metaField.Data)
+                    Value value = new Value { Languagecode = data.language };
+                    if (data.Item != null && data.Item.Count > 0)
                     {
-                        Value value = new Value { Languagecode = data.language };
-                        if (data.Item != null && data.Item.Count > 0)
+                        foreach (var item in data.Item)
                         {
-                            foreach (Item item in data.Item)
-                            {
-                                value.Data += item.value + ";";
-                            }
+                            value.Data += item.value + ";";
+                        }
                             
-                            int lastIndexOf = value.Data.LastIndexOf(';');
-                            if (lastIndexOf != -1)
-                            {
-                                value.Data = value.Data.Remove(lastIndexOf);
-                            }
-                        }
-                        else
+                        var lastIndexOf = value.Data.LastIndexOf(';');
+                        if (lastIndexOf != -1)
                         {
-                            value.Data = data.value;    
+                            value.Data = value.Data.Remove(lastIndexOf);
                         }
-                        
-                        values.Add(value);
                     }
-
-                    resourceMetaField.Values = values;
-
-                    metaFields.Add(resourceMetaField);
+                    else
+                    {
+                        value.Data = data.value;    
+                    }
+                        
+                    values.Add(value);
                 }
+
+                resourceMetaField.Values = values;
+
+                metaFields.Add(resourceMetaField);
             }
 
             return metaFields;

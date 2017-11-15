@@ -78,7 +78,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             if (structureEntity.LinkEntityId != null)
             {
-                return linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayNameFromEntity(linkEntity, -1).Replace(' ', '_');
+                return linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayName(linkEntity, -1).Replace(' ', '_');
             }
 
             return structureEntity.LinkTypeIdFromParent;
@@ -236,7 +236,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             string returnString = string.Empty;
             if (nameField == null || nameField.IsEmpty())
             {
-                returnString = _pimFieldAdapter.GetDisplayNameFromEntity(entity, maxLength);
+                returnString = _pimFieldAdapter.GetDisplayName(entity, maxLength);
             }
             else if (nameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
