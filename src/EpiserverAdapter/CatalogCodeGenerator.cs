@@ -64,5 +64,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             return $"{_config.ChannelIdPrefix}{data}";
         }
+
+        public string GetAssociationKey(string entityCode, string parentCode, string associationName)
+        {
+            return $"{entityCode}_{parentCode}_{associationName}";
+        }
     }
 }

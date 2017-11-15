@@ -61,15 +61,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return _addedNodes.Contains(nodeCode);
         }
 
-        public void AddAssociation(XElement association, string associationName)
+        public void AddAssociationKey(string associationKey)
         {
-            Associations.Add(association);
-            _addedAssociations.Add(associationName);
+            _addedAssociations.Add(associationKey);
         }
 
-        public bool HasAssociation(string associationName)
+        public void AddAssociation(XElement association, string associationKey)
         {
-            return _addedAssociations.Contains(associationName);
+            Associations.Add(association);
+            _addedAssociations.Add(associationKey);
+        }
+
+        public bool HasAssociation(string associationKey)
+        {
+            return _addedAssociations.Contains(associationKey);
         }
     }
 }
