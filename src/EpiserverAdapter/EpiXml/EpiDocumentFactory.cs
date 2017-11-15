@@ -185,8 +185,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     XElement codeElement = entryElement.Element("Code");
                     if (codeElement != null && !_epiElementContainer.HasEntry(codeElement.Value))
                     {
-                        _epiElementContainer.Entries.Add(entryElement);
-                        _epiElementContainer.AddEntry(codeElement.Value);
+                        _epiElementContainer.AddEntry(entryElement, codeElement.Value);
                         IntegrationLogger.Write(LogLevel.Debug, $"Added Entity {linkEntity.DisplayName} to Entries");
                     }
                 }
@@ -201,8 +200,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         XElement codeElement = sku.Element("Code");
                         if (codeElement != null && !_epiElementContainer.HasEntry(codeElement.Value))
                         {
-                            _epiElementContainer.Entries.Add(sku);
-                            _epiElementContainer.AddEntry(codeElement.Value);
+                            _epiElementContainer.AddEntry(sku, codeElement.Value);
 
                             IntegrationLogger.Write(LogLevel.Debug, $"Added Item/SKU {sku.Name.LocalName} to Entries");
                         }
@@ -226,8 +224,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         metaFieldsElement?.Add(specificationField);
                     }
 
-                    _epiElementContainer.Entries.Add(element);
-                    _epiElementContainer.AddEntry(codeElement.Value);
+                    _epiElementContainer.AddEntry(element, codeElement.Value);
 
                     IntegrationLogger.Write(LogLevel.Debug, $"Added Entity {entity.Id} to Entries");
                 }
@@ -344,8 +341,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 if (nodeElement == null)
                 {
                     nodeElement = _epiElementFactory.CreateNodeElement(entity, structureEntity.ParentId, linkIndex);
-                    _epiElementContainer.Nodes.Add(nodeElement);
-                    _epiElementContainer.AddNode(currentNodeCode);
+                    _epiElementContainer.AddNode(nodeElement, currentNodeCode);
                     IntegrationLogger.Write(LogLevel.Debug, $"Added channelNode {entity.Id} to Nodes");
                 }
                 else
@@ -371,8 +367,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         continue;
 
                     var nodeRelationElement = _epiElementFactory.CreateNodeRelation(structureEntity.ParentId, entity.Id, linkIndex);
-                    _epiElementContainer.Relations.Add(nodeRelationElement);
-                    _epiElementContainer.AddRelation(relationName);
+
+                    _epiElementContainer.AddRelation(nodeRelationElement, relationName);
 
                     IntegrationLogger.Write(LogLevel.Debug, $"Adding relation to channelNode {entity.Id}");
                 }
@@ -389,8 +385,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             var relationElement = _epiElementFactory.CreateNodeEntryRelation(distinctStructureEntity.ParentId, distinctStructureEntity.EntityId, distinctStructureEntity.SortOrder);
 
-            _epiElementContainer.Relations.Add(relationElement);
-            _epiElementContainer.AddRelation(addedRelationName);
+            _epiElementContainer.AddRelation(relationElement, addedRelationName);
 
             IntegrationLogger.Write(LogLevel.Debug, $"Added Relation for Source {distinctStructureEntity.ParentId} and Target {distinctStructureEntity.EntityId} for LinkTypeId {linkType.Id}");
         }
@@ -480,9 +475,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(parentCode, linkType.SourceEntityTypeId, skuCode, structureEntity.SortOrder);
 
-            _epiElementContainer.Relations.Add(entryRelationElement);
-
-            _epiElementContainer.AddRelation(addedRelationsName);
+            _epiElementContainer.AddRelation(entryRelationElement, addedRelationsName);
 
             IntegrationLogger.Write(LogLevel.Debug, $"Added EntryRelation for {skuCode} to product {parentCode}. Relation name: {addedRelationsName}.");
 
@@ -505,9 +498,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 return;
 
             var relationElement = _epiElementFactory.CreateNodeEntryRelation(parentCode, skuCode, distinctStructureEntity.SortOrder);
-            _epiElementContainer.Relations.Add(relationElement);
 
-            _epiElementContainer.AddRelation(relationName);
+            _epiElementContainer.AddRelation(relationElement, relationName);
 
             IntegrationLogger.Write(LogLevel.Debug, $"Added NodeEntryRelation for EntryCode {skuCode}. Relation name: {relationName}.");
         }
