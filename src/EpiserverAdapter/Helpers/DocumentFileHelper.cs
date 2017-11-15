@@ -29,14 +29,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 Directory.CreateDirectory(path);
             }
 
-            string filePath = Path.Combine(path, "Resources.xml");
+            var filePath = Path.Combine(path, Constants.ResourceExportFilename);
 
             IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath} for channel:{channelIdentifier}");
             doc.Save(filePath);
             return filePath;
         }
 
-        public string SaveDocument(Entity channel, XDocument doc, string folderNameTimestampComponent)
+        public string SaveCatalogDocument(Entity channel, XDocument doc, string folderNameTimestampComponent)
         {
             var dirPath = Path.Combine(_config.PublicationsRootPath, folderNameTimestampComponent);
 
@@ -55,7 +55,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 IntegrationLogger.Write(LogLevel.Error, "Fail to verify the document: ", exception);
             }
 
-            var filePath = Path.Combine(dirPath, Constants.ExportFilename);
+            var filePath = Path.Combine(dirPath, Constants.CatalogExportFilename);
 
             var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
             IntegrationLogger.Write(LogLevel.Information, $"Saving verified document to path {filePath} for channel: {channelIdentifier}");
@@ -64,38 +64,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return filePath;
         }
         
-        public string SaveDocumentAsZip(Entity channel, string filePathToZip, string folderNameTimestampComponent)
-        {
-            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
-
-            var fullZippedFileName = $"inRiverExport_{channelIdentifier}_{DateTime.Now.ToString(folderNameTimestampComponent)}.zip";
-
-            ZipFile(filePathToZip, fullZippedFileName);
-
-            return fullZippedFileName;
-        }
-
-        public void ZipFile(Package zip, FileInfo fi, string destFilename)
-        {
-            Uri uri = PackUriHelper.CreatePartUri(new Uri(destFilename, UriKind.Relative));
-            if (zip.PartExists(uri))
-            {
-                zip.DeletePart(uri);
-            }
-
-            PackagePart part = zip.CreatePart(uri, string.Empty, CompressionOption.Normal);
-            using (FileStream fileStream = new FileStream(fi.FullName, FileMode.Open, FileAccess.Read))
-            {
-                if (part != null)
-                {
-                    using (Stream dest = part.GetStream())
-                    {
-                        CopyStream(fileStream, dest);
-                    }
-                }
-            }
-        }
-
         public static void CopyStream(FileStream inputStream, Stream outputStream)
         {
             const long MaxbuffertSize = 4096;
@@ -107,20 +75,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 outputStream.Write(buffer, 0, bytesRead);
             }
         }
-
-        public void ZipFile(string fileToZip, string zippedFileName)
-        {
-            string path = Path.GetDirectoryName(fileToZip);
-            if (path != null)
-            {
-                using (Package zip = Package.Open(Path.Combine(path, zippedFileName), FileMode.Create))
-                {
-                    string destFilename = ".\\" + Path.GetFileName(fileToZip);
-                    ZipFile(zip, new FileInfo(fileToZip), destFilename);
-                }
-            }
-        }
-
+        
         private XDocument VerifyAndCorrectDocument(XDocument doc)
         {
             var unwantedEntityTypes = CreateUnwantedEntityTypeList();

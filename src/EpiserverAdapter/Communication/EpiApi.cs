@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.Interfaces;
@@ -182,7 +183,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void Import(string filePath)
+        internal void ImportCatalog(string filePath)
         {
             lock (EpiLockObject.Instance)
             {
@@ -200,20 +201,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void ImportResources(string manifest, string baseFilePpath)
+        internal void ImportResources(string resourceDocumentFilePath, string baseFilePath)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
                     var importer = new ResourceImporter(_config, _httpClient);
-                    importer.ImportResources(manifest, baseFilePpath);
+                    importer.ImportResources(resourceDocumentFilePath, baseFilePath);
 
-                    IntegrationLogger.Write(LogLevel.Information, $"Resource file {manifest} imported to Episerver.");
+                    IntegrationLogger.Write(LogLevel.Information, $"Resource file {resourceDocumentFilePath} imported to Episerver.");
                 }
                 catch (Exception exception)
                 {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import resource file {baseFilePpath} to Episerver. Manifest: {manifest}.", exception);
+                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import resource file {resourceDocumentFilePath} to Episerver.", exception);
                     throw;
                 }
             }
@@ -268,22 +269,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         internal void NotifyEpiserverPostImport(string filepath)
         {
             if (string.IsNullOrEmpty(_config.HttpPostUrl))
-            {
                 return;
-            }
 
-            try
+            lock (EpiLockObject.Instance)
             {
-                string uri = _config.HttpPostUrl;
-                using (WebClient client = new WebClient())
-                {
-                    client.UploadFileAsync(new Uri(uri), "POST", @filepath);
-                }
-            }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error, "Exception in SendHttpPost", ex);
-                throw;
+                _httpClient.Post(_config.HttpPostUrl, new { filePath = filepath });
             }
         }
 

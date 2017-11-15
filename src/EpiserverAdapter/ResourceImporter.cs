@@ -23,12 +23,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _httpClient = httpClient;
         }
         
-        public bool ImportResources(string manifest, string baseResourcePath)
+        public bool ImportResources(string resourceXmlFilePath, string baseResourcePath)
         {
-            IntegrationLogger.Write(LogLevel.Information, $"Starting Resource Import. Manifest: {manifest} BaseResourcePath: {baseResourcePath}");
+            IntegrationLogger.Write(LogLevel.Information, $"Starting Resource Import. Manifest: {resourceXmlFilePath} BaseResourcePath: {baseResourcePath}");
             var serializer = new XmlSerializer(typeof(Resources));
             Resources resources;
-            using (var reader = XmlReader.Create(manifest))
+            using (var reader = XmlReader.Create(resourceXmlFilePath))
             {
                 resources = (Resources)serializer.Deserialize(reader);
             }

@@ -40,44 +40,36 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
         {
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Generating catalog.xml...", 11);
             var epiElements = _epiDocumentFactory.GetEPiElements(structureEntities);
+            
+            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
+            var folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
 
             var doc = _epiDocumentFactory.CreateImportDocument(channel, null, null, epiElements);
-
-            string channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
-
-            string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
-
-            string zippedfileName = _documentFileHelper.SaveAndZipDocument(channel, doc, folderDateTime);
+            var savedCatalogDocument = _documentFileHelper.SaveCatalogDocument(channel, doc, folderDateTime);
 
             LogSaveStatement(epiElements);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating catalog.xml. Generating Resource.xml and saving files to disk...", 26);
 
-            var resourceDocument = _resourceElementFactory.GetResourcesNodeForChannelEntities(structureEntities, folderDateTime);
-            _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, folderDateTime);
-
-            string zipFileName = $"resource_{folderDateTime}.zip";
-            var fileToZip = Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, "Resources.xml");
-
-            _documentFileHelper.ZipFile(fileToZip, zipFileName);
+            var resourcesBasePath = Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime);
+            var resourceDocument = _resourceElementFactory.GetResourcesNodeForChannelEntities(structureEntities, resourcesBasePath);
+            var resourceDocumentPath = _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, resourcesBasePath);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating/saving Resource.xml, sending Catalog.xml to EPiServer...", 50);
 
-            var filePath = Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, Constants.ExportFilename);
-
-            _epiApi.Import(filePath);
+            _epiApi.ImportCatalog(savedCatalogDocument);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.PostFilePath(Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, zippedfileName));
+            _epiApi.NotifyEpiserverPostImport(Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, savedCatalogDocument));
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Sending Resources to EPiServer...", 76);
 
-            _epiApi.ImportResources(fileToZip, Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime));
+            _epiApi.ImportResources(resourceDocumentPath, resourcesBasePath);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Resources to EPiServer...", 99);
 
-            _epiApi.PostFilePath(Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, zipFileName));
+            _epiApi.NotifyEpiserverPostImport(resourceDocumentPath);
         }
 
         private static void LogSaveStatement(CatalogElementContainer epiElements)

@@ -75,8 +75,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             
             var folderNameTimestampComponent = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
 
-            var filePath = _documentFileHelper.SaveDocument(channel, doc, folderNameTimestampComponent);
-            var zippedFilePath = _documentFileHelper.SaveDocumentAsZip(channel, filePath, folderNameTimestampComponent);
+            var filePath = _documentFileHelper.SaveCatalogDocument(channel, doc, folderNameTimestampComponent);
 
             IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
                                                           $"Nodes: {epiElements.Nodes.Count}. " +
@@ -86,37 +85,30 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done generating catalog.xml. Generating Resource.xml and saving files to disk...", 26);
 
-            var resources = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channel.Id.ToString(), "Resource");
-            var resourceDocument = _resourceElementFactory.GetResourcesNodeForChannelEntities(resources, folderNameTimestampComponent);
+            var resourceEntities = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channel.Id.ToString(), "Resource");
 
-            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
             var resourceXmlFolder = Path.Combine(_config.ResourcesRootPath, folderNameTimestampComponent);
+            var resourceDocument = _resourceElementFactory.GetResourcesNodeForChannelEntities(resourceEntities, resourceXmlFolder);
+            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
             var savedResourceDocument = _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, resourceXmlFolder);
-
-            var resourceZipFile = $"resource_{folderNameTimestampComponent}.zip";
-           
-            _documentFileHelper.ZipFile(savedResourceDocument, resourceZipFile);
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done generating/saving Resource.xml. Sending Catalog.xml to EPiServer...", 51);
 
-            var catalogImportFilePath = Path.Combine(_config.PublicationsRootPath, folderNameTimestampComponent, Constants.ExportFilename);
-
-            _epiApi.Import(catalogImportFilePath);
+            _epiApi.ImportCatalog(filePath);
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.PostFilePath(Path.Combine(_config.PublicationsRootPath, folderNameTimestampComponent, zippedFilePath));
+            _epiApi.NotifyEpiserverPostImport(filePath);
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Sending Resources to EPiServer...", 76);
 
             var baseFilePpath = Path.Combine(_config.ResourcesRootPath, folderNameTimestampComponent);
+
             _epiApi.ImportResources(savedResourceDocument, baseFilePpath);
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Done sending resources to EPiServer...", 99);
-
-            var resourceZipFilePath = Path.Combine(_config.ResourcesRootPath, folderNameTimestampComponent, resourceZipFile);
-            
-            _epiApi.PostFilePath(resourceZipFilePath);
+           
+            _epiApi.NotifyEpiserverPostImport(savedResourceDocument);
 
             var channelName = _mappingHelper.GetNameForEntity(channel, 100);
 
@@ -165,7 +157,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var updatedEntity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataAndLinks);
 
-            string folderDateTime = DateTime.Now.ToString("yyyyMMdd-HHmmss.fff");
+            string folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
 
             bool resourceIncluded = false;
             
@@ -198,12 +190,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         _epiApi.UpdateLinkEntityData(updatedEntity, channel, links.First().Source.Id);
                 }
 
-                string zippedName = _documentFileHelper.SaveDocument(channel, doc, folderDateTime);
+                string catalogDocumentName = _documentFileHelper.SaveCatalogDocument(channel, doc, folderDateTime);
 
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-                _epiApi.Import(Path.Combine(_config.PublicationsRootPath, folderDateTime, "Catalog.xml"));
-                _epiApi.PostFilePath(Path.Combine(_config.PublicationsRootPath, folderDateTime, zippedName));
+                _epiApi.ImportCatalog(catalogDocumentName);
+                _epiApi.NotifyEpiserverPostImport(catalogDocumentName);
             }
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
@@ -380,19 +372,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime, Entity channel)
         {
             var resourceIncluded = false;
-            string channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
-
-            var resDoc = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
-            _documentFileHelper.SaveDocument(channelIdentifier, resDoc, folderDateTime);
-
-            string resourceZipFile = $"resource_{folderDateTime}.zip";
-
-            _documentFileHelper.ZipFile(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), resourceZipFile);
-
+            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
+            var resourceDocument = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
+            _documentFileHelper.SaveDocument(channelIdentifier, resourceDocument, folderDateTime);
+            
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
 
-            _epiApi.ImportResources(Path.Combine(_config.ResourcesRootPath, folderDateTime, "Resources.xml"), Path.Combine(_config.ResourcesRootPath, folderDateTime));
-            _epiApi.PostFilePath(Path.Combine(_config.ResourcesRootPath, folderDateTime, resourceZipFile));
+            var baseFilePath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
+            var resourceXmlPath = Path.Combine(baseFilePath, "Resources.xml");
+
+            _epiApi.ImportResources(resourceXmlPath, baseFilePath);
+
+            _epiApi.NotifyEpiserverPostImport(resourceXmlPath);
             resourceIncluded = true;
 
             return resourceIncluded;

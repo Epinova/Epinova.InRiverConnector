@@ -38,8 +38,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         public XElement CreateResourceElement(Entity resource, string action)
         {
             var allResourceStructureEntities = _entityService.GetAllStructureEntitiesInChannel("Resource");
-            IntegrationLogger.Write(LogLevel.Debug, $"{allResourceStructureEntities.Count} resource entities found.");
-            
+            IntegrationLogger.Write(LogLevel.Debug, $"Creating resource element for resource ID {resource.Id} resource entities found.");
+
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
             
             var allResourceLocations = allResourceStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
@@ -112,7 +112,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return parent.Value != null && parent.Value.ToString().Equals(resourceFileId);
         }
 
-        public XDocument GetResourcesNodeForChannelEntities(List<StructureEntity> channelEntities, string folderDateTime)
+        public XDocument GetResourcesNodeForChannelEntities(List<StructureEntity> channelEntities, string resourcesBasePath)
         {
             XDocument resourceDocument = new XDocument();
             try
@@ -134,7 +134,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 List<Entity> resources = RemoteManager.DataService.GetEntities(resourceIds, LoadLevel.DataAndLinks);
                 foreach (Entity res in resources)
                 {
-                    SaveFileToDisk(res, folderDateTime);
+                    SaveFileToDisk(res, resourcesBasePath);
                 }
 
                 resourceDocument = CreateResourceDocument(resources, resources, ImporterActions.Added, true);
@@ -180,12 +180,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                         resources.Select(res => CreateResourceElement(res, action)))));
         }
 
-        internal bool SaveFileToDisk(Entity resource, string folderDateTime)
+        internal bool SaveFileToDisk(Entity resource, string resourcesBasePath)
         {
             try
             {
-                var stopwatch = Stopwatch.StartNew();
-                
                 int resourceFileId = GetResourceFileId(resource);
                 if (resourceFileId < 0)
                 {
@@ -204,17 +202,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                     var fileName = GetResourceFileName(resource, resourceFileId, displayConfiguration);
 
-                    string folder = GetFolderName(displayConfiguration, resource);
-                    string dir = Path.Combine(_config.ResourcesRootPath, folderDateTime, folder);
+                    var folder = GetFolderName(displayConfiguration, resource);
+                    var dir = Path.Combine(resourcesBasePath, folder);
 
                     if (!Directory.Exists(dir))
                     {
                         Directory.CreateDirectory(dir);
                     }
-                    
-                    File.WriteAllBytes(Path.Combine(dir, fileName), resourceData);
-                    stopwatch.Stop();
-                    IntegrationLogger.Write(LogLevel.Debug, $"Saving Resource {resource.Id} to {fileName} took {stopwatch.GetElapsedTimeFormated()}");
+
+                    var fullFilePath = Path.Combine(dir, fileName);
+
+                    File.WriteAllBytes(fullFilePath, resourceData);
+                    IntegrationLogger.Write(LogLevel.Debug, $"Saving Resource {resource.Id} to {fullFilePath}.");
                 }
             }
             catch (Exception ex)
