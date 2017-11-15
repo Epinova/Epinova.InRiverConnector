@@ -62,13 +62,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _documentFileHelper.ZipFile(fileToZip, zipFileName);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating/saving Resource.xml, sending Catalog.xml to EPiServer...", 50);
-            IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
             var filePath = Path.Combine(_connectorConfig.PublicationsRootPath, folderDateTime, Constants.ExportFilename);
 
-            var channelGuid = _channelHelper.GetChannelGuid(channel);
-
-            _epiApi.Import(filePath, channelGuid);
+            _epiApi.Import(filePath);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Catalog.xml to EPiServer", 75);
 

@@ -19,25 +19,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         private readonly EpiElementFactory _epiElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
-        private readonly ChannelHelper _channelHelper;
         private readonly IConfiguration _config;
+        private readonly IEntityService _entityService;
 
         public ResourceElementFactory(EpiElementFactory epiElementFactory, 
                                       EpiMappingHelper mappingHelper, 
                                       CatalogCodeGenerator catalogCodeGenerator, 
-                                      ChannelHelper channelHelper,
-                                      IConfiguration config)
+                                      IConfiguration config,
+                                      IEntityService entityService)
         {
             _epiElementFactory = epiElementFactory;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
-            _channelHelper = channelHelper;
             _config = config;
+            _entityService = entityService;
         }
 
         public XElement CreateResourceElement(Entity resource, string action)
         {
-            var allResourceStructureEntities = _channelHelper.GetAllStructureEntitiesInChannel("Resource");
+            var allResourceStructureEntities = _entityService.GetAllStructureEntitiesInChannel("Resource");
             IntegrationLogger.Write(LogLevel.Debug, $"{allResourceStructureEntities.Count} resource entities found.");
             
             Dictionary<string, int?> parents = new Dictionary<string, int?>();

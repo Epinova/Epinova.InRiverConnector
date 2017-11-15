@@ -31,6 +31,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private CatalogCodeGenerator _catalogCodeGenerator;
         private ChannelPublisher _publisher;
         private PimFieldAdapter _pimFieldAdapter;
+        private EntityService _entityService;
 
         public new void Start()
         {
@@ -48,17 +49,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     ConnectorEventHelper.UpdateEvent(startEvent, "Channel id is not valid: Entity with given ID is not a channel, or doesn't exist. Unable to start", -1, true);
                     return;
                 }
-
-                var entityService = new EntityService();
-
-                _catalogCodeGenerator = new CatalogCodeGenerator(_config, entityService);
+                
                 _pimFieldAdapter = new PimFieldAdapter(_config);
                 _epiMappingHelper = new EpiMappingHelper(_config, _pimFieldAdapter);
+                _entityService = new EntityService(_config, _epiMappingHelper);
+                _catalogCodeGenerator = new CatalogCodeGenerator(_config, _entityService);
                 _epiApi = new EpiApi(_config, _catalogCodeGenerator, _pimFieldAdapter);
                 _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
                 _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _catalogCodeGenerator);
                 _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
-                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _channelHelper, _config);
+                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
                 
                 var documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
                 _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper, documentFileHelper);
@@ -75,7 +75,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _addUtility,
                                                   _deleteUtility,
                                                   documentFileHelper,
-                                                  _pimFieldAdapter);
+                                                  _pimFieldAdapter,
+                                                  _entityService);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 

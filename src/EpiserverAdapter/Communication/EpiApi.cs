@@ -182,13 +182,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void Import(string filePath, Guid guid)
+        internal void Import(string filePath)
         {
             lock (EpiLockObject.Instance)
             {
                 try
                 {
-                    string result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml, filePath);
+                    var result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml, filePath);
 
                     IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
                 }
@@ -265,7 +265,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void PostFilePath(string filepath)
+        internal void NotifyEpiserverPostImport(string filepath)
         {
             if (string.IsNullOrEmpty(_config.HttpPostUrl))
             {

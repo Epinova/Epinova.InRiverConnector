@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using inRiver.Integration.Logging;
 using inRiver.Integration.Reporting;
 using inRiver.Remoting;
 using inRiver.Remoting.Connect;
+using inRiver.Remoting.Log;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
@@ -11,6 +13,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     {
         internal static ConnectorEvent InitiateEvent(IConfiguration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
         {
+            IntegrationLogger.Write(LogLevel.Debug, message);
+
             ConnectorEvent connectorEvent = new ConnectorEvent
             {
                 ChannelId = config.ChannelId,
@@ -29,6 +33,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         internal static ConnectorEvent UpdateEvent(ConnectorEvent connectorEvent, string message, int percentage, bool error = false)
         {
+            IntegrationLogger.Write(LogLevel.Debug, message);
+
             if (percentage >= 0)
             {
                 connectorEvent.Percentage = percentage;

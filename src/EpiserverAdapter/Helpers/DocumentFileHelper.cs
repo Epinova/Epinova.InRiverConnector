@@ -22,24 +22,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _channelHelper = channelHelper;
         }
 
-        public void SaveDocument(string channelIdentifier, XDocument doc, string folderDateTime)
+        public string SaveDocument(string channelIdentifier, XDocument doc, string path)
         {
-            string dirPath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
-            if (!Directory.Exists(dirPath))
+            if (!Directory.Exists(path))
             {
-                Directory.CreateDirectory(dirPath);
+                Directory.CreateDirectory(path);
             }
 
-            string filePath = Path.Combine(dirPath, "Resources.xml");
+            string filePath = Path.Combine(path, "Resources.xml");
 
             IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath} for channel:{channelIdentifier}");
             doc.Save(filePath);
+            return filePath;
         }
 
-        public string SaveAndZipDocument(Entity channel, XDocument doc, string folderName)
+        public string SaveDocument(Entity channel, XDocument doc, string folderNameTimestampComponent)
         {
-            string dirPath = Path.Combine(_config.PublicationsRootPath, folderName);
-            
+            var dirPath = Path.Combine(_config.PublicationsRootPath, folderNameTimestampComponent);
+
             if (!Directory.Exists(dirPath))
             {
                 Directory.CreateDirectory(dirPath);
@@ -55,15 +55,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 IntegrationLogger.Write(LogLevel.Error, "Fail to verify the document: ", exception);
             }
 
-            string filePath = Path.Combine(dirPath, Constants.ExportFilename);
+            var filePath = Path.Combine(dirPath, Constants.ExportFilename);
 
             var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
             IntegrationLogger.Write(LogLevel.Information, $"Saving verified document to path {filePath} for channel: {channelIdentifier}");
-            
-            doc.Save(filePath);
-            string fullZippedFileName = $"inRiverExport_{channelIdentifier}_{DateTime.Now.ToString("yyyyMMdd-HHmmss")}.zip";
 
-            ZipFile(filePath, fullZippedFileName);
+            doc.Save(filePath);
+            return filePath;
+        }
+        
+        public string SaveDocumentAsZip(Entity channel, string filePathToZip, string folderNameTimestampComponent)
+        {
+            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
+
+            var fullZippedFileName = $"inRiverExport_{channelIdentifier}_{DateTime.Now.ToString(folderNameTimestampComponent)}.zip";
+
+            ZipFile(filePathToZip, fullZippedFileName);
 
             return fullZippedFileName;
         }
@@ -125,31 +132,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             var entryElements = root.Descendants("Entry");
-            List<string> codesToBeRemoved = new List<string>();
+            var codesToBeRemoved = new List<string>();
             foreach (XElement entryElement in entryElements)
             {
-                string code = entryElement.Elements("Code").First().Value;
-                string metaClassName =
-                    entryElement.Elements("MetaData").Elements("MetaClass").Elements("Name").First().Value;
+                var code = entryElement.Elements("Code").First().Value;
+                var metaClassName = entryElement.Elements("MetaData")
+                                                .Elements("MetaClass")
+                                                .Elements("Name")
+                                                .First().Value;
 
-                if (unwantedEntityTypes.Contains(metaClassName))
-                {
-                    IntegrationLogger.Write(
-                        LogLevel.Debug,
-                        string.Format("Code {0} will be removed as it has wrong metaclass name ({1})", code, metaClassName));
-                    codesToBeRemoved.Add(code);
-                }
+                if (!unwantedEntityTypes.Contains(metaClassName))
+                    continue;
+
+                IntegrationLogger.Write(LogLevel.Debug, $"Code {code} will be removed as it has wrong metaclass name ({metaClassName})");
+                codesToBeRemoved.Add(code);
             }
 
-            foreach (string code in codesToBeRemoved)
+            foreach (var code in codesToBeRemoved)
             {
-                string theCode = code;
-                root.Descendants("Entry").Where(
-                    e =>
-                        {
-                            XElement codeElement = e.Element("Code");
-                            return codeElement != null && codeElement.Value == theCode;
-                        }).Remove();
+                root.Descendants("Entry").Where(x => x.Element("Code")?.Value == code).Remove();
             }
 
             return result;
@@ -166,6 +167,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                                            "Section",
                                            "Publication"
                                        };
+
             List<string> result = new List<string>();
             foreach (string typeId in typeIds)
             {
@@ -182,7 +184,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
                 foreach (FieldSet fieldSet in fieldSets)
                 {
-                    string value = string.Format("{0}_{1}", typeId, fieldSet.Id);
+                    string value = $"{typeId}_{fieldSet.Id}";
                     if (!result.Contains(value))
                     {
                         result.Add(value);

@@ -1,9 +1,17 @@
-﻿using inRiver.Remoting.Objects;
+﻿using System.Collections.Generic;
+using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public interface IEntityService
     {
         Entity GetEntity(int id, LoadLevel loadLevel);
+        List<StructureEntity> GetAllStructureEntitiesInChannel(List<EntityType> entityTypes);
+        List<StructureEntity> GetAllStructureEntitiesInChannel(string type);
+        List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId);
+        string GetTargetEntityPath(int targetEntityId, List<StructureEntity> channelEntities, int? parentId = null);
+        List<StructureEntity> GetChildrenEntitiesInChannel(int entityId, string path);
+        List<StructureEntity> GetStructureEntitiesForEntityInChannel(int channelId, int entityId);
+        StructureEntity GetParentStructureEntity(int channelId, int sourceEntityId, int targetEntityId, List<StructureEntity> channelEntities);
     }
 }
