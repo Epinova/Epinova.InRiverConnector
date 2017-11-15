@@ -445,16 +445,46 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
                 else
                 {
+                    if (_config.ForceIncludeLinkedContent)
+                    {
+                        AddMissingParentRelation(addedRelations, epiElements, structureEntity, skuId);
+                    }
                     AddAssociationElements(epiElements, linkType, distinctStructureEntity, structureEntity, skuId);
                 }
             }
         }
 
+        /// <summary>
+        /// Items included only as upsell/accessories etc might not have their parent products/bundles in the channel. 
+        /// Add them if you're force including linked content.
+        /// </summary>
+        private void AddMissingParentRelation(List<string> addedRelations, 
+                                              Dictionary<string, List<XElement>> epiElements, 
+                                              StructureEntity structureEntity,
+                                              string skuId)
+        {
+            var parentProduct = _channelHelper.GetParentProduct(structureEntity);
+            if (parentProduct == null)
+                return;
+
+            var parentCode = _catalogCodeGenerator.GetEpiserverCode(parentProduct);
+            var hasParent = epiElements["Entries"].Any(x => x.Element("Code").Value == parentCode);
+
+            if (!hasParent)
+            {
+                IntegrationLogger.Write(LogLevel.Debug, $"Could not find parent for {skuId}, adding it to the list. Parent is {parentCode}.");
+                var missingParent = _epiElementFactory.InRiverEntityToEpiEntry(parentProduct);
+                epiElements["Entries"].Add(missingParent);
+            }
+
+            AddEntryRelationElement(structureEntity, skuId, addedRelations, epiElements, new LinkType());
+        }
+
         private void AddEntryRelationElement(StructureEntity structureEntity, 
-                                          string skuCode, 
-                                          List<string> addedRelations,
-                                          Dictionary<string, List<XElement>> epiElements,
-                                          LinkType linkType)
+                                             string skuCode, 
+                                             List<string> addedRelations,
+                                             Dictionary<string, List<XElement>> epiElements,
+                                             LinkType linkType)
         {
             var parentProduct = _channelHelper.GetParentProduct(structureEntity);
             if (parentProduct == null)
