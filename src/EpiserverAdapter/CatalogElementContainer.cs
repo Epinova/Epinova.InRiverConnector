@@ -38,14 +38,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return _addedRelations.Contains(relationName);
         }
 
-        public void AddEntity(string entityCode)
+        public void AddEntry(string entityCode)
         {
             _addedEntities.Add(entityCode);
         }
 
-        public bool HasEntry(string relationName)
+        public bool HasEntry(string entryCode)
         {
-            return _addedEntities.Contains(relationName);
+            return _addedEntities.Contains(entryCode);
         }
 
         public void AddNode(string nodeCode)

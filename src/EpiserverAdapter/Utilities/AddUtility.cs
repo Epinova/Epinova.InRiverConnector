@@ -83,13 +83,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Utilities
             _epiApi.PostFilePath(Path.Combine(_connectorConfig.ResourcesRootPath, folderDateTime, zipFileName));
         }
 
-        private static void LogSaveStatement(Dictionary<string, List<XElement>> epiElements)
+        private static void LogSaveStatement(CatalogElementContainer epiElements)
         {
             IntegrationLogger.Write(LogLevel.Information, "Catalog saved with the following:");
-            IntegrationLogger.Write(LogLevel.Information, $"Nodes: {epiElements["Nodes"].Count}");
-            IntegrationLogger.Write(LogLevel.Information, $"Entries: {epiElements["Entries"].Count}");
-            IntegrationLogger.Write(LogLevel.Information, $"Relations: {epiElements["Relations"].Count}");
-            IntegrationLogger.Write(LogLevel.Information, $"Associations: {epiElements["Associations"].Count}");
+            IntegrationLogger.Write(LogLevel.Information, $"Nodes: {epiElements.Nodes.Count}");
+            IntegrationLogger.Write(LogLevel.Information, $"Entries: {epiElements.Entries.Count}");
+            IntegrationLogger.Write(LogLevel.Information, $"Relations: {epiElements.Relations.Count}");
+            IntegrationLogger.Write(LogLevel.Information, $"Associations: {epiElements.Associations.Count}");
         }
     }
 }
