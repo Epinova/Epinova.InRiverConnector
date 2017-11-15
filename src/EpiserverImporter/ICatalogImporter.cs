@@ -12,7 +12,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         void DeleteCatalogNode(string code);
 
-        void CheckAndMoveNodeIfNeeded(string catalogNodeId);
+        void MoveNodeToRootIfNeeded(string catalogNodeId);
 
         void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData);
 

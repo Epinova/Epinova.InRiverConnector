@@ -64,11 +64,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public void CheckAndMoveNodeIfNeeded([FromBody] string catalogNodeId)
+        public void MoveNodeToRootIfNeeded([FromBody] string catalogNodeId)
         {
-            _logger.Debug("CheckAndMoveNodeIfNeeded");
+            _logger.Debug("MoveNodeToRootIfNeeded");
 
-            _catalogImporter.CheckAndMoveNodeIfNeeded(catalogNodeId);
+            _catalogImporter.MoveNodeToRootIfNeeded(catalogNodeId);
         }
 
         [HttpPost]

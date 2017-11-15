@@ -9,14 +9,9 @@ using Epinova.InRiverConnector.Interfaces;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.Catalog.Linking;
-using EPiServer.Commerce.SpecializedProperties;
-using EPiServer.Core;
-using EPiServer.DataAbstraction;
-using EPiServer.DataAccess;
 using EPiServer.Logging;
 using EPiServer.Security;
 using EPiServer.ServiceLocation;
-using Mediachase.Commerce.Assets;
 using Mediachase.Commerce.Catalog;
 using Mediachase.Commerce.Catalog.Dto;
 using Mediachase.Commerce.Catalog.ImportExport;
@@ -162,12 +157,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             return nodeRelations.Count() == 1;
         }
 
-        public void CheckAndMoveNodeIfNeeded(string catalogNodeId)
+        public void MoveNodeToRootIfNeeded(string catalogNodeId)
         {
             CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(catalogNodeId);
             if (nodeDto.CatalogNode.Count > 0)
             {
-                // Node exists
                 if (nodeDto.CatalogNode[0].ParentNodeId != 0)
                 {
                     MoveNode(nodeDto.CatalogNode[0].Code, 0);

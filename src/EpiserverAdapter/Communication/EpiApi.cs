@@ -167,7 +167,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void CheckAndMoveNodeIfNeeded(int entityId)
+        internal void MoveNodeToRootIfNeeded(int entityId)
         {
             lock (EpiLockObject.Instance)
             {

@@ -317,9 +317,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             {
                 var entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
 
-                if (_config.ChannelId.Equals(structureEntity.ParentId))
+                if (_config.ChannelId == structureEntity.ParentId)
                 {
-                    _epiApi.CheckAndMoveNodeIfNeeded(entity.Id);
+                    _epiApi.MoveNodeToRootIfNeeded(entity.Id);
                 }
 
                 IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entity.Id} to Nodes");

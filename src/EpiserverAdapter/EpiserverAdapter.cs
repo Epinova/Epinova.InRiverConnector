@@ -262,6 +262,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
+        public void CVLValueCreated(string cvlId, string cvlValueKey)
+        {
+        }
+
+        public void CVLValueUpdated(string cvlId, string cvlValueKey)
+        {
+            // TODO: Search all entities with this CVL and cvlValueKey, and pass on updates to episerver
+        }
+
+        public void CVLValueDeleted(string cvlId, string cvlValueKey)
+        {
+        }
+
+        public void CVLValueDeletedAll(string cvlId)
+        {
+        }
+
         private Assembly CurrentDomainAssemblyResolve(object sender, ResolveEventArgs args)
         {
             string folderPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
@@ -288,23 +305,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             Assembly assembly = Assembly.LoadFrom(assemblyPath);
             return assembly;
-        }
-
-        public void CVLValueCreated(string cvlId, string cvlValueKey)
-        {
-        }
-
-        public void CVLValueUpdated(string cvlId, string cvlValueKey)
-        {
-            // TODO: Search all entities with this CVL and cvlValueKey, and pass on updates to episerver
-        }
-
-        public void CVLValueDeleted(string cvlId, string cvlValueKey)
-        {
-        }
-
-        public void CVLValueDeletedAll(string cvlId)
-        {
         }
     }
 }
