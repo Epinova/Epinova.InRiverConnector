@@ -165,7 +165,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                
         private void AddEntryElements(List<StructureEntity> batch)
         {
-            foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId))
+            foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId && !x.IsChannelNode()))
             {
                 if (structureEntity.LinkEntityId.HasValue)
                 {
