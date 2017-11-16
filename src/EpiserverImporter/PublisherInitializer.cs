@@ -1,7 +1,4 @@
-﻿using System.Linq;
-using System.Web.Http;
-using System.Web.Http.ExceptionHandling;
-using System.Web.Mvc;
+﻿using System.Web.Http;
 using EPiServer.Framework;
 using EPiServer.Framework.Initialization;
 using EPiServer.ServiceLocation;
@@ -10,7 +7,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 {
     [InitializableModule]
     [ModuleDependency(typeof(EPiServer.Web.InitializationModule))]
-    public class PublisherInitializer : IInitializableModule, IConfigurableModule
+    public class PublisherInitializer : IConfigurableModule
     {
         /// <summary>
         /// Initializate the inRiver Web API.

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Xml.Linq;
-using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
+using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
@@ -16,14 +16,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     public class ChannelHelper
     {
         private readonly IConfiguration _config;
-        private readonly EpiElementFactory _epiElementFactory;
+        private readonly CatalogElementFactory _catalogElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
-        public ChannelHelper(IConfiguration config, EpiElementFactory epiElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
+        public ChannelHelper(IConfiguration config, CatalogElementFactory catalogElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
-            _epiElementFactory = epiElementFactory;
+            _catalogElementFactory = catalogElementFactory;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
         }
@@ -151,7 +151,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (parentEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
             {
-                var parents = _epiElementFactory.SkuItemIds(parentEntity);
+                var parents = _catalogElementFactory.SkuItemIds(parentEntity);
                 elements.AddRange(parents.Select(parent => new XElement("parent", _catalogCodeGenerator.GetPrefixedCode(parent))));
             }
             else

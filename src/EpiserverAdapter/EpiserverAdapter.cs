@@ -2,8 +2,8 @@
 using System.IO;
 using System.Reflection;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
-using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
 using inRiver.Integration.Configuration;
 using inRiver.Integration.Export;
 using inRiver.Integration.Interface;
@@ -20,8 +20,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private bool _started;
         private IConfiguration _config;
         private EpiApi _epiApi;
-        private EpiElementFactory _epiElementFactory;
-        private EpiDocumentFactory _epiDocumentFactory;
+        private CatalogElementFactory _catalogElementFactory;
+        private CatalogDocumentFactory _catalogDocumentFactory;
         private ChannelHelper _channelHelper;
         private ResourceElementFactory _resourceElementFactory;
         private EpiMappingHelper _epiMappingHelper;
@@ -54,17 +54,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _entityService = new EntityService(_config, _epiMappingHelper);
                 _catalogCodeGenerator = new CatalogCodeGenerator(_config, _entityService);
                 _epiApi = new EpiApi(_config, _catalogCodeGenerator, _pimFieldAdapter);
-                _epiElementFactory = new EpiElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
-                _channelHelper = new ChannelHelper(_config, _epiElementFactory, _epiMappingHelper, _catalogCodeGenerator);
-                _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
-                _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
+                _catalogElementFactory = new CatalogElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
+                _channelHelper = new ChannelHelper(_config, _catalogElementFactory, _epiMappingHelper, _catalogCodeGenerator);
+                _catalogDocumentFactory = new CatalogDocumentFactory(_config, _epiApi, _catalogElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
+                _resourceElementFactory = new ResourceElementFactory(_catalogElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
                 
                 _documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
-                _cvlUpdater = new CvlUpdater(_config, _epiDocumentFactory, _epiApi, _documentFileHelper);
+                _cvlUpdater = new CvlUpdater(_config, _catalogDocumentFactory, _epiApi, _documentFileHelper);
 
                 _publisher = new ChannelPublisher(_config, 
-                                                  _epiDocumentFactory, 
-                                                  _epiElementFactory,
+                                                  _catalogDocumentFactory, 
+                                                  _catalogElementFactory,
                                                   _resourceElementFactory, 
                                                   _epiApi,
                                                   _epiMappingHelper, 
@@ -95,8 +95,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Stop, "Connector is stopping", 0);
             _started = false;
             _epiApi = null;
-            _epiElementFactory = null;
-            _epiDocumentFactory = null;
+            _catalogElementFactory = null;
+            _catalogDocumentFactory = null;
             _channelHelper = null;
             _resourceElementFactory = null;
             _epiMappingHelper = null;

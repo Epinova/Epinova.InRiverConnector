@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
-using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Connect;
@@ -17,17 +17,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
     public class CvlUpdater
     {
         private readonly IConfiguration _config;
-        private readonly EpiDocumentFactory _epiDocumentFactory;
+        private readonly CatalogDocumentFactory _catalogDocumentFactory;
         private readonly EpiApi _epiApi;
         private readonly DocumentFileHelper _documentFileHelper;
 
         public CvlUpdater(IConfiguration config, 
-                          EpiDocumentFactory epiDocumentFactory, 
+                          CatalogDocumentFactory catalogDocumentFactory, 
                           EpiApi epiApi,
                           DocumentFileHelper documentFileHelper)
         {
             _config = config;
-            _epiDocumentFactory = epiDocumentFactory;
+            _catalogDocumentFactory = catalogDocumentFactory;
             _epiApi = epiApi;
             _documentFileHelper = documentFileHelper;
         }
@@ -51,7 +51,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var entities = RemoteManager.DataService.Search(query, LoadLevel.DataOnly);
             IntegrationLogger.Write(LogLevel.Debug, $"Found {entities.Count} entities with the CVL {cvlId} to update. Value-key to update: {cvlValueKey}.");
 
-            var updateDocument = _epiDocumentFactory.CreateUpdateDocument(channel, entities);
+            var updateDocument = _catalogDocumentFactory.CreateUpdateDocument(channel, entities);
             var folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
 
             var savedCatalogDocument = _documentFileHelper.SaveCatalogDocument(channel, updateDocument, folderDateTime);

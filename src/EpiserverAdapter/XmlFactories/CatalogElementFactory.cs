@@ -9,16 +9,16 @@ using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
+namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 {
-    public class EpiElementFactory
+    public class CatalogElementFactory
     {
         private readonly IConfiguration _config;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly PimFieldAdapter _pimFieldAdapter;
 
-        public EpiElementFactory(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, PimFieldAdapter pimFieldAdapter)
+        public CatalogElementFactory(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, PimFieldAdapter pimFieldAdapter)
         {
             _config = config;
             _mappingHelper = mappingHelper;

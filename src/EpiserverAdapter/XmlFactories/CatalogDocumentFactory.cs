@@ -9,29 +9,29 @@ using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
+namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 {
-    public class EpiDocumentFactory
+    public class CatalogDocumentFactory
     {
         private readonly IConfiguration _config;
         private readonly EpiApi _epiApi;
-        private readonly EpiElementFactory _epiElementFactory;
+        private readonly CatalogElementFactory _catalogElementFactory;
         private readonly EpiMappingHelper _epiMappingHelper;
         private readonly ChannelHelper _channelHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         
         private CatalogElementContainer _epiElementContainer;
 
-        public EpiDocumentFactory(IConfiguration config, 
+        public CatalogDocumentFactory(IConfiguration config, 
                                   EpiApi epiApi, 
-                                  EpiElementFactory epiElementFactory, 
+                                  CatalogElementFactory catalogElementFactory, 
                                   EpiMappingHelper epiMappingHelper, 
                                   ChannelHelper channelHelper,
                                   CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _epiApi = epiApi;
-            _epiElementFactory = epiElementFactory;
+            _catalogElementFactory = catalogElementFactory;
             _epiMappingHelper = epiMappingHelper;
             _channelHelper = channelHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
@@ -39,7 +39,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XDocument CreateImportDocument(Entity channelEntity, XElement metaClasses, XElement associationTypes, CatalogElementContainer epiElements)
         {
-            var catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
+            var catalogElement = _catalogElementFactory.CreateCatalogElement(channelEntity);
 
             var baseElements = CreateBaseCatalogDocumentNodes(channelEntity, epiElements.Nodes, epiElements.Entries, epiElements.Relations, epiElements.Associations);
 
@@ -50,9 +50,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XDocument CreateUpdateDocument(Entity channelEntity, List<Entity> updatedEntity)
         {
-            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
+            XElement catalogElement = _catalogElementFactory.CreateCatalogElement(channelEntity);
 
-            var entries = updatedEntity.Select(_epiElementFactory.InRiverEntityToEpiEntry).ToList();
+            var entries = updatedEntity.Select(_catalogElementFactory.InRiverEntityToEpiEntry).ToList();
             var baseElements = CreateBaseCatalogDocumentNodes(channelEntity, null, entries, null, null);
 
             catalogElement.Add(baseElements);
@@ -65,7 +65,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             var skus = new List<XElement>();
             if (_config.ItemsToSkus && updatedEntity.EntityType.Id == "Item")
             {
-                skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity);
+                skus = _catalogElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity);
             }
 
             XElement updatedNode = null;
@@ -79,7 +79,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
             else if (shouldGetUpdatedEntry)
             {
-                updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity);
+                updatedEntry = _catalogElementFactory.InRiverEntityToEpiEntry(updatedEntity);
                 Link specLink = updatedEntity.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
                 if (specLink != null)
                 {
@@ -100,7 +100,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 }
             }
 
-            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
+            XElement catalogElement = _catalogElementFactory.CreateCatalogElement(channelEntity);
             var updatedNodes = new List<XElement> {updatedEntry};
             updatedNodes.AddRange(skus);
 
@@ -119,7 +119,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 sortOrder = nodeLink.Index;
             }
 
-            return _epiElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder);
+            return _catalogElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder);
         }
 
         private List<XElement> CreateBaseCatalogDocumentNodes(Entity channelEntity, List<XElement> nodes, List<XElement> entries, List<XElement> relations, List<XElement> associations)
@@ -175,7 +175,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XElement GetAssociationTypes()
         {
-            var associationTypeElements = _config.AssociationLinkTypes.Select(_epiElementFactory.CreateAssociationTypeElement);
+            var associationTypeElements = _config.AssociationLinkTypes.Select(_catalogElementFactory.CreateAssociationTypeElement);
             return new XElement("AssociationTypes", associationTypeElements);
         }
                
@@ -187,7 +187,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 if (ShouldCreateSkus(structureEntity))
                 {
-                    List<XElement> skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(entity);
+                    List<XElement> skus = _catalogElementFactory.GenerateSkuItemElemetsFromItem(entity);
                     foreach (XElement sku in skus)
                     {
                         XElement codeElement = sku.Element("Code");
@@ -203,7 +203,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 if (structureEntity.IsItem() && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce ||
                     !ShouldCreateSkus(structureEntity))
                 {
-                    var element = _epiElementFactory.InRiverEntityToEpiEntry(entity);
+                    var element = _catalogElementFactory.InRiverEntityToEpiEntry(entity);
 
                     var codeElement = element.Element("Code");
                     if (codeElement == null || _epiElementContainer.HasEntry(codeElement.Value))
@@ -333,7 +333,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 if (nodeElement == null)
                 {
-                    nodeElement = _epiElementFactory.CreateNodeElement(entity, structureEntity.ParentId, linkIndex);
+                    nodeElement = _catalogElementFactory.CreateNodeElement(entity, structureEntity.ParentId, linkIndex);
                     _epiElementContainer.AddNode(nodeElement, currentNodeCode);
                     IntegrationLogger.Write(LogLevel.Debug, $"Added channelNode {entity.Id} to Nodes");
                 }
@@ -359,7 +359,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                     if (_epiElementContainer.HasRelation(relationName))
                         continue;
 
-                    var nodeRelationElement = _epiElementFactory.CreateNodeRelation(structureEntity.ParentId, entity.Id, linkIndex);
+                    var nodeRelationElement = _catalogElementFactory.CreateNodeRelation(structureEntity.ParentId, entity.Id, linkIndex);
 
                     _epiElementContainer.AddRelation(nodeRelationElement, relationName);
 
@@ -376,7 +376,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (_epiElementContainer.HasRelation(addedRelationName))
                 return;
 
-            var relationElement = _epiElementFactory.CreateNodeEntryRelation(distinctStructureEntity.ParentId, distinctStructureEntity.EntityId, distinctStructureEntity.SortOrder);
+            var relationElement = _catalogElementFactory.CreateNodeEntryRelation(distinctStructureEntity.ParentId, distinctStructureEntity.EntityId, distinctStructureEntity.SortOrder);
 
             _epiElementContainer.AddRelation(relationElement, addedRelationName);
 
@@ -395,7 +395,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             if (structureEntity.IsItem() && _config.ItemsToSkus)
             {
-                skus = _epiElementFactory.SkuItemIds(entity);
+                skus = _catalogElementFactory.SkuItemIds(entity);
                 for (var i = 0; i < skus.Count; i++)
                 {
                     skus[i] = _catalogCodeGenerator.GetPrefixedCode(skus[i]);
@@ -441,7 +441,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (!hasParent)
             {
                 IntegrationLogger.Write(LogLevel.Debug, $"Could not find parent for {skuId}, adding it to the list. Parent is {parentCode}.");
-                var missingParent = _epiElementFactory.InRiverEntityToEpiEntry(parentProduct);
+                var missingParent = _catalogElementFactory.InRiverEntityToEpiEntry(parentProduct);
                 _epiElementContainer.Entries.Add(missingParent);
             }
 
@@ -466,7 +466,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (_epiElementContainer.HasRelation(addedRelationsName))
                 return;
 
-            var entryRelationElement = _epiElementFactory.CreateEntryRelationElement(parentCode, linkType.SourceEntityTypeId, skuCode, structureEntity.SortOrder);
+            var entryRelationElement = _catalogElementFactory.CreateEntryRelationElement(parentCode, linkType.SourceEntityTypeId, skuCode, structureEntity.SortOrder);
 
             _epiElementContainer.AddRelation(entryRelationElement, addedRelationsName);
 
@@ -488,7 +488,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (_epiElementContainer.HasRelation(relationName))
                 return;
 
-            var relationElement = _epiElementFactory.CreateNodeEntryRelation(parentCode, skuCode, distinctStructureEntity.SortOrder);
+            var relationElement = _catalogElementFactory.CreateNodeEntryRelation(parentCode, skuCode, distinctStructureEntity.SortOrder);
 
             _epiElementContainer.AddRelation(relationElement, relationName);
 
@@ -534,7 +534,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             if (existingAssociation != null)
             {
-                XElement newElement = _epiElementFactory.CreateAssociationElement(distinctStructureEntity);
+                XElement newElement = _catalogElementFactory.CreateAssociationElement(distinctStructureEntity);
 
                 if (!existingAssociation.Descendants().Any(e => e.Name.LocalName == "EntryCode" && e.Value == entityCode))
                 {
@@ -544,7 +544,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
             else
             {
-                var associationElement = _epiElementFactory.CreateCatalogAssociationElement(distinctStructureEntity);
+                var associationElement = _catalogElementFactory.CreateCatalogAssociationElement(distinctStructureEntity);
                 _epiElementContainer.AddAssociation(associationElement, associationKey);
             }
         }
@@ -564,7 +564,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             Entity source = RemoteManager.DataService.GetEntity(distinctStructureEntity.ParentId, LoadLevel.DataOnly);
 
-            var skuCodes = _epiElementFactory.SkuItemIds(source);
+            var skuCodes = _catalogElementFactory.SkuItemIds(source);
             for (var i = 0; i < skuCodes.Count; i++)
             {
                 skuCodes[i] = _catalogCodeGenerator.GetPrefixedCode(skuCodes[i]);

@@ -10,23 +10,23 @@ using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
-namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
+namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 {
     public class ResourceElementFactory
     {
-        private readonly EpiElementFactory _epiElementFactory;
+        private readonly CatalogElementFactory _catalogElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly IConfiguration _config;
         private readonly IEntityService _entityService;
 
-        public ResourceElementFactory(EpiElementFactory epiElementFactory, 
+        public ResourceElementFactory(CatalogElementFactory catalogElementFactory, 
                                       EpiMappingHelper mappingHelper, 
                                       CatalogCodeGenerator catalogCodeGenerator, 
                                       IConfiguration config,
                                       IEntityService entityService)
         {
-            _epiElementFactory = epiElementFactory;
+            _catalogElementFactory = catalogElementFactory;
             _mappingHelper = mappingHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
             _config = config;
@@ -65,7 +65,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 if (_config.ItemsToSkus && linkedEntity.EntityType.Id == "Item")
                 {
-                    List<string> skuIds = _epiElementFactory.SkuItemIds(linkedEntity);
+                    List<string> skuIds = _catalogElementFactory.SkuItemIds(linkedEntity);
                     foreach (string skuId in skuIds)
                     {
                         var prefixedSkuId = _catalogCodeGenerator.GetPrefixedCode(skuId);
@@ -92,7 +92,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             }
 
             var metaFields = resource.Fields.Where(field => !_mappingHelper.SkipField(field.FieldType))
-                                            .Select(field => _epiElementFactory.GetMetaFieldValueElement(field));
+                                            .Select(field => _catalogElementFactory.GetMetaFieldValueElement(field));
 
             var parentEntries = parents.Select(parent => new XElement("EntryCode", parent.Key,
                                                             new XAttribute("IsMainPicture", IsMainPicture(parent, resourceFileId))));
@@ -160,7 +160,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (addMetadata)
             {
                 var reourceType = resources.Count > 0 ? resources[0].EntityType : RemoteManager.ModelService.GetEntityType("Resource");
-                resourceMetaClasses = _epiElementFactory.CreateResourceMetaFieldsElement(reourceType);
+                resourceMetaClasses = _catalogElementFactory.CreateResourceMetaFieldsElement(reourceType);
             }
 
             return new XDocument(new XElement("Resources", 

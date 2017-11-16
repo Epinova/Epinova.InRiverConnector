@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
-using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
+using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
 using Epinova.InRiverConnector.Interfaces;
 using Epinova.InRiverConnector.Interfaces.Enums;
 using inRiver.Integration.Logging;
@@ -19,8 +19,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
     public class ChannelPublisher
     {
         private readonly IConfiguration _config;
-        private readonly EpiDocumentFactory _epiDocumentFactory;
-        private readonly EpiElementFactory _epiElementFactory;
+        private readonly CatalogDocumentFactory _catalogDocumentFactory;
+        private readonly CatalogElementFactory _catalogElementFactory;
         private readonly ResourceElementFactory _resourceElementFactory;
         private readonly EpiApi _epiApi;
         private readonly EpiMappingHelper _mappingHelper;
@@ -30,8 +30,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
         public ChannelPublisher(IConfiguration config, 
-                                EpiDocumentFactory epiDocumentFactory, 
-                                EpiElementFactory epiElementFactory,
+                                CatalogDocumentFactory catalogDocumentFactory, 
+                                CatalogElementFactory catalogElementFactory,
                                 ResourceElementFactory resourceElementFactory,
                                 EpiApi epiApi,
                                 EpiMappingHelper mappingHelper,
@@ -41,8 +41,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                 CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
-            _epiDocumentFactory = epiDocumentFactory;
-            _epiElementFactory = epiElementFactory;
+            _catalogDocumentFactory = catalogDocumentFactory;
+            _catalogElementFactory = catalogElementFactory;
             _resourceElementFactory = resourceElementFactory;
             _epiApi = epiApi;
             _mappingHelper = mappingHelper;
@@ -61,11 +61,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             
             ConnectorEventHelper.UpdateEvent(publishEvent, "Fetched all channel entities. Generating catalog.xml...", 10);
 
-            var epiElements = _epiDocumentFactory.GetEPiElements(channelStructureEntities);
-            var metaClasses = _epiElementFactory.GetMetaClassesFromFieldSets();
-            var associationTypes = _epiDocumentFactory.GetAssociationTypes();
+            var epiElements = _catalogDocumentFactory.GetEPiElements(channelStructureEntities);
+            var metaClasses = _catalogElementFactory.GetMetaClassesFromFieldSets();
+            var associationTypes = _catalogDocumentFactory.GetAssociationTypes();
 
-            var catalogDocument = _epiDocumentFactory.CreateImportDocument(channel, metaClasses, associationTypes, epiElements);
+            var catalogDocument = _catalogDocumentFactory.CreateImportDocument(channel, metaClasses, associationTypes, epiElements);
 
             LogCatalogProperties(epiElements);
 
@@ -79,9 +79,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         internal void PublishEntities(Entity channel, ConnectorEvent connectorEvent, List<StructureEntity> structureEntities)
         {
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Generating catalog.xml...", 11);
-            var epiElements = _epiDocumentFactory.GetEPiElements(structureEntities);
+            var epiElements = _catalogDocumentFactory.GetEPiElements(structureEntities);
             
-            var catalogDocument = _epiDocumentFactory.CreateImportDocument(channel, null, null, epiElements);
+            var catalogDocument = _catalogDocumentFactory.CreateImportDocument(channel, null, null, epiElements);
 
             LogCatalogProperties(epiElements);
 
@@ -188,7 +188,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return connectorEvent;
                 }
 
-                XDocument doc = _epiDocumentFactory.CreateUpdateDocument(channel, updatedEntity);
+                XDocument doc = _catalogDocumentFactory.CreateUpdateDocument(channel, updatedEntity);
                
                 string catalogDocumentName = _documentFileHelper.SaveCatalogDocument(channel, doc, folderDateTime);
 
@@ -345,7 +345,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     {
                         var entitiesToDelete = new List<string>();
 
-                        var skuElements = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity);
+                        var skuElements = _catalogElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity);
 
                         foreach (XElement sku in skuElements)
                         {
