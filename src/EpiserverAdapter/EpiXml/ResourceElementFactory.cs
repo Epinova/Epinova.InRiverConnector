@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
@@ -103,7 +101,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                        new XAttribute("id", resourceId),
                        new XAttribute("action", action),
                        new XElement("ResourceFields", metaFields),
-                       GetInternalPathsInZip(resource),
+                       GetInternalPaths(resource),
                        new XElement("ParentEntries", parentEntries));
         }
 
@@ -154,15 +152,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             channelResources.Add(updatedResource);
 
             return CreateResourceDocument(channelResources, new List<Entity> { updatedResource }, ImporterActions.Updated, false);
-        }
-
-        internal XDocument HandleResourceDelete(string deletedResourceCode)
-        {
-            return
-                new XDocument(new XElement("Resources",
-                        new XElement("ResourceMetaFields"),
-                        new XElement("ResourceFiles",
-                            new XElement("Resource", new XAttribute("id", deletedResourceCode), new XAttribute("action", ImporterActions.Deleted)))));
         }
 
         internal XDocument CreateResourceDocument(List<Entity> channelResources, List<Entity> resources, string action, bool addMetadata)
@@ -229,7 +218,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return true;
         }
 
-        internal XElement GetInternalPathsInZip(Entity resource)
+        internal XElement GetInternalPaths(Entity resource)
         {
             int id = GetResourceFileId(resource);
 

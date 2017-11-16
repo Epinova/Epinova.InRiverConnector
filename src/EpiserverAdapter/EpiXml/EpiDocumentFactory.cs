@@ -560,7 +560,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                                                StructureEntity distinctStructureEntity, 
                                                string skuId)
         {
-            string linkEntityId = _catalogCodeGenerator.GetEpiserverCode(distinctStructureEntity.LinkEntityId ?? 0);
             string associationName = _epiMappingHelper.GetAssociationName(distinctStructureEntity);
 
             Entity source = RemoteManager.DataService.GetEntity(distinctStructureEntity.ParentId, LoadLevel.DataOnly);

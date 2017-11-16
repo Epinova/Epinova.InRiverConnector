@@ -16,24 +16,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _pimFieldAdapter = pimFieldAdapter;
         }
 
-        private static int firstProductItemLinkType = -2;
+        private static int _firstProductItemLinkType = -2;
 
         public static int FirstProductItemLinkType
         {
             get
             {
-                if (firstProductItemLinkType < -1)
-                {
-                    List<LinkType> linkTypes = RemoteManager.ModelService.GetLinkTypesForEntityType("Product");
-                    LinkType first =
-                        linkTypes.Where(lt => lt.TargetEntityTypeId.Equals("Item"))
-                            .OrderBy(lt => lt.Index)
-                            .FirstOrDefault();
+                if (_firstProductItemLinkType >= -1)
+                    return _firstProductItemLinkType;
 
-                    firstProductItemLinkType = first != null ? first.Index : -1;
-                }
+                List<LinkType> linkTypes = RemoteManager.ModelService.GetLinkTypesForEntityType("Product");
+                LinkType first =
+                    linkTypes.Where(lt => lt.TargetEntityTypeId.Equals("Item"))
+                        .OrderBy(lt => lt.Index)
+                        .FirstOrDefault();
 
-                return firstProductItemLinkType;
+                _firstProductItemLinkType = first?.Index ?? -1;
+
+                return _firstProductItemLinkType;
             }
         }
 
