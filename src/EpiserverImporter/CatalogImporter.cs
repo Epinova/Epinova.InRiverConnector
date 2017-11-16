@@ -169,150 +169,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
-        public void UpdateEntryRelations(UpdateRelationData updateRelationData)
-        {
-            int catalogId = FindCatalogByName(updateRelationData.ChannelName);
-            CatalogEntryDto ced = CatalogContext.Current.GetCatalogEntryDto(updateRelationData.CatalogEntryIdString);
-            CatalogEntryDto ced2 = CatalogContext.Current.GetCatalogEntryDto(updateRelationData.ParentEntryId);
-            _logger.Debug($"UpdateEntryRelations called for catalog {catalogId} between {updateRelationData.ParentEntryId} and {updateRelationData.CatalogEntryIdString}");
-
-
-            CatalogNodeDto nodeDto = CatalogContext.Current.GetCatalogNodeDto(updateRelationData.CatalogEntryIdString);
-
-            if (nodeDto.CatalogNode.Count > 0)
-            {
-                _logger.Debug($"found {updateRelationData.CatalogEntryIdString} as a catalog node");
-                CatalogRelationDto rels = CatalogContext.Current.GetCatalogRelationDto(
-                    catalogId,
-                    nodeDto.CatalogNode[0].CatalogNodeId,
-                    0,
-                    string.Empty,
-                    new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.CatalogNode));
-
-                foreach (CatalogRelationDto.CatalogNodeRelationRow row in rels.CatalogNodeRelation)
-                {
-                    CatalogNode parentCatalogNode = CatalogContext.Current.GetCatalogNode(row.ParentNodeId);
-                    if (updateRelationData.RemoveFromChannelNodes.Contains(parentCatalogNode.ID))
-                    {
-                        row.Delete();
-                        updateRelationData.RemoveFromChannelNodes.Remove(parentCatalogNode.ID);
-                    }
-                }
-
-                if (rels.HasChanges())
-                {
-                    _logger.Debug("Relations between nodes has been changed, saving new catalog releations");
-                    CatalogContext.Current.SaveCatalogRelationDto(rels);
-                }
-            }
-
-            if (ced.CatalogEntry.Count <= 0)
-            {
-                _logger.Debug($"No catalog entry with id {updateRelationData.CatalogEntryIdString} found, will not continue.");
-                return;
-            }
-
-            if (updateRelationData.RemoveFromChannelNodes.Count > 0)
-            {
-                _logger.Debug($"Look for removal from channel nodes, nr of possible nodes: {updateRelationData.RemoveFromChannelNodes.Count}");
-                var rel = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.NodeEntry));
-
-                foreach (CatalogRelationDto.NodeEntryRelationRow row in rel.NodeEntryRelation)
-                {
-                    CatalogNode catalogNode = CatalogContext.Current.GetCatalogNode(row.CatalogNodeId);
-                    if (updateRelationData.RemoveFromChannelNodes.Contains(catalogNode.ID))
-                    {
-                        row.Delete();
-                    }
-                }
-
-                if (rel.HasChanges())
-                {
-                    _logger.Debug("Relations between entries has been changed, saving new catalog releations");
-                    CatalogContext.Current.SaveCatalogRelationDto(rel);
-                }
-            }
-            else
-            {
-                _logger.Debug($"{updateRelationData.CatalogEntryIdString} shall not be removed from node {updateRelationData.ParentEntryId}");
-            }
-
-            if (ced2.CatalogEntry.Count <= 0)
-            {
-                return;
-            }
-
-            if (!updateRelationData.ParentExistsInChannelNodes)
-            {
-                if (updateRelationData.IsRelation)
-                {
-                    _logger.Debug("Checking other relations");
-                    CatalogRelationDto rel3 = CatalogContext.Current.GetCatalogRelationDto(catalogId, 0, ced2.CatalogEntry[0].CatalogEntryId, string.Empty, new CatalogRelationResponseGroup(CatalogRelationResponseGroup.ResponseGroup.CatalogEntry));
-                    foreach (CatalogRelationDto.CatalogEntryRelationRow row in rel3.CatalogEntryRelation)
-                    {
-                        Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.ChildEntryId);
-                        if (childEntry.ID == updateRelationData.CatalogEntryIdString)
-                        {
-                            _logger.Debug(string.Format("Relations between entries {0} and {1} has been removed, saving new catalog releations", row.ParentEntryId, row.ChildEntryId));
-                            row.Delete();
-                            CatalogContext.Current.SaveCatalogRelationDto(rel3);
-                            break;
-                        }
-                    }
-                }
-                else
-                {
-                    List<int> catalogAssociationIds = new List<int>();
-                    _logger.Debug("Checking other associations");
-
-                    CatalogAssociationDto associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateRelationData.ParentEntryId);
-                    foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto.CatalogEntryAssociation)
-                    {
-                        if (row.AssociationTypeId == updateRelationData.LinkTypeId)
-                        {
-                            Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.CatalogEntryId);
-                            if (childEntry.ID == updateRelationData.CatalogEntryIdString)
-                            {
-                                if (updateRelationData.LinkEntityIdsToRemove.Count == 0 || updateRelationData.LinkEntityIdsToRemove.Contains(row.CatalogAssociationRow.AssociationDescription))
-                                {
-                                    catalogAssociationIds.Add(row.CatalogAssociationId);
-                                    _logger.Debug(string.Format("Removing association for {0}", row.CatalogEntryId));
-                                    row.Delete();
-                                }
-                            }
-                        }
-                    }
-
-                    if (associationsDto.HasChanges())
-                    {
-                        _logger.Debug("Saving updated associations");
-                        CatalogContext.Current.SaveCatalogAssociation(associationsDto);
-                    }
-
-                    if (catalogAssociationIds.Count > 0)
-                    {
-                        foreach (int catalogAssociationId in catalogAssociationIds)
-                        {
-                            associationsDto = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, updateRelationData.ParentEntryId);
-                            if (associationsDto.CatalogEntryAssociation.Count(r => r.CatalogAssociationId == catalogAssociationId) == 0)
-                            {
-                                foreach (CatalogAssociationDto.CatalogAssociationRow assRow in associationsDto.CatalogAssociation)
-                                {
-                                    if (assRow.CatalogAssociationId == catalogAssociationId)
-                                    {
-                                        assRow.Delete();
-                                        _logger.Debug($"Removing association with id {catalogAssociationId} and sending update.");
-                                        CatalogContext.Current.SaveCatalogAssociation(associationsDto);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
         public void ImportCatalogXml(string path)
         {
             Task.Run(
@@ -324,16 +180,17 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         ImportStatusContainer.Instance.IsImporting = true;
 
                         _logger.Information($"Importing catalog document from {path}");
+
                         var catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
                         if (catalogImportHandlers.Any() && _config.RunCatalogImportHandlers)
                         {
                             _logger.Information("Importing with pre- and post-import handlers.");
-                            ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
+                            ImportCatalogWithHandlers(path, catalogImportHandlers);
                         }
                         else
                         {
                             _logger.Information("Importing without handlers.");
-                            ImportCatalogXmlFromPath(path);
+                            ImportCatalog(path);
                         }
                     }
                     catch (Exception ex)
@@ -342,6 +199,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         _logger.Error("Catalog Import Failed", ex);
                         ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
                     }
+
+                    _logger.Information("Successfully imported Catalog.xml.");
 
                     ImportStatusContainer.Instance.IsImporting = false;
                     ImportStatusContainer.Instance.Message = "Import Sucessful";
@@ -409,80 +268,68 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
-        private void ImportCatalogXmlFromPath(string path)
+        private void ImportCatalog(string path)
         {
-            _logger.Information("Starting importing the xml into EPiServer Commerce.");
-
             var cie = new CatalogImportExport();
             cie.ImportExportProgressMessage += ProgressHandler;
 
             var directoryName = Path.GetDirectoryName(path);
             cie.Import(directoryName, true);
-
-            _logger.Information("Done importing the xml into EPiServer Commerce.");
         }
 
-        private void ImportCatalogXmlWithHandlers(string filePath, List<ICatalogImportHandler> catalogImportHandlers)
+        private void ImportCatalogWithHandlers(string filePath, List<ICatalogImportHandler> catalogImportHandlers)
         {
-            try
+            string originalFileName = Path.GetFileNameWithoutExtension(filePath);
+            string filenameBeforePreImport = originalFileName + "-beforePreImport.xml";
+
+            XDocument catalogDoc = XDocument.Load(filePath);
+            var directory = Path.GetDirectoryName(filePath);
+            var completeFilePathToSave = Path.Combine(directory, filenameBeforePreImport);
+            _logger.Debug($"Saving original file to {completeFilePathToSave}.");
+
+            catalogDoc.Save(completeFilePathToSave);
+
+            if (catalogImportHandlers.Any())
             {
-                string originalFileName = Path.GetFileNameWithoutExtension(filePath);
-                string filenameBeforePreImport = originalFileName + "-beforePreImport.xml";
-
-                XDocument catalogDoc = XDocument.Load(filePath);
-                var directory = Path.GetDirectoryName(filePath);
-                var completeFilePathToSave = Path.Combine(directory, filenameBeforePreImport);
-                _logger.Debug($"Saving original file to {completeFilePathToSave}.");
-
-                catalogDoc.Save(completeFilePathToSave);
-
-                if (catalogImportHandlers.Any())
+                foreach (ICatalogImportHandler handler in catalogImportHandlers)
                 {
-                    foreach (ICatalogImportHandler handler in catalogImportHandlers)
+                    try
                     {
-                        try
-                        {
-                            _logger.Debug($"Preimport handler: {handler.GetType().FullName}");
-                            handler.PreImport(catalogDoc);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Error("Failed to run PreImport on " + handler.GetType().FullName, e);
-                        }
+                        _logger.Debug($"Preimport handler: {handler.GetType().FullName}");
+                        handler.PreImport(catalogDoc);
                     }
-                }
-    
-                FileStream fs = new FileStream(filePath, FileMode.Create);
-                catalogDoc.Save(fs);
-                fs.Dispose();
-
-                CatalogImportExport cie = new CatalogImportExport();
-                cie.ImportExportProgressMessage += ProgressHandler;
-
-                cie.Import(directory, true);
-
-                catalogDoc = XDocument.Load(filePath);
-
-                if (catalogImportHandlers.Any())
-                {
-                    foreach (ICatalogImportHandler handler in catalogImportHandlers)
+                    catch (Exception e)
                     {
-                        try
-                        {
-                            _logger.Debug($"Postimport handler: {handler.GetType().FullName}");
-                            handler.PostImport(catalogDoc);
-                        }
-                        catch (Exception e)
-                        {
-                            _logger.Error("Failed to run PostImport on " + handler.GetType().FullName, e);
-                        }
+                        _logger.Error("Failed to run PreImport on " + handler.GetType().FullName, e);
                     }
                 }
             }
-            catch (Exception exception)
+    
+            FileStream fs = new FileStream(filePath, FileMode.Create);
+            catalogDoc.Save(fs);
+            fs.Dispose();
+
+            CatalogImportExport cie = new CatalogImportExport();
+            cie.ImportExportProgressMessage += ProgressHandler;
+
+            cie.Import(directory, true);
+
+            catalogDoc = XDocument.Load(filePath);
+
+            if (catalogImportHandlers.Any())
             {
-                _logger.Error("Error in ImportCatalogXmlWithHandlers", exception);
-                throw;
+                foreach (ICatalogImportHandler handler in catalogImportHandlers)
+                {
+                    try
+                    {
+                        _logger.Debug($"Postimport handler: {handler.GetType().FullName}");
+                        handler.PostImport(catalogDoc);
+                    }
+                    catch (Exception e)
+                    {
+                        _logger.Error("Failed to run PostImport on " + handler.GetType().FullName, e);
+                    }
+                }
             }
         }
 

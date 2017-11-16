@@ -92,7 +92,6 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="Helpers\DocumentFileHelper.cs" />
     <Compile Include="Helpers\EpiMappingHelper.cs" />
-    <Compile Include="Helpers\StopwatchExtentions.cs" />
     <Compile Include="EpiserverAdapter.cs" />
     <Compile Include="Communication\EpiApi.cs" />
     <Compile Include="Communication\HttpClientInvoker.cs" />

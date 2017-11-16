@@ -92,14 +92,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             );
         }
 
-        [HttpPost]
-        public void UpdateEntryRelations(UpdateRelationData updateRelationData)
-        {
-            _logger.Debug("UpdateEntryRelations");
-
-            _catalogImporter.UpdateEntryRelations(updateRelationData);
-        }
-
         public string Get()
         {
             _logger.Debug("Hello from Episerver import controller!");

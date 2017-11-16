@@ -15,7 +15,6 @@
         public string DeleteCatalogNode => _baseUrl + "DeleteCatalogNode";
         public string DeleteCatalogEntry => _baseUrl + "DeleteCatalogEntry";
         public string CheckAndMoveNodeIfNeeded => _baseUrl + "MoveNodeToRootIfNeeded";
-        public string UpdateEntryRelations => _baseUrl + "UpdateEntryRelations";
         public string ImportCatalogXml => _baseUrl + "ImportCatalogXml";
         public string ImportUpdateCompleted => _baseUrl + "ImportUpdateCompleted";
         public string DeleteCompleted => _baseUrl + "DeleteCompleted";
