@@ -1,10 +1,10 @@
 # Test if it's installed correctly:
 
-Visit <yourSiteRoot>/inriverapi/inriverdataimport/get, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
 
 # Config in Episerver
 
-- You can now add a setting (appSettings) `InRiverPimConnector.ResourceFolderName` to set your own folder name for the imported resources. Defaults to `ImportedResources`.
+- You can now add a setting (appSettings) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
 
 # Changes from original connector
 
@@ -39,7 +39,7 @@ TODO: As of now there's a TODO to update all Episerver entities whenever a CVL v
 - `MODIFY_FILTER_BEHAVIOR` has been removed. Invisible and undocumented, poorly named and probably never used.
 - Support for `EPiDataType` field setting has been removed, as it's utterly pointless and can never do anything but create harm.
 - `EXPORT_ENTITIES` is new. It should contain all the entity types you want to export. Defaults to `Product,Item`, but you can add in anything really. These will be created as catalog entities, so adding things like milestones or activites will not make sense. Create your own integration for such things.
-- `FORCE_INCLUDE_LINKED_CONTENT` - new setting. Set to `True` if you want to include everything linked to the channel via upsell/accessories and such, as well as via Product-Item-links or ChannelNode-Product links. Set to 'False' to only include those entities which directly belongs to a Product/Bundle/Package or a Channel Node. Defaults to False. These force-added entries will end up at the root of your catalog. Implement and register `ICatalogImportHandler.PostImport` if you want to fiddle about with it.
+- `FORCE_INCLUDE_LINKED_CONTENT` - new setting. Set to `True` if you want to include everything linked to the channel via upsell/accessories and such, as well as via Product-Item-links or ChannelNode-Product links. Set to 'False' to only include those entities which directly belongs to a Product/Bundle/Package or a Channel Node. Defaults to False. These force-added entries will end up at the root of your catalog. Implement and register `ICatalogImportHandler.PostImport` if you want to fiddle about with it. (You might see this as a more controllable version of the `inRiverAssociations` node from the original connector.)
 - `HTTP_POST_URL` - The URL you supply here no longer receives a ZIP-file, but rather the path to the recently imported file. You could implement this like below:
 
 
