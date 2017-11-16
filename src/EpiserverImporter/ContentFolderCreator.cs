@@ -18,16 +18,14 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         public ContentReference CreateOrGetFolder(ContentReference parent, string folderName)
         {
             var existingFolder = _contentRepo.GetChildren<ContentFolder>(parent)
-                                                  .FirstOrDefault(x => x.Name == folderName);
+                                             .FirstOrDefault(x => x.Name == folderName);
 
-            if (existingFolder == null)
-            {
-                var newFolder = _contentRepo.GetDefault<ContentFolder>(parent);
-                newFolder.Name = folderName;
-                return _contentRepo.Save(newFolder, SaveAction.Save, AccessLevel.NoAccess);
-            }
+            if (existingFolder != null)
+                return existingFolder.ContentLink;
 
-            return existingFolder.ContentLink;
+            var newFolder = _contentRepo.GetDefault<ContentFolder>(parent);
+            newFolder.Name = folderName;
+            return _contentRepo.Save(newFolder, SaveAction.Save, AccessLevel.NoAccess);
         }
     }
 }

@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Logging;
-using log4net;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {

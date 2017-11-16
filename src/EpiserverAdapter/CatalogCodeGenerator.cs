@@ -12,6 +12,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             
         }
+
         public CatalogCodeGenerator(IConfiguration config, IEntityService entityService)
         {
             _config = config;
@@ -27,6 +28,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return GetEpiserverCode(entity);
         }
 
+        /// <summary>
+        /// Gets the Code field (product numbers, article numbers) for Episerver, taking configuration into account.
+        /// </summary>
+        /// <param name="entity">The entity from which to get the Code.</param>
+        /// <remarks>Be careful when changing this, if an entity gets the wrong Code in an update, bad stuff will happen.</remarks>
         public string GetEpiserverCode(Entity entity)
         {
             if (entity.LoadLevel < LoadLevel.DataOnly)
