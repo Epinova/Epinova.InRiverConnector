@@ -4,7 +4,6 @@ using System.Reflection;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
-using Epinova.InRiverConnector.EpiserverAdapter.Utilities;
 using inRiver.Integration.Configuration;
 using inRiver.Integration.Export;
 using inRiver.Integration.Interface;
@@ -25,7 +24,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private EpiDocumentFactory _epiDocumentFactory;
         private ChannelHelper _channelHelper;
         private ResourceElementFactory _resourceElementFactory;
-        private DeleteUtility _deleteUtility;
         private EpiMappingHelper _epiMappingHelper;
         private CatalogCodeGenerator _catalogCodeGenerator;
         private ChannelPublisher _publisher;
@@ -62,7 +60,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
                 
                 _documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
-                _deleteUtility = new DeleteUtility(_config, _epiElementFactory, _epiApi, _catalogCodeGenerator, _epiMappingHelper);
                 _cvlUpdater = new CvlUpdater(_config, _epiDocumentFactory, _epiApi, _documentFileHelper);
 
                 _publisher = new ChannelPublisher(_config, 
@@ -71,10 +68,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _resourceElementFactory, 
                                                   _epiApi,
                                                   _epiMappingHelper, 
-                                                  _deleteUtility,
                                                   _documentFileHelper,
                                                   _pimFieldAdapter,
-                                                  _entityService);
+                                                  _entityService,
+                                                  _catalogCodeGenerator);
 
                 AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainAssemblyResolve;
 
@@ -102,7 +99,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _epiDocumentFactory = null;
             _channelHelper = null;
             _resourceElementFactory = null;
-            _deleteUtility = null;
             _epiMappingHelper = null;
             _catalogCodeGenerator = null;
             _publisher = null;

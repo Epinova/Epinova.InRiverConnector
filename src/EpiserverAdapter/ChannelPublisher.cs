@@ -6,7 +6,7 @@ using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.EpiXml;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
-using Epinova.InRiverConnector.EpiserverAdapter.Utilities;
+using Epinova.InRiverConnector.Interfaces;
 using Epinova.InRiverConnector.Interfaces.Enums;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
@@ -24,10 +24,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly ResourceElementFactory _resourceElementFactory;
         private readonly EpiApi _epiApi;
         private readonly EpiMappingHelper _mappingHelper;
-        private readonly DeleteUtility _deleteUtility;
         private readonly DocumentFileHelper _documentFileHelper;
         private readonly PimFieldAdapter _pimFieldAdapter;
         private readonly IEntityService _entityService;
+        private readonly CatalogCodeGenerator _catalogCodeGenerator;
 
         public ChannelPublisher(IConfiguration config, 
                                 EpiDocumentFactory epiDocumentFactory, 
@@ -35,10 +35,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                 ResourceElementFactory resourceElementFactory,
                                 EpiApi epiApi,
                                 EpiMappingHelper mappingHelper,
-                                DeleteUtility deleteUtility,
                                 DocumentFileHelper documentFileHelper,
                                 PimFieldAdapter pimFieldAdapter,
-                                IEntityService entityService)
+                                IEntityService entityService,
+                                CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _epiDocumentFactory = epiDocumentFactory;
@@ -46,10 +46,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _resourceElementFactory = resourceElementFactory;
             _epiApi = epiApi;
             _mappingHelper = mappingHelper;
-            _deleteUtility = deleteUtility;
             _documentFileHelper = documentFileHelper;
             _pimFieldAdapter = pimFieldAdapter;
             _entityService = entityService;
+            _catalogCodeGenerator = catalogCodeGenerator;
         }
 
         public ConnectorEvent Publish(Entity channel)
@@ -123,15 +123,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.Publish, true);
         }
 
-        private static void LogCatalogProperties(CatalogElementContainer epiElements)
-        {
-            IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
-                                                          $"Nodes: {epiElements.Nodes.Count}. " +
-                                                          $"Entries: {epiElements.Entries.Count}. " +
-                                                          $"Relations: {epiElements.Relations.Count}. " +
-                                                          $"Associations: {epiElements.Associations.Count}. ");
-        }
-
         public ConnectorEvent ChannelEntityAdded(Entity channel, int entityId)
         {
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityAdded, $"Received entity added for entity {entityId} in channel {channel.DisplayName}", 0);
@@ -160,24 +151,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             PublishEntities(channel, connectorEvent, structureEntities);
           
-            string channelName = _mappingHelper.GetNameForEntity(channel, 100);
+            var channelName = _mappingHelper.GetNameForEntity(channel, 100);
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityAdded, true);
             return connectorEvent;
         }
 
         public ConnectorEvent ChannelEntityUpdated(Entity channel, int entityId, string data)
         {
-            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
+            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, 
+                        $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
 
             var updatedEntity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataAndLinks);
 
             if (updatedEntity.EntityType.IsLinkEntityType)
                 return connectorEvent;
 
-            string folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
-
-            bool resourceIncluded = false;
-            
+            var folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
+            var resourceIncluded = false;
             var structureEntities = _entityService.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
             if (updatedEntity.EntityType.Id.Equals("Resource"))
@@ -220,7 +210,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                             ConnectorEventType.ChannelEntityDeleted, 
                                             $"Received entity deleted for entity {deletedEntity.Id} in channel {channelName}.", 0);
 
-            _deleteUtility.Delete(channel, deletedEntity);
+            Delete(channel, deletedEntity);
             
             _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.EntitiyDeleted);
 
@@ -285,12 +275,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (removalTarget.EntityType.Id == "Resource")
             {
-                _deleteUtility.DeleteResourceLink(removalTarget, removalSource);
+                DeleteResourceLink(removalTarget, removalSource);
             }
             else
             {
                 
-                _deleteUtility.DeleteLink(removalSource, removalTarget, linkTypeId);
+                DeleteLink(removalSource, removalTarget, linkTypeId);
             }
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
@@ -330,6 +320,69 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return connectorEvent;
         }
 
+        private void Delete(Entity channelEntity, Entity deletedEntity)
+        {
+            switch (deletedEntity.EntityType.Id)
+            {
+                case "Resource":
+                    var resourceGuid = EpiserverEntryIdentifier.EntityIdToGuid(deletedEntity.Id);
+                    _epiApi.DeleteResource(resourceGuid);
+
+                    break;
+                case "Channel":
+                    _epiApi.DeleteCatalog(deletedEntity.Id);
+                    break;
+                case "ChannelNode":
+                    _epiApi.DeleteCatalogNode(deletedEntity, channelEntity.Id);
+                    break;
+                case "Item":
+                    if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)
+                    {
+                        _epiApi.DeleteCatalogEntry(deletedEntity);
+                    }
+
+                    if (_config.ItemsToSkus)
+                    {
+                        var entitiesToDelete = new List<string>();
+
+                        var skuElements = _epiElementFactory.GenerateSkuItemElemetsFromItem(deletedEntity);
+
+                        foreach (XElement sku in skuElements)
+                        {
+                            XElement skuCodElement = sku.Element("Code");
+                            if (skuCodElement != null)
+                            {
+                                entitiesToDelete.Add(skuCodElement.Value);
+                            }
+                        }
+
+                        _epiApi.DeleteSkus(entitiesToDelete);
+                    }
+
+                    break;
+                default:
+                    _epiApi.DeleteCatalogEntry(deletedEntity);
+                    break;
+            }
+        }
+
+        private void DeleteResourceLink(Entity removedResource, Entity removalTarget)
+        {
+            var resourceGuid = EpiserverEntryIdentifier.EntityIdToGuid(removedResource.Id);
+            var targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
+
+            _epiApi.DeleteLink(resourceGuid, targetCode);
+        }
+
+        private void DeleteLink(Entity removalSource, Entity removalTarget, string linkTypeId)
+        {
+            var isRelation = _mappingHelper.IsRelation(linkTypeId);
+
+            var sourceCode = _catalogCodeGenerator.GetEpiserverCode(removalSource);
+            var targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
+
+            _epiApi.DeleteLink(sourceCode, targetCode, isRelation);
+        }
 
         private void HandleSkuUpdate(int entityId, 
                                       Entity channelEntity,
@@ -382,7 +435,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             var resourceIncluded = false;
             var resourceDocument = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
-            _documentFileHelper.SaveDocument( resourceDocument, folderDateTime);
+            _documentFileHelper.SaveDocument(resourceDocument, folderDateTime);
             
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
 
@@ -395,6 +448,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             resourceIncluded = true;
 
             return resourceIncluded;
+        }
+
+        private static void LogCatalogProperties(CatalogElementContainer epiElements)
+        {
+            IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
+                                                          $"Nodes: {epiElements.Nodes.Count}. " +
+                                                          $"Entries: {epiElements.Entries.Count}. " +
+                                                          $"Relations: {epiElements.Relations.Count}. " +
+                                                          $"Associations: {epiElements.Associations.Count}. ");
         }
     }
 }

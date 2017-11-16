@@ -90,7 +90,6 @@
     <Compile Include="Poco\Resources.cs" />
     <Compile Include="Poco\Type.cs" />
     <Compile Include="Extensions.cs" />
-    <Compile Include="Utilities\DeleteUtility.cs" />
     <Compile Include="Helpers\DocumentFileHelper.cs" />
     <Compile Include="Helpers\EpiMappingHelper.cs" />
     <Compile Include="Helpers\StopwatchExtentions.cs" />
