@@ -324,13 +324,15 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         ImportStatusContainer.Instance.IsImporting = true;
 
                         _logger.Information($"Importing catalog document from {path}");
-                        List<ICatalogImportHandler> catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
+                        var catalogImportHandlers = ServiceLocator.Current.GetAllInstances<ICatalogImportHandler>().ToList();
                         if (catalogImportHandlers.Any() && _config.RunCatalogImportHandlers)
                         {
+                            _logger.Information("Importing with pre- and post-import handlers.");
                             ImportCatalogXmlWithHandlers(path, catalogImportHandlers);
                         }
                         else
                         {
+                            _logger.Information("Importing without handlers.");
                             ImportCatalogXmlFromPath(path);
                         }
                     }
@@ -428,7 +430,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 string filenameBeforePreImport = originalFileName + "-beforePreImport.xml";
 
                 XDocument catalogDoc = XDocument.Load(filePath);
-                catalogDoc.Save(filenameBeforePreImport);
+                var directory = Path.GetDirectoryName(filePath);
+                var completeFilePathToSave = Path.Combine(directory, filenameBeforePreImport);
+                _logger.Debug($"Saving original file to {completeFilePathToSave}.");
+
+                catalogDoc.Save(completeFilePathToSave);
 
                 if (catalogImportHandlers.Any())
                 {
@@ -445,14 +451,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         }
                     }
                 }
-
-                if (!File.Exists(filePath))
-                {
-                    _logger.Error("Cata_logger.xml for path " + filePath + " does not exist. Importer is not able to continue with this process.");
-                    return;
-                }
-                var directoryPath = Path.GetDirectoryName(filePath);
-
+    
                 FileStream fs = new FileStream(filePath, FileMode.Create);
                 catalogDoc.Save(fs);
                 fs.Dispose();
@@ -460,7 +459,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 CatalogImportExport cie = new CatalogImportExport();
                 cie.ImportExportProgressMessage += ProgressHandler;
 
-                cie.Import(directoryPath, true);
+                cie.Import(directory, true);
 
                 catalogDoc = XDocument.Load(filePath);
 
