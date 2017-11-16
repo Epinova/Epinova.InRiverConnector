@@ -22,6 +22,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _channelHelper = channelHelper;
         }
 
+        // TODO: Fjern channelidentifier?
         public string SaveDocument(string channelIdentifier, XDocument doc, string path)
         {
             if (!Directory.Exists(path))

@@ -32,6 +32,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private ChannelPublisher _publisher;
         private PimFieldAdapter _pimFieldAdapter;
         private EntityService _entityService;
+        private CvlUpdater _cvlUpdater;
+        private DocumentFileHelper _documentFileHelper;
 
         public new void Start()
         {
@@ -60,10 +62,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _epiDocumentFactory = new EpiDocumentFactory(_config, _epiApi, _epiElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
                 _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
                 
-                var documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
-                _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper, documentFileHelper);
+                _documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
+                _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper, _documentFileHelper);
                 _deleteUtility = new DeleteUtility(_config, _epiElementFactory, _epiApi, _catalogCodeGenerator, _epiMappingHelper);
-                
+                _cvlUpdater = new CvlUpdater(_config, _epiDocumentFactory, _epiApi, _documentFileHelper);
 
                 _publisher = new ChannelPublisher(_config, 
                                                   _channelHelper, 
@@ -74,7 +76,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                                                   _epiMappingHelper, 
                                                   _addUtility,
                                                   _deleteUtility,
-                                                  documentFileHelper,
+                                                  _documentFileHelper,
                                                   _pimFieldAdapter,
                                                   _entityService);
 
@@ -110,6 +112,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _catalogCodeGenerator = null;
             _publisher = null;
             _config = null;
+            _documentFileHelper = null;
+            _entityService = null;
+            _cvlUpdater = null;
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Connector has stopped.", 100);
         }
@@ -268,7 +273,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void CVLValueUpdated(string cvlId, string cvlValueKey)
         {
-            // TODO: Search all entities with this CVL and cvlValueKey, and pass on updates to episerver
+            DoWithInitCheck(_config.ChannelId, ConnectorEventType.CVLValueUpdated, channelEntity => _cvlUpdater.CVLValueUpdated(channelEntity, cvlId, cvlValueKey));
         }
 
         public void CVLValueDeleted(string cvlId, string cvlValueKey)

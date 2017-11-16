@@ -41,14 +41,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             var catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
 
-            catalogElement.Add(
-                new XElement("Sites", new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
-                new XElement("Nodes", new XAttribute("totalCount", epiElements.Nodes.Count), epiElements.Nodes),
-                new XElement("Entries", new XAttribute("totalCount", epiElements.Entries.Count), epiElements.Entries),
-                new XElement("Relations", new XAttribute("totalCount", epiElements.Relations.Count), epiElements.Relations.OrderByDescending(e => e.Name.LocalName)),
-                new XElement("Associations", new XAttribute("totalCount", epiElements.Associations.Count), epiElements.Associations));
+            var baseElements = CreateBaseCatalogDocumentNodes(channelEntity, epiElements.Nodes, epiElements.Entries, epiElements.Relations, epiElements.Associations);
+
+            catalogElement.Add(baseElements);
 
             return CreateDocument(catalogElement, metaClasses, associationTypes);
+        }
+
+        public XDocument CreateUpdateDocument(Entity channelEntity, List<Entity> updatedEntity)
+        {
+            XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
+
+            var entries = updatedEntity.Select(_epiElementFactory.InRiverEntityToEpiEntry).ToList();
+            var baseElements = CreateBaseCatalogDocumentNodes(channelEntity, null, entries, null, null);
+
+            catalogElement.Add(baseElements);
+
+            return CreateDocument(catalogElement, null, null);
         }
 
         public XDocument CreateUpdateDocument(Entity channelEntity, Entity updatedEntity)
@@ -58,7 +67,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             if (_config.ItemsToSkus && updatedEntity.EntityType.Id == "Item")
             {
                 skus = _epiElementFactory.GenerateSkuItemElemetsFromItem(updatedEntity);
-                count += skus.Count;
             }
 
             XElement updatedNode = null;
@@ -75,6 +83,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
                 updatedNode = _epiElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder);
             }
+
             else if (!(updatedEntity.EntityType.Id == "Item" && !_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
             {
                 updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity);
@@ -99,25 +108,30 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         element.Add(metaField);
                     }
                 }
-
-                count += 1;
             }
 
             XElement catalogElement = _epiElementFactory.CreateCatalogElement(channelEntity);
+            var updatedNodes = new List<XElement> {updatedEntry};
+            updatedNodes.AddRange(skus);
 
-            catalogElement.Add(
-                new XElement("Sites", 
-                    new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
-                new XElement("Nodes", updatedNode),
-                new XElement("Entries", 
-                    new XAttribute("totalCount", count), 
-                    updatedEntry, 
-                    skus),
-                new XElement("Relations"),
-                new XElement("Associations"));
+            var baseCatalogDocumentNodes = CreateBaseCatalogDocumentNodes(channelEntity, new List<XElement> {updatedNode}, updatedNodes, null, null);
+            catalogElement.Add(baseCatalogDocumentNodes);
 
             return CreateDocument(catalogElement, null, null);
         }
+
+        private List<XElement> CreateBaseCatalogDocumentNodes(Entity channelEntity, List<XElement> nodes, List<XElement> entries, List<XElement> relations, List<XElement> associations)
+        {
+            return new List<XElement>
+            {
+                new XElement("Sites", new XElement("Site", _channelHelper.GetChannelGuid(channelEntity).ToString())),
+                new XElement("Nodes", new XAttribute("totalCount", nodes?.Count ?? 0), nodes),
+                new XElement("Entries", new XAttribute("totalCount", entries?.Count ?? 0), entries),
+                new XElement("Relations", new XAttribute("totalCount", relations?.Count ?? 0), relations),
+                new XElement("Associations", new XAttribute("totalCount", associations?.Count ?? 0), associations)
+            };
+        }
+        
 
         public XDocument CreateDocument(XElement catalogElement, XElement metaClasses, XElement associationTypes)
         {
@@ -133,7 +147,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             return result;
         }
 
-        public CatalogElementContainer GetEPiElements(List<StructureEntity> allChannelStructureEntities)
+        public CatalogElementContainer GetEPiElements(List<StructureEntity> structureEntities)
         {
             _epiElementContainer = new CatalogElementContainer();
 
@@ -142,17 +156,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
             do
             {
-                var batch = allChannelStructureEntities.Skip(totalLoaded).Take(batchSize).ToList();
+                var batch = structureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
                 AddNodeElements(batch);
                 AddEntryElements(batch);
-                AddRelationElements(batch, allChannelStructureEntities);
+                AddRelationElements(batch, structureEntities);
 
                 totalLoaded += batch.Count;
 
-                IntegrationLogger.Write(LogLevel.Debug, $"Fetched {totalLoaded} of {allChannelStructureEntities.Count} total");
+                IntegrationLogger.Write(LogLevel.Debug, $"Fetched {totalLoaded} of {structureEntities.Count} total");
             }
-            while (allChannelStructureEntities.Count > totalLoaded);
+            while (structureEntities.Count > totalLoaded);
 
             return _epiElementContainer;
         }
