@@ -22,8 +22,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _channelHelper = channelHelper;
         }
 
-        // TODO: Fjern channelidentifier?
-        public string SaveDocument(string channelIdentifier, XDocument doc, string path)
+        public string SaveDocument(XDocument doc, string path)
         {
             if (!Directory.Exists(path))
             {
@@ -32,7 +31,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             var filePath = Path.Combine(path, Constants.ResourceExportFilename);
 
-            IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath} for channel:{channelIdentifier}");
+            IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath}.");
             doc.Save(filePath);
             return filePath;
         }

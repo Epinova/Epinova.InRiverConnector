@@ -23,7 +23,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private EpiApi _epiApi;
         private EpiElementFactory _epiElementFactory;
         private EpiDocumentFactory _epiDocumentFactory;
-        private AddUtility _addUtility;
         private ChannelHelper _channelHelper;
         private ResourceElementFactory _resourceElementFactory;
         private DeleteUtility _deleteUtility;
@@ -63,18 +62,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _resourceElementFactory = new ResourceElementFactory(_epiElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
                 
                 _documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
-                _addUtility = new AddUtility(_config, _epiApi, _epiDocumentFactory, _resourceElementFactory, _channelHelper, _documentFileHelper);
                 _deleteUtility = new DeleteUtility(_config, _epiElementFactory, _epiApi, _catalogCodeGenerator, _epiMappingHelper);
                 _cvlUpdater = new CvlUpdater(_config, _epiDocumentFactory, _epiApi, _documentFileHelper);
 
                 _publisher = new ChannelPublisher(_config, 
-                                                  _channelHelper, 
                                                   _epiDocumentFactory, 
                                                   _epiElementFactory,
                                                   _resourceElementFactory, 
                                                   _epiApi,
                                                   _epiMappingHelper, 
-                                                  _addUtility,
                                                   _deleteUtility,
                                                   _documentFileHelper,
                                                   _pimFieldAdapter,
@@ -104,7 +100,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _epiApi = null;
             _epiElementFactory = null;
             _epiDocumentFactory = null;
-            _addUtility = null;
             _channelHelper = null;
             _resourceElementFactory = null;
             _deleteUtility = null;

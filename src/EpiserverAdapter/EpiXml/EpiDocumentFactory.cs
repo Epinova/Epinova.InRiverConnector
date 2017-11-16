@@ -62,7 +62,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
 
         public XDocument CreateUpdateDocument(Entity channelEntity, Entity updatedEntity)
         {
-            var count = 0;
             var skus = new List<XElement>();
             if (_config.ItemsToSkus && updatedEntity.EntityType.Id == "Item")
             {
@@ -72,41 +71,32 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             XElement updatedNode = null;
             XElement updatedEntry = null;
 
+            var shouldGetUpdatedEntry = !(updatedEntity.EntityType.Id == "Item" && !_config.UseThreeLevelsInCommerce && _config.ItemsToSkus);
+
             if (updatedEntity.EntityType.Id == "ChannelNode")
             {
-                Link nodeLink = updatedEntity.Links.Find(l => l.Source.Id == channelEntity.Id);
-                int sortOrder = 0;
-                if (nodeLink != null)
-                {
-                    sortOrder = nodeLink.Index;
-                }
-
-                updatedNode = _epiElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder);
+                updatedNode = GetUpdatedNode(channelEntity, updatedEntity, updatedNode);
             }
-
-            else if (!(updatedEntity.EntityType.Id == "Item" && !_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
+            else if (shouldGetUpdatedEntry)
             {
                 updatedEntry = _epiElementFactory.InRiverEntityToEpiEntry(updatedEntity);
                 Link specLink = updatedEntity.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
                 if (specLink != null)
                 {
-                    XElement metaField = new XElement("MetaField", 
+                    XElement specificationField = new XElement("MetaField", 
                         new XElement("Name", "SpecificationField"), 
                         new XElement("Type", "LongHtmlString"));
 
                     foreach (var languageMap in _config.LanguageMapping)
                     {
                         var htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, updatedEntity.Id, languageMap.Value);
-                        metaField.Add(new XElement("Data", 
+                        specificationField.Add(new XElement("Data", 
                             new XAttribute("language", languageMap.Key.Name.ToLower()), 
                             new XAttribute("value", htmlData)));
                     }
 
                     XElement element = updatedEntry.Descendants().FirstOrDefault(f => f.Name == "MetaFields");
-                    if (element != null)
-                    {
-                        element.Add(metaField);
-                    }
+                    element?.Add(specificationField);
                 }
             }
 
@@ -118,6 +108,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
             catalogElement.Add(baseCatalogDocumentNodes);
 
             return CreateDocument(catalogElement, null, null);
+        }
+
+        private XElement GetUpdatedNode(Entity channelEntity, Entity updatedEntity, XElement updatedNode)
+        {
+            Link nodeLink = updatedEntity.Links.Find(l => l.Source.Id == channelEntity.Id);
+            int sortOrder = 0;
+            if (nodeLink != null)
+            {
+                sortOrder = nodeLink.Index;
+            }
+
+            return _epiElementFactory.CreateNodeElement(updatedEntity, channelEntity.Id, sortOrder);
         }
 
         private List<XElement> CreateBaseCatalogDocumentNodes(Entity channelEntity, List<XElement> nodes, List<XElement> entries, List<XElement> relations, List<XElement> associations)
