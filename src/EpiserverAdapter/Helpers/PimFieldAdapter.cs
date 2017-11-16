@@ -30,7 +30,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             set => cvlValues = value;
         }
 
-        public static List<CVL> CvLs
+        public static List<CVL> CVLs
         {
             get => cvls ?? (cvls = RemoteManager.ModelService.GetAllCVLs());
             set => cvls = value;
@@ -168,7 +168,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             if (field == null || field.IsEmpty())
                 return dataElements;
 
-            var cvl = CvLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
+            var cvl = CVLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
             if (cvl == null)
                 return dataElements;
 
@@ -191,8 +191,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         private XElement GetCvlDataElement(Field field, CultureInfo language)
         {
-            var dataElement = new XElement(
-                "Data",
+            var dataElement = new XElement("Data",
                 new XAttribute("language", language.Name.ToLower()),
                 new XAttribute("value", GetCvlFieldValue(field, language)));
 
@@ -201,46 +200,57 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         private string GetCvlFieldValue(Field field, CultureInfo language)
         {
-            if (_config.ActiveCVLDataMode.Equals(CVLDataMode.Keys) || FieldIsExcludedCatalogEntryMarkets(field))
-            {
+            if (FieldIsExcludedCatalogEntryMarkets(field))
                 return field.Data.ToString();
-            }
            
             string[] keys = field.Data.ToString().Split(';');
             var cvlId = field.FieldType.CVLId;
+            var currentCvlValues = CVLValues.Where(cv => cv.CVLId.Equals(cvlId)).ToList();
+
+            var cvl = CVLs.FirstOrDefault(x => x.Id == cvlId);
+            if (cvl == null)
+                return null;
 
             var returnValues = new List<string>();
-                
+
+            IntegrationLogger.Write(LogLevel.Debug, $"Fetching CVL Value for CVL {cvlId} and Field {field.FieldType.Id}.");
+
             foreach (var key in keys)
             {
-                var cvlValue = CVLValues.FirstOrDefault(cv => cv.CVLId.Equals(cvlId) && cv.Key.Equals(key));
-                if (cvlValue?.Value == null)
-                    continue;
-
-                string finalizedValue;
-
-                if (field.FieldType.DataType.Equals(DataType.LocaleString))
-                {
-                    LocaleString ls = (LocaleString)cvlValue.Value;
-                        
-                    if (!ls.ContainsCulture(language))
-                        return null;
-
-                    var value = ls[language];
-                    finalizedValue = GetFinalizedValue(value, key);
-                }
-                else
-                {
-                    var value = cvlValue.Value.ToString();
-                    finalizedValue = GetFinalizedValue(value, key);
-                }
-
+                var finalizedValue = GetSingleCvlValue(key, language, currentCvlValues, cvl);
+                
                 returnValues.Add(finalizedValue);
             }
 
             return string.Join(";", returnValues);
         }
 
+        public string GetSingleCvlValue(string key, CultureInfo language, List<CVLValue> currentCvlValues, CVL cvl)
+        {
+            var cvlValue = currentCvlValues.FirstOrDefault(cv => cv.Key.Equals(key));
+            if (cvlValue?.Value == null)
+                return null;
+
+            string finalizedValue;
+
+            if (cvl.DataType.Equals(DataType.LocaleString))
+            {
+                var ls = (LocaleString)cvlValue.Value;
+
+                if (!ls.ContainsCulture(language))
+                    return null;
+
+                var value = ls[language];
+                finalizedValue = GetFinalizedValue(value, key);
+            }
+            else
+            {
+                var value = cvlValue.Value.ToString();
+                finalizedValue = GetFinalizedValue(value, key);
+            }
+
+            return finalizedValue;
+        }
         private static bool FieldIsExcludedCatalogEntryMarkets(Field field)
         {
             return field.FieldType.Settings.ContainsKey("EPiMetaFieldName") &&
@@ -249,6 +259,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         private string GetFinalizedValue(string value, string key)
         {
+            if (_config.ActiveCVLDataMode.Equals(CVLDataMode.Keys))
+            {
+                return key;
+            }
+
             if (_config.ActiveCVLDataMode.Equals(CVLDataMode.KeysAndValues))
             {
                 value = key + Configuration.CVLKeyDelimiter + value;

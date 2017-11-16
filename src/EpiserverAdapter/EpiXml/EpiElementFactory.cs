@@ -189,6 +189,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         
         public XElement InRiverEntityToEpiEntry(Entity entity)
         {
+            var metaFields = from f in entity.Fields
+                where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
+                select GetMetaFieldValueElement(f);
+
             return new XElement("Entry",
                 new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
                 new XElement("StartDate", _pimFieldAdapter.GetStartDate(entity)),
@@ -205,9 +209,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                         "MetaFields",
                         GetDisplayFieldElement(entity.DisplayName, "DisplayName"),
                         GetDisplayFieldElement(entity.DisplayDescription, "DisplayDescription"),
-                        from f in entity.Fields
-                        where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
-                        select GetMetaFieldValueElement(f))),
+                        metaFields)),
                         CreateSEOInfoElement(entity)
                         );
         }
@@ -246,18 +248,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 {
                     foreach (var culturePair in _config.LanguageMapping)
                     {
-                        metaField.Add(
-                            new XElement("Data",
-                                new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                new XAttribute("value", string.Empty)));
+                        metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", string.Empty)));
                     }
                 }
             }
             else if (field.FieldType.DataType.Equals(DataType.CVL))
             {
-                metaField.Add(
-                    new XElement("Data",
-                        _pimFieldAdapter.GetCVLValues(field)));
+                var cvlDataElement = _pimFieldAdapter.GetCVLValues(field);
+                metaField.Add(cvlDataElement);
             }
             else
             {
