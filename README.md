@@ -14,20 +14,11 @@ Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP head
 - No longer creates empty `InRiverGenericMedia` objects for resources in InRiver without a file attached to it.
 - No longer creates `InRiverGenericMedia` for file types not matching any of your implemented media types. If your Episerver site does not have a content type matching a file extension, no file will be created.
 - Support for `ChannelMimeTypeMappings` on your channel entity is removed. No need to increase complexity by tweaking internal workings of the connector.
+- CVL-values are no longer transferred as dictionaries - only the key+value is returned (configuratble as before). In Episerver, model your catalog entries to have normal string properties ("LongString") for these. Episerver has no need to maintain these values internally.
 
 ## ICatalogImportHandlers implemented?
 
 Both the original file AND the modified file will now reside in the data directory where the connector puts it's data for import.
-
-## CVL-values
-
-The adapter no longer implements `ICVLListener` - thus it no longer maintains CVLs as dictionaries in Episerver. As a result, CVL-values are no longer transferred as dictionaries - only the key+value is returned (configuratble as before). In Episerver, model your catalog entries to have normal string properties ("LongString") for these.
-
-Episerver has no need to maintain these values.
-
-Caution: If updating a value that's already in use, this will no longer be updated automatically. Might be re-added in a fundamentally different way later on.
-
-TODO: As of now there's a TODO to update all Episerver entities whenever a CVL value updates. This should usually not be a common case though, so I won't prioritize it quite yet.
 
 ## Configuration changes
 
