@@ -8,15 +8,12 @@ Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP head
 
 # Changes from original connector
 
-## inRiverAssociations
-
-This concept has been completely removed. The node will never be created, and anything that would live just inside this (like linked products/items) and nowhere else will simply not be transferred to Episerver. Should make catalog management drastically cleaner.
-
-## Inventory and price exports
-
-The original connector contained loads of code for dealing with inventory and price updates. This was not documented anywhere, nor reflected in default connector settings.
-
-This has been *removed*. The PIM should not be responsible for this in any way. 
+- Link entities will no longer be transferred in any way. They simply won't make any sense as catalog entries in Episerver - at least not generically for all solutions. Create your own integration to transfer this data correctly if needed. It only properly maintained it's display name anyways.
+- inRiverAssociations node: This concept has been completely removed. The node will never be created, and anything that would live just inside this (like linked products/items) and nowhere else will simply not be transferred to Episerver. Should make catalog management drastically cleaner.
+- Inventory and price exports: This has been *removed*. The PIM should not be responsible for this in any way.  The original connector contained loads of code for dealing with inventory and price updates. This was not documented anywhere, nor reflected in default connector settings. 
+- No longer creates empty `InRiverGenericMedia` objects for resources in InRiver without a file attached to it.
+- No longer creates `InRiverGenericMedia` for file types not matching any of your implemented media types. If your Episerver site does not have a content type matching a file extension, no file will be created.
+- Support for `ChannelMimeTypeMappings` on your channel entity is removed. No need to increase complexity by tweaking internal workings of the connector.
 
 ## ICatalogImportHandlers implemented?
 
@@ -50,10 +47,5 @@ TODO: As of now there's a TODO to update all Episerver entities whenever a CVL v
       }
 
 
-- Support for `ChannelMimeTypeMappings` on your channel entity is removed. There's simply no need to increase complexity by tweaking internal workings of the connector.
+
 - Setting `AllowsSearch` on your field type (with values `True` or `False`), tells the built in search index in CommerceManager whether the field is searchable or not.
-
-## Resources
-
-- No longer creates completely empty `InRiverGenericMedia` objects for resources in InRiver without a file attached to it.
-- No longer creates `InRiverGenericMedia` for file types not matching any of your implemented media types. If your Episerver site does not have a content type matching a file extension, no file will be created.
