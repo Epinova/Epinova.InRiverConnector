@@ -18,7 +18,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public override Task<HttpResponseMessage> ExecuteAsync(HttpControllerContext controllerContext, CancellationToken cancellationToken)
         {
-            if (ValidateApiKey(controllerContext.Request) == false)
+            if (!ValidateApiKey(controllerContext.Request))
             {
                 HttpResponseMessage resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
                 TaskCompletionSource<HttpResponseMessage> tsc = new TaskCompletionSource<HttpResponseMessage>();
@@ -31,19 +31,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         protected virtual bool ValidateApiKey(HttpRequestMessage request)
         {
-            string apiKey = null;
-            if (request.Headers.Contains(ApiKeyName))
-            {
-                // Validate api key
-                apiKey = request.Headers.GetValues(ApiKeyName).FirstOrDefault();
-            }
-
-            if (string.Compare(apiKey, ApiKeyValue, StringComparison.InvariantCultureIgnoreCase) != 0)
-            {
+            if (string.IsNullOrEmpty(ApiKeyValue))
                 return false;
-            }
 
-            return true;
+            return request.Headers.GetValues(ApiKeyName).FirstOrDefault() == ApiKeyValue;
         }
     }
 }
