@@ -72,15 +72,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         /// Creates the unique name as required for by Episerver
         /// </summary>
         /// <param name="structureEntity"></param>
-        /// <param name="linkEntity"></param>
         /// <returns></returns>
-        public string GetAssociationName(StructureEntity structureEntity, Entity linkEntity)
+        public string GetAssociationName(StructureEntity structureEntity)
         {
-            if (structureEntity.LinkEntityId != null)
-            {
-                return linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayName(linkEntity, -1).Replace(' ', '_');
-            }
-
             return structureEntity.LinkTypeIdFromParent;
         }
 

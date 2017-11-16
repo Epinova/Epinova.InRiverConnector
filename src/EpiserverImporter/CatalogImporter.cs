@@ -169,24 +169,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
-        public void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
-        {
-            int catalogId = FindCatalogByName(linkEntityUpdateData.ChannelName);
-
-            CatalogAssociationDto associationsDto2 = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, linkEntityUpdateData.ParentEntryId);
-            foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto2.CatalogEntryAssociation)
-            {
-                if (row.CatalogAssociationRow.AssociationDescription == linkEntityUpdateData.LinkEntityIdString)
-                {
-                    row.BeginEdit();
-                    row.CatalogAssociationRow.AssociationName = linkEntityUpdateData.LinkEntryDisplayName;
-                    row.AcceptChanges();
-                }
-            }
-
-            CatalogContext.Current.SaveCatalogAssociation(associationsDto2);
-        }
-
         public void UpdateEntryRelations(UpdateRelationData updateRelationData)
         {
             int catalogId = FindCatalogByName(updateRelationData.ChannelName);
@@ -329,35 +311,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     }
                 }
             }
-        }
-
-        public List<string> GetLinkEntityAssociationsForEntity(GetLinkEntityAssociationsForEntityData data)
-        {
-            List<string> ids = new List<string>();
-            int catalogId = FindCatalogByName(data.ChannelName);
-
-            foreach (string parentId in data.ParentIds)
-            {
-                CatalogAssociationDto associationsDto2 = CatalogContext.Current.GetCatalogAssociationDtoByEntryCode(catalogId, parentId);
-                foreach (CatalogAssociationDto.CatalogEntryAssociationRow row in associationsDto2.CatalogEntryAssociation)
-                {
-                    if (row.AssociationTypeId == data.LinkTypeId)
-                    {
-                        Entry childEntry = CatalogContext.Current.GetCatalogEntry(row.CatalogEntryId);
-
-                        if (data.TargetIds.Contains(childEntry.ID))
-                        {
-                            if (!ids.Contains(row.CatalogAssociationRow.AssociationDescription))
-                            {
-                                ids.Add(row.CatalogAssociationRow.AssociationDescription);
-                            }
-                        }
-                    }
-                }
-
-                CatalogContext.Current.SaveCatalogAssociation(associationsDto2);
-            }
-            return ids;
         }
 
         public void ImportCatalogXml(string path)

@@ -14,11 +14,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         void MoveNodeToRootIfNeeded(string catalogNodeId);
 
-        void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData);
-
         void UpdateEntryRelations(UpdateRelationData updateRelationData);
-
-        List<string> GetLinkEntityAssociationsForEntity(GetLinkEntityAssociationsForEntityData data);
 
         void ImportCatalogXml([FromBody] string path);
 

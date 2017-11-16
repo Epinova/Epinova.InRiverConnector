@@ -14,8 +14,6 @@
         public string DeleteCatalog => _baseUrl + "DeleteCatalog";
         public string DeleteCatalogNode => _baseUrl + "DeleteCatalogNode";
         public string DeleteCatalogEntry => _baseUrl + "DeleteCatalogEntry";
-        public string UpdateLinkEntityData => _baseUrl + "UpdateLinkEntityData";
-        public string GetLinkEntityAssociationsForEntity => _baseUrl + "GetLinkEntityAssociationsForEntity";
         public string CheckAndMoveNodeIfNeeded => _baseUrl + "MoveNodeToRootIfNeeded";
         public string UpdateEntryRelations => _baseUrl + "UpdateEntryRelations";
         public string ImportCatalogXml => _baseUrl + "ImportCatalogXml";

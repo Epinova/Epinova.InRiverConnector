@@ -133,15 +133,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             structureEntities.AddRange(addedStructureEntities);
 
             var targetEntityPath = _entityService.GetTargetEntityPath(entityId, addedStructureEntities);
-            var childLinkEntities = _entityService.GetChildrenEntitiesInChannel(entityId, targetEntityPath);
-
-            foreach (var linkEntity in childLinkEntities)
+            var childLinks = _entityService.GetChildrenEntitiesInChannel(entityId, targetEntityPath);
+            
+            foreach (var linkStructureEntity in childLinks)
             {
-                var childLinkedEntities = _entityService.GetChildrenEntitiesInChannel(linkEntity.EntityId, linkEntity.Path);
+                var childLinkedEntities = _entityService.GetChildrenEntitiesInChannel(linkStructureEntity.EntityId, linkStructureEntity.Path);
                 structureEntities.AddRange(childLinkedEntities);
             }
 
-            structureEntities.AddRange(childLinkEntities);
+            structureEntities.AddRange(childLinks);
 
             _addUtility.Add(channel, connectorEvent, structureEntities);
           
@@ -155,6 +155,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
 
             var updatedEntity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataAndLinks);
+
+            if (updatedEntity.EntityType.IsLinkEntityType)
+                return connectorEvent;
 
             string folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
 
@@ -181,14 +184,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
 
                 XDocument doc = _epiDocumentFactory.CreateUpdateDocument(channel, updatedEntity);
-                
-                if (updatedEntity.EntityType.IsLinkEntityType)
-                {
-                    List<Link> links = RemoteManager.DataService.GetLinksForLinkEntity(updatedEntity.Id);
-                    if (links.Count > 0)
-                        _epiApi.UpdateLinkEntityData(updatedEntity, channel, links.First().Source.Id);
-                }
-
+               
                 string catalogDocumentName = _documentFileHelper.SaveCatalogDocument(channel, doc, folderDateTime);
 
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");

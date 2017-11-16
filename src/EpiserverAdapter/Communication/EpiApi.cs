@@ -106,67 +106,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        internal void UpdateLinkEntityData(Entity linkEntity, Entity channel, int parentId)
-        {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    string channelName = _pimFieldAdapter.GetDisplayName(channel, -1);
-
-                    string parentEntryId = _catalogCodeGenerator.GetEpiserverCode(parentId);
-                    string linkEntityIdString = _catalogCodeGenerator.GetEpiserverCode(linkEntity);
-
-                    string dispName = linkEntity.EntityType.Id + '_' + _pimFieldAdapter.GetDisplayName(linkEntity, -1).Replace(' ', '_');
-
-                    LinkEntityUpdateData dataToSend = new LinkEntityUpdateData
-                                                          {
-                                                              ChannelName = channelName,
-                                                              LinkEntityIdString = linkEntityIdString,
-                                                              LinkEntryDisplayName = dispName,
-                                                              ParentEntryId = parentEntryId
-                                                          };
-
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.UpdateLinkEntityData, dataToSend);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to update data for link entity with id:{linkEntity.Id}", exception);
-                }
-            }
-        }
-
-        internal List<string> GetLinkEntityAssociationsForEntity(string linkType, 
-                                                                 Entity channelEntity, 
-                                                                 List<string> parentCodes, 
-                                                                 List<string> targetCodes)
-        {
-            lock (EpiLockObject.Instance)
-            {
-                List<string> ids = new List<string>();
-                try
-                {
-                    string channelName = _pimFieldAdapter.GetDisplayName(channelEntity, -1);
-
-                    GetLinkEntityAssociationsForEntityData dataToSend = new GetLinkEntityAssociationsForEntityData
-                                                                            {
-                                                                                ChannelName = channelName,
-                                                                                LinkTypeId = linkType,
-                                                                                ParentIds = parentCodes,
-                                                                                TargetIds = targetCodes
-                                                                            };
-
-                    ids = _httpClient.PostWithStringListAsReturn(_config.Endpoints.GetLinkEntityAssociationsForEntity, dataToSend);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Warning, "Failed to get link entity associations for entity", exception);
-                }
-
-                return ids;
-            }
-        }
-
         internal void MoveNodeToRootIfNeeded(int entityId)
         {
             lock (EpiLockObject.Instance)

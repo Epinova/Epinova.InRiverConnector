@@ -137,7 +137,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
                 new XElement("StartDate", _pimFieldAdapter.GetStartDate(entity)),
                 new XElement("EndDate", _pimFieldAdapter.GetEndDate(entity)),
-                new XElement("IsActive", !entity.EntityType.IsLinkEntityType),
+                new XElement("IsActive", true.ToString()),
                 new XElement("SortOrder", sortOrder),
                 new XElement("DisplayTemplate", string.Empty),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
@@ -331,19 +331,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
                 new XElement("GroupName", "default"),
                 new XElement("SortOrder", sortOrder));
         }
-        public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Entity linkEntity, Dictionary<int, Entity> channelEntities = null)
-        {
-            string name = _mappingHelper.GetAssociationName(structureEntity, linkEntity);
-            string description = structureEntity.LinkEntityId == null ? 
-                                        structureEntity.LinkTypeIdFromParent : 
-                                        _catalogCodeGenerator.GetEpiserverCode(structureEntity.LinkEntityId.Value);
 
-            description = description ?? string.Empty;
+        public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Dictionary<int, Entity> channelEntities = null)
+        {
+            string name = _mappingHelper.GetAssociationName(structureEntity);
 
             return new XElement(
                 "CatalogAssociation",
                 new XElement("Name", name),
-                new XElement("Description", description),
+                new XElement("Description", structureEntity.LinkTypeIdFromParent),
                 new XElement("SortOrder", structureEntity.SortOrder),
                 new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId)),
                 CreateAssociationElement(structureEntity));

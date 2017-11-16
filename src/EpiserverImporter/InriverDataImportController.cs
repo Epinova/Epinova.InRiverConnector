@@ -93,26 +93,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public void UpdateLinkEntityData(LinkEntityUpdateData linkEntityUpdateData)
-        {
-            _logger.Debug("UpdateLinkEntityData");
-            _catalogImporter.UpdateLinkEntityData(linkEntityUpdateData);
-        }
-
-        [HttpPost]
         public void UpdateEntryRelations(UpdateRelationData updateRelationData)
         {
             _logger.Debug("UpdateEntryRelations");
 
             _catalogImporter.UpdateEntryRelations(updateRelationData);
-        }
-
-        [HttpPost]
-        public List<string> GetLinkEntityAssociationsForEntity(GetLinkEntityAssociationsForEntityData data)
-        {
-            _logger.Debug("GetLinkEntityAssociationsForEntity");
-
-            return _catalogImporter.GetLinkEntityAssociationsForEntity(data);
         }
 
         public string Get()
