@@ -251,6 +251,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             return finalizedValue;
         }
+
         private static bool FieldIsExcludedCatalogEntryMarkets(Field field)
         {
             return field.FieldType.Settings.ContainsKey("EPiMetaFieldName") &&

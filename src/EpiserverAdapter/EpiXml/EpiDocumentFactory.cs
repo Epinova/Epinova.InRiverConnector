@@ -167,20 +167,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.EpiXml
         {
             foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId && !x.IsChannelNode()))
             {
-                if (structureEntity.LinkEntityId.HasValue)
-                {
-                    Entity linkEntity = RemoteManager.DataService.GetEntity(structureEntity.LinkEntityId.Value, LoadLevel.DataOnly);
-
-                    XElement entryElement = _epiElementFactory.InRiverEntityToEpiEntry(linkEntity);
-
-                    XElement codeElement = entryElement.Element("Code");
-                    if (codeElement != null && !_epiElementContainer.HasEntry(codeElement.Value))
-                    {
-                        _epiElementContainer.AddEntry(entryElement, codeElement.Value);
-                        IntegrationLogger.Write(LogLevel.Debug, $"Added Entity {linkEntity.DisplayName} to Entries");
-                    }
-                }
-
                 Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataAndLinks);
 
                 if (ShouldCreateSkus(structureEntity))
