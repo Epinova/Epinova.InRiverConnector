@@ -1,0 +1,6 @@
+<configuration xmlns:xdt="http://schemas.microsoft.com/XML-Document-Transform">
+  <appSettings>
+    <add key="inRiver.apikey" value="123" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)" />
+    <add key="inRiver.RunICatalogImportHandlers" value="false" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)" />
+  </appSettings>
+</configuration>

@@ -1,0 +1,6 @@
+<configuration xmlns:xdt="http://schemas.microsoft.com/XML-Document-Transform">
+  <appSettings>
+    <add key="inRiver.apikey" xdt:Transform="Remove" xdt:Locator="Match(name)" />
+    <add key="inRiver.RunICatalogImportHandlers" xdt:Transform="Remove" xdt:Locator="Match(name)" />
+  </appSettings>
+</configuration>

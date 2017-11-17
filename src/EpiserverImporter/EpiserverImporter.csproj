@@ -227,12 +227,17 @@
     <None Include="packages.config">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Web.config.install.xdt" />
+    <None Include="Web.config.uninstall.xdt" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Interfaces\Interfaces.csproj">
       <Project>{0c76565d-930b-4478-9101-aad7bced1d6f}</Project>
       <Name>Interfaces</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="readme.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

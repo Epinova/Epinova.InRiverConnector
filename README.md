@@ -6,6 +6,14 @@ This is a major modification of inRiver's own connector, located at https://gith
 
 *Big shout out to Optimera AS, Norway, that allowed me to spend time on this!*
 
+## How to install:
+
+1. Install NuGet
+2. Add <apikey etc>
+3. packages\Epinova.InRiverConnector.x.x.x.x\OutboundConnectors - the files here must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
+4. Restart the `inRiver Connect` service
+
+
 ## Changes from original connector
 
 - Link entities will no longer be transferred in any way. They simply won't make any sense as catalog entries in Episerver - at least not generically for all solutions. Create your own integration to transfer this data correctly if needed. It only properly maintained it's display name anyways.
@@ -42,8 +50,8 @@ This is a major modification of inRiver's own connector, located at https://gith
 
 Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
 
-# Config in Episerver
+# Config in Episerver (`web.config\appSettings`)
 
-- Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
-
-...more to come here.
+- Optional: Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
+- `inRiver.apikey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
+- `inRiver.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.

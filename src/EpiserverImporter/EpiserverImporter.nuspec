@@ -22,5 +22,7 @@
     <file src="..\EpiserverAdapter\bin\Release\Epinova.InRiverConnector.EpiserverAdapter.dll" target="OutboundConnectors\Epinova.InRiverConnector.EpiserverAdapter.dll" />
     <file src="..\EpiserverAdapter\bin\Release\Epinova.InRiverConnector.Interfaces.dll" target="OutboundConnectors\Epinova.InRiverConnector.Interfaces.dll" />
     <file src="bin\Release\Epinova.InRiverConnector.Interfaces.dll" target="lib/net452" />
+    <file src="\Web.config.install.xdt" target="content" />
+    <file src="\Web.config.uninstall.xdt" target="content" />
   </files>
 </package>
