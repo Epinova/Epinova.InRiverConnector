@@ -1,0 +1,1 @@
+﻿For docs, see https://github.com/Epinova/Epinova.InRiverConnector or README.md in the package root.
