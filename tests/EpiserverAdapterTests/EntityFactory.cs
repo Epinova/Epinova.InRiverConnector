@@ -7,11 +7,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
     {
         public static Entity CreateItem(int id)
         {
-            return new Entity()
+            return new Entity
             {
                 EntityType = new EntityType("Item"),
                 Id = id,
-                Fields = new List<Field>()
+                Fields = new List<Field>(),
+                LoadLevel = LoadLevel.DataOnly
             };
         }
     }
