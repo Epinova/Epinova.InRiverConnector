@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle("inRiver.EPiServerCommerce.Interfaces")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("inRiver AB")]
 [assembly: AssemblyProduct("inRiver.EPiServerCommerce.Interfaces")]
 [assembly: AssemblyCopyright("Copyright © inRiver AB 2016")]
@@ -21,3 +20,11 @@ using System.Runtime.InteropServices;
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
 [assembly: Guid("897a5e65-197c-4fba-b927-7adc3083bd64")]
+
+[assembly: AssemblyVersion("1.0.0.0")]
+[assembly: AssemblyFileVersion("1.0.0.0")]
+#if DEBUG
+[assembly: AssemblyConfiguration("Debug")]
+#else
+[assembly: AssemblyConfiguration("Release")]
+#endif
