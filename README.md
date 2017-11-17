@@ -1,12 +1,10 @@
-# Test if it's installed correctly:
+# Epinova.InRiverConnector
 
-Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+This is a major modification of inRiver's own connector, located at https://github.com/inRiver/EPiServer. It connects inRiver PIM with Episerver Commerce, enabling you to keep your catalog in sync between the two systems.
 
-# Config in Episerver
+Note, if you've been using certain features of the original connector, *installing this might contain breaking changes*. Read this and test well. Godspeed!
 
-- You can now add a setting (appSettings) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
-
-# Changes from original connector
+## Changes from original connector
 
 - Link entities will no longer be transferred in any way. They simply won't make any sense as catalog entries in Episerver - at least not generically for all solutions. Create your own integration to transfer this data correctly if needed. It only properly maintained it's display name anyways.
 - inRiverAssociations node: This concept has been completely removed. The node will never be created, and anything that would live just inside this (like linked products/items) and nowhere else will simply not be transferred to Episerver. Should make catalog management drastically cleaner.
@@ -15,12 +13,9 @@ Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP head
 - No longer creates `InRiverGenericMedia` for file types not matching any of your implemented media types. If your Episerver site does not have a content type matching a file extension, no file will be created.
 - Support for `ChannelMimeTypeMappings` on your channel entity is removed. No need to increase complexity by tweaking internal workings of the connector.
 - CVL-values are no longer transferred as dictionaries - only the key+value is returned (configuratble as before). In Episerver, model your catalog entries to have normal string properties ("LongString") for these. Episerver has no need to maintain these values internally.
+- If you implement ICatalogImportHandlers that changes the exported `Catalog.xml` file, both the original file and the modified file will now reside in the data directory where the connector puts it's data for import. This should hopefully make debugging slightly easier.
 
-## ICatalogImportHandlers implemented?
-
-Both the original file AND the modified file will now reside in the data directory where the connector puts it's data for import.
-
-## Configuration changes
+### Configuration changes
 
 - `RESOURCE_PROVIDER_TYPE` has been removed. Write your own integration if this was truly needed.
 - `EPI_MAJOR_VERSION` has been removed. It had no purpose.
@@ -40,3 +35,13 @@ Both the original file AND the modified file will now reside in the data directo
 
 
 - Setting `AllowsSearch` on your field type (with values `True` or `False`), tells the built in search index in CommerceManager whether the field is searchable or not.
+
+# Test if it's installed correctly:
+
+Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+
+# Config in Episerver
+
+- Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
+
+
