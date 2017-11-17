@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("inRiver.EPiServerCommerce.Nine.Importer")]
-[assembly: AssemblyDescription("Custom built at Optimera for Episerver 10")]
+[assembly: AssemblyTitle("Epinova.InRiverConnector.EpiserverImporter")]
+[assembly: AssemblyDescription("Connector between Episerver and inRiver PIM")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("inRiver.EPiServerCommerce.Nine.Importer")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyProduct("Epinova.InRiverConnector")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

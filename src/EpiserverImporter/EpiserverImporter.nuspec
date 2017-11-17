@@ -1,0 +1,20 @@
+﻿<?xml version="1.0"?>
+<package xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <metadata xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <id>$id$</id>
+    <title>$id$</title>
+    <version>$version$</version>
+    <authors>Arve Systad</authors>
+    <owners>$author$ - Arve Systad (Epinova + Optimera AS)</owners>
+    <iconUrl>http://www.epinova.no/favicon.ico</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>$description$</description>
+    <releaseNotes></releaseNotes>
+    <copyright>Copyright © 2Epinova 2016</copyright>
+    <tags>EPiServer Epinova inRiver PIM Commerce</tags>
+    <dependencies>
+      <dependency id="EPiServer.CMS.Core" version="[10.10.0, 11.0.0)" />
+      <dependency id="EPiServer.Commerce.Core" version="[11.0.0, 12.0.0)" />
+    </dependencies>
+  </metadata>
+</package>
