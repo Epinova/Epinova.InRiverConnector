@@ -4,7 +4,7 @@ This is a major modification of inRiver's own connector, located at https://gith
 
 **IMPORTANT NOTE:** If you've been using certain features of the original connector, **installing this might be a major breaking change**. Read this and test well. Godspeed!
 
-Big shout out to Optimera AS, Norway, that enabled me to spend time on this!
+*Big shout out to Optimera AS, Norway, that allowed me to spend time on this!*
 
 ## Changes from original connector
 
@@ -46,3 +46,4 @@ Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP head
 
 - Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
 
+...more to come here.
