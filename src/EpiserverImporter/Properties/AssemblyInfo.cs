@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("Epinova.InRiverConnector.EpiserverImporter")]
+[assembly: AssemblyTitle("Epinova.InRiverConnector")]
 [assembly: AssemblyDescription("Connector between Episerver and inRiver PIM")]
 [assembly: AssemblyCompany("Epinova")]
 [assembly: AssemblyProduct("Epinova.InRiverConnector")]
