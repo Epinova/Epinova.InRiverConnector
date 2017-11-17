@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Epinova.InRiverConnector.Interfaces;
 using EPiServer.Logging;
+using EPiServer.ServiceLocation;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
@@ -12,6 +13,15 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private readonly ICatalogImporter _catalogImporter;
         private readonly ILogger _logger;
         private readonly MediaImporter _mediaImporter;
+
+        public InriverDataImportController()
+        {
+            // In case you haven't got your own WebAPI dependency resolver, do it this old fashioned silly way.
+
+            _catalogImporter = ServiceLocator.Current.GetInstance<ICatalogImporter>();
+            _logger = ServiceLocator.Current.GetInstance<ILogger>();
+            _mediaImporter = ServiceLocator.Current.GetInstance<MediaImporter>();
+        }
 
         public InriverDataImportController(ICatalogImporter catalogImporter,
                                            ILogger logger,
