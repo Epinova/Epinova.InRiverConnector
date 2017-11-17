@@ -17,4 +17,10 @@
       <dependency id="EPiServer.Commerce.Core" version="[11.0.0, 12.0.0)" />
     </dependencies>
   </metadata>
+  <files>
+    <file src="..\..\README.md" target="" />
+    <file src="..\EpiserverAdapter\bin\Release\Epinova.InRiverConnector.EpiserverAdapter.dll" target="content\Epinova.InRiverConnector.EpiserverAdapter.dll" />
+    <file src="..\EpiserverAdapter\bin\Release\Epinova.InRiverConnector.Interfaces.dll" target="content\Epinova.InRiverConnector.Interfaces.dll" />
+    <file src="bin\Release\Epinova.InRiverConnector.Interfaces.dll" target="lib/net452" />
+  </files>
 </package>
