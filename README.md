@@ -9,10 +9,25 @@ This is a major modification of inRiver's own connector, located at https://gith
 ## How to install:
 
 1. Install NuGet
-2. Add <apikey etc>
-3. packages\Epinova.InRiverConnector.x.x.x.x\OutboundConnectors - the files here must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
-4. Restart the `inRiver Connect` service
+2. In `web.config\appSettings`, add an API key to `inRiver.apikey`. The same key must be added to the installed connector as a configuration with key `EPI_APIKEY`.
+3. Locate the installed nuget package in `packages\Epinova.InRiverConnector.x.x.x.x\`. The files beneath `OutboundConnectors` must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
+4. Restart the `inRiver Connect` service and create a new connector. Configure it as explained below the *Connector configuration* section.
 
+
+Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+
+## Config in Episerver (`web.config\appSettings`)
+
+- Optional: Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
+- `inRiver.apikey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
+- `inRiver.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.
+
+## Connector configuration
+
+## Troubleshooting
+
+- To debug the Episerver side of things, add a logger called `Epinova.InRiverConnector` to `Episerverlog.config` and set it to `DEBUG` level.
+- To debug the PIM connector side, see `inRiver Connect\Logs`. Make sure the inRiver log config is set to `DEBUG` if you want detailed information.
 
 ## Changes from original connector
 
@@ -46,12 +61,3 @@ This is a major modification of inRiver's own connector, located at https://gith
 
 - Setting `AllowsSearch` on your field type (with values `True` or `False`), tells the built in search index in CommerceManager whether the field is searchable or not.
 
-# Test if it's installed correctly:
-
-Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
-
-# Config in Episerver (`web.config\appSettings`)
-
-- Optional: Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
-- `inRiver.apikey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
-- `inRiver.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.
