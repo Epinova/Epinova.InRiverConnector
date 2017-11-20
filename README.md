@@ -38,6 +38,9 @@ Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP head
 - LANGUAGE_MAPPING setting makes it possible to map one PIM cultureinfo to one or several EPiCommerce cultureinfos. The syntax is the following: `<languages><language><epi>en-us</epi><inriver>en-us</inriver></language></languages>`
 - `EXPORT_ENTITIES` - Should contain all the entity types you want to export. Defaults to `Product,Item,ChannelNode`, but you can add in anything really. These will be created as catalog entities, so adding things like milestones or activites will not make sense. Create your own integration for such things.
 - `FORCE_INCLUDE_LINKED_CONTENT` - Set to `True` if you want to include everything linked to the channel via upsell/accessories and such, as well as via Product-Item-links or ChannelNode-Product links. Set to 'False' to only include those entities which directly belongs to a Product/Bundle/Package or a Channel Node. Defaults to False. These force-added entries will end up at the root of your catalog. Implement and register `ICatalogImportHandler.PostImport` if you want to fiddle about with it. (You might see this as a more controllable version of the old `inRiverAssociations` node.)
+- `EPI_ENDPOINT_URL` - Base endpoint for the connector to talk to the Episerver website with. Defaults to `https://www.example.com/inriverapi/InriverDataImport/`. Typically, you'll only change the host name (`www.example.com`) here.
+- `EPI_APIKEY` - API key to secure the importer endpoint. Must match `inRiver.apikey` setting in the Episerver website.
+- `EPI_RESTTIMEOUT` - Timeout in hours for connector calls to the Episerver website. Defaults to `1`.
 - HTTP_POST_URL - The connector will post the path to the recently imported file to the URL given here, if any. Could simply be implemented as shown below:
 
 
