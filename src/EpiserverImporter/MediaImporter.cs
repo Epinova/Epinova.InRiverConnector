@@ -384,12 +384,12 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
 
             var writableMediaCollection = writableContent.CommerceMediaCollection.CreateWritableClone();
-            var mediaToRemove = writableMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
+            var mediaToRemove = writableContent.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.ContentLink));
             if (mediaToRemove == null)
                 return;
 
-            writableMediaCollection.Remove(mediaToRemove);
-            _contentRepository.Save((IContent) writableContent, AccessLevel.NoAccess);
+            writableContent.CommerceMediaCollection.Remove(mediaToRemove);
+            _contentRepository.Save((IContent) writableContent, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
         private static readonly object LockObject = new object();
