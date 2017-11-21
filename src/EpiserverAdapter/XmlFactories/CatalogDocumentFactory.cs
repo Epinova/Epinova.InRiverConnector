@@ -434,7 +434,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         /// </summary>
         private void AddMissingParentRelation(StructureEntity structureEntity, string skuId)
         {
-            var parentProduct = _channelHelper.GetParentProduct(structureEntity);
+            var parentProduct = _entityService.GetParentProduct(structureEntity);
             if (parentProduct == null)
                 return;
 
@@ -455,7 +455,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                                              string skuCode, 
                                              LinkType linkType)
         {
-            var parentProduct = _channelHelper.GetParentProduct(structureEntity);
+            var parentProduct = _entityService.GetParentProduct(structureEntity);
             if (parentProduct == null)
                 return;
 

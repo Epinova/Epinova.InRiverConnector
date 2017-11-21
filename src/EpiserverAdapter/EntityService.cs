@@ -20,6 +20,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private Dictionary<string, List<StructureEntity>> _cachedChannelNodeStructureEntities;
         private List<StructureEntity> _allResourceStructureEntities;
+        private Dictionary<int, Entity> _cachedParentEntities;
 
         public EntityService(IConfiguration config, EpiMappingHelper mappingHelper)
         {
@@ -28,6 +29,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             _cachedEntities = new List<Entity>();
             _cachedChannelNodeStructureEntities = new Dictionary<string, List<StructureEntity>>();
+            _cachedParentEntities = new Dictionary<int, Entity>();
         }
 
         public Entity GetEntity(int id, LoadLevel loadLevel)
@@ -150,6 +152,26 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var structureEntities = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(path, "ChannelNode");
             _cachedChannelNodeStructureEntities.Add(path, structureEntities);
             return structureEntities;
+        }
+
+
+        public Entity GetParentProduct(StructureEntity itemStructureEntity)
+        {
+            var entityId = itemStructureEntity.EntityId;
+
+            if (_cachedParentEntities.ContainsKey(entityId))
+                return _cachedParentEntities[entityId];
+
+            var inboundLinks = RemoteManager.DataService.GetInboundLinksForEntity(entityId);
+            var relationLink = inboundLinks.FirstOrDefault(x => _mappingHelper.IsRelation(x.LinkType));
+
+            if (relationLink == null)
+                return null;
+
+            var parent = GetEntity(relationLink.Source.Id, LoadLevel.DataOnly);
+            _cachedParentEntities.Add(entityId, parent);
+
+            return parent;
         }
 
         public void FlushCache()
