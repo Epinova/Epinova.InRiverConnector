@@ -8,34 +8,38 @@ This is a major modification of inRiver's own connector, located at https://gith
 
 ## How to install:
 
-1. Install NuGet
+1. Install NuGet package (For now build it yourself: `nuget pack <path-to-clone-location>/src/EpiserverImporter/EpiserverImporter.csproj`. It'll hopefully end up in the Episerver nuget feed later when it has undergone some testing.)
 2. In `web.config\appSettings`, add an API key to `inRiver.apikey`. The same key must be added to the installed connector as a configuration with key `EPI_APIKEY`.
 3. Locate the installed nuget package in `packages\Epinova.InRiverConnector.x.x.x.x\`. The files beneath `OutboundConnectors` must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
 4. Restart the `inRiver Connect` service and create a new connector. Configure it as explained below the *Connector configuration* section.
 
-Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get` (for example `www.example.com/inriverapi/inriverdataimport/get` , with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+
+Note: This connector logs quite extensively in debug mode. If that's not needed, make sure your inRiver connect service runs with a higher log level, as this might affect performance.
 
 ## Config in Episerver (`web.config\appSettings`)
 
-- Optional: Add an application setting (`appSettings` in `web.config`) `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
+These settings should be added to your `web.config` file under `<appSettings>` as `<add key="name_given_below" value="a suitable value" />`.
+
+- Optional: `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
 - `inRiver.apikey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
 - `inRiver.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.
 
 ## Connector configuration
 
-- PUBLISH_FOLDER - Path for the connector to publish catalog data to. The Episerver web site needs read access to the same path.
-- PUBLISH_FOLDER_RESOURCES - Path for the connector to publish resources to. The Episerver web site needs read access to the same path.
-- RESOURCE_CONFIGURATION - Image formats to be exported. Values must match the imageConfigurations in inRiver.Server.exe.config.  (Original, Thumbnail, Preview, ...) This is a comma separated list. The Value Original is not a listed as a image configuration, because it returns the unchanged original image.
-- ITEM_TO_SKUS - SKU data on the Items that should be exported as separate items (true/false)
-- USE_THREE_LEVELS_IN_COMMERCE - Used together with ITEM_TO_SKUS for controlling if the SKUs should replace the Items or added under the Items (true/false).
-- CVL_DATA - What information should be exported for the CVLs. (Keys/Values/KeysAndValues)
-- BUNDLE_ENTITYTYPES - Entity types in inRiver that should be exported as Bundle. This is a comma separated list.
-- PACKAGE_ENTITYTYPES- Entity types in inRiver that should be exported as Package. This is a comma separated list.
-- DYUNAMIC_PACKAGE_ENTITYTYPES- Entity types in inRiver that should be exported as Dynamic Package. This is a comma separated list.
-- CHANNEL_ID - The System ID of the channel the connector should listen to.
-- EXCLUDE_FIELDS - Used to exclude fields in the import. Write the FieldTypeIds in a comma separated list
-- EPI_CODE_FIELDS - Used to map the Code field in EPiServer Commerce to custom fields in inRiver. Write the FieldTypeIds (one for each entity type, that should be overridden) in a comma separated list. If empty the ChannelPrefix and the internal id in inRiver will be used as Code in EPiServer Commerce. If a field in inRiver is used, this field can not be updated once the channel is published.
-- LANGUAGE_MAPPING setting makes it possible to map one PIM cultureinfo to one or several EPiCommerce cultureinfos. The syntax is the following: `<languages><language><epi>en-us</epi><inriver>en-us</inriver></language></languages>`
+- `PUBLISH_FOLDER` - Path for the connector to publish catalog data to. The Episerver web site needs read access to the same path.
+- `PUBLISH_FOLDER_RESOURCES` - Path for the connector to publish resources to. The Episerver web site needs read access to the same path.
+- `RESOURCE_CONFIGURATION` - Image formats to be exported. Values must match the imageConfigurations in inRiver.Server.exe.config.  (Original, Thumbnail, Preview, ...) This is a comma separated list. The Value Original is not a listed as a image configuration, because it returns the unchanged original image.
+- `ITEM_TO_SKUS` - SKU data on the Items that should be exported as separate items (true/false)
+- `USE_THREE_LEVELS_IN_COMMERCE` - Used together with ITEM_TO_SKUS for controlling if the SKUs should replace the Items or added under the Items (true/false).
+- `CVL_DATA` - What information should be exported for the CVLs. (Keys/Values/KeysAndValues)
+- `BUNDLE_ENTITYTYPES` - Entity types in inRiver that should be exported as Bundle. This is a comma separated list.
+- `PACKAGE_ENTITYTYPES`- Entity types in inRiver that should be exported as Package. This is a comma separated list.
+- `DYNAMIC_PACKAGE_ENTITYTYPES` - Entity types in inRiver that should be exported as Dynamic Package. This is a comma separated list.
+- `CHANNEL_ID` - The System ID of the channel the connector should listen to.
+- `EXCLUDE_FIELDS` - Used to exclude fields in the import. Write the FieldTypeIds in a comma separated list
+- `EPI_CODE_FIELDS` - Used to map the Code field in EPiServer Commerce to custom fields in inRiver. Write the FieldTypeIds (one for each entity type, that should be overridden) in a comma separated list. If empty the ChannelPrefix and the internal id in inRiver will be used as Code in EPiServer Commerce. If a field in inRiver is used, this field can not be updated once the channel is published.
+- `LANGUAGE_MAPPING` - Maps one PIM CultureInfo to one or several CultureInfos in Episerver. The syntax is the following: `<languages><language><epi>en-us</epi><inriver>en-us</inriver></language></languages>`
 - `EXPORT_ENTITIES` - Should contain all the entity types you want to export. Defaults to `Product,Item,ChannelNode`, but you can add in anything really. These will be created as catalog entities, so adding things like milestones or activites will not make sense. Create your own integration for such things.
 - `FORCE_INCLUDE_LINKED_CONTENT` - Set to `True` if you want to include everything linked to the channel via upsell/accessories and such, as well as via Product-Item-links or ChannelNode-Product links. Set to 'False' to only include those entities which directly belongs to a Product/Bundle/Package or a Channel Node. Defaults to False. These force-added entries will end up at the root of your catalog. Implement and register `ICatalogImportHandler.PostImport` if you want to fiddle about with it. (You might see this as a more controllable version of the old `inRiverAssociations` node.)
 - `EPI_ENDPOINT_URL` - Base endpoint for the connector to talk to the Episerver website with. Defaults to `https://www.example.com/inriverapi/InriverDataImport/`. Typically, you'll only change the host name (`www.example.com`) here.
@@ -77,3 +81,4 @@ Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get`, with an added HTTP head
 - `EXPORT_ENTITIES` is new. See description above.
 - `FORCE_INCLUDE_LINKED_CONTENT` - new setting. See description above.
 - `HTTP_POST_URL` - The URL you supply here no longer receives a ZIP-file, but rather the path to the recently imported file. 
+- `EXPORT_INVENTORY_DATA` and `EXPORT_PRICING_DATA` have been removed.
