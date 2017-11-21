@@ -14,5 +14,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         List<StructureEntity> GetStructureEntitiesForEntityInChannel(int channelId, int entityId);
         StructureEntity GetParentStructureEntity(int channelId, int sourceEntityId, int targetEntityId, List<StructureEntity> channelEntities);
         void FlushCache();
+        List<StructureEntity> GetChannelNodeStructureEntitiesInPath(string path);
     }
 }

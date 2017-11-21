@@ -69,9 +69,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public Entity GetParentProduct(StructureEntity itemStructureEntity)
         {
-            // TODO: Cache the result from here, with structureEntity.EntityId as some sort of key
-            // TODO: Remember to empty this cache after the export is done
-
             var inboundLinks = RemoteManager.DataService.GetInboundLinksForEntity(itemStructureEntity.EntityId);
             var relationLink = inboundLinks.FirstOrDefault(x => _mappingHelper.IsRelation(x.LinkType));
 
@@ -79,11 +76,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         }
 
         public Entity GetParentChannelNode(StructureEntity structureEntity)
-        {
-            // TODO: Cache the result from here, with structureEntity.EntityId as some sort of key
-            // TODO: Remember to empty this cache after the export is done
-
-            var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "ChannelNode");
+        {          
+            var channelNodesInPath = _entityService.GetChannelNodeStructureEntitiesInPath(structureEntity.Path);
             var entity = channelNodesInPath.LastOrDefault();
             return entity != null ? _entityService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
         }

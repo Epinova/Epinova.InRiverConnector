@@ -18,12 +18,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         /// </summary>
         private List<Entity> _cachedEntities;
 
+        private Dictionary<string, List<StructureEntity>> _cachedChannelNodeStructureEntities;
+
         public EntityService(IConfiguration config, EpiMappingHelper mappingHelper)
         {
             _config = config;
             _mappingHelper = mappingHelper;
 
             _cachedEntities = new List<Entity>();
+            _cachedChannelNodeStructureEntities = new Dictionary<string, List<StructureEntity>>();
         }
 
         public Entity GetEntity(int id, LoadLevel loadLevel)
@@ -135,11 +138,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return structureEntities.Find(i => i.Path.Equals(parentPath) && i.EntityId.Equals(sourceEntityId));
         }
 
+        public List<StructureEntity> GetChannelNodeStructureEntitiesInPath(string path)
+        {
+            if (_cachedChannelNodeStructureEntities.ContainsKey(path))
+                return _cachedChannelNodeStructureEntities[path];
+
+            var structureEntities = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(path, "ChannelNode");
+            _cachedChannelNodeStructureEntities.Add(path, structureEntities);
+            return structureEntities;
+        }
+
         public void FlushCache()
         {
             _cachedEntities = new List<Entity>();
+            _cachedChannelNodeStructureEntities = new Dictionary<string, List<StructureEntity>>();
         }
-
+        
 
         /// <summary>
         /// Tells you whether or not a structure entity belongs in the channel, based on it's links.

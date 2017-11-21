@@ -8,11 +8,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly IConfiguration _config;
         private readonly IEntityService _entityService;
 
-        public CatalogCodeGenerator()
-        {
-            
-        }
-
         public CatalogCodeGenerator(IConfiguration config, IEntityService entityService)
         {
             _config = config;
