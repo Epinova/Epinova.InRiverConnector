@@ -161,7 +161,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated, 
                         $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
 
-            var updatedEntity = RemoteManager.DataService.GetEntity(entityId, LoadLevel.DataAndLinks);
+            
+            var updatedEntity = _entityService.GetEntity(entityId, LoadLevel.DataAndLinks);
 
             if (updatedEntity.EntityType.IsLinkEntityType)
                 return connectorEvent;
@@ -270,8 +271,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
                 $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName.Data}", 0);
 
-            Entity removalTarget = RemoteManager.DataService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
-            Entity removalSource = RemoteManager.DataService.GetEntity(sourceEntityId, LoadLevel.DataAndLinks);
+            Entity removalTarget = _entityService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
+            Entity removalSource = _entityService.GetEntity(sourceEntityId, LoadLevel.DataAndLinks);
 
             if (removalTarget.EntityType.Id == "Resource")
             {

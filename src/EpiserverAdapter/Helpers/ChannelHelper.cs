@@ -16,22 +16,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     public class ChannelHelper
     {
         private readonly IConfiguration _config;
-        private readonly CatalogElementFactory _catalogElementFactory;
         private readonly EpiMappingHelper _mappingHelper;
-        private readonly CatalogCodeGenerator _catalogCodeGenerator;
+        private readonly IEntityService _entityService;
 
-        public ChannelHelper(IConfiguration config, CatalogElementFactory catalogElementFactory, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator)
+        public ChannelHelper(IConfiguration config, EpiMappingHelper mappingHelper, IEntityService entityService)
         {
             _config = config;
-            _catalogElementFactory = catalogElementFactory;
             _mappingHelper = mappingHelper;
-            _catalogCodeGenerator = catalogCodeGenerator;
+            _entityService = entityService;
         }
 
 
         public Entity InitiateChannelConfiguration(int channelId)
         {
-            Entity channel = RemoteManager.DataService.GetEntity(channelId, LoadLevel.DataOnly);
+            Entity channel = _entityService.GetEntity(channelId, LoadLevel.DataOnly);
             if (channel == null)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Could not find channel");
@@ -71,17 +69,23 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public Entity GetParentProduct(StructureEntity itemStructureEntity)
         {
+            // TODO: Cache the result from here, with structureEntity.EntityId as some sort of key
+            // TODO: Remember to empty this cache after the export is done
+
             var inboundLinks = RemoteManager.DataService.GetInboundLinksForEntity(itemStructureEntity.EntityId);
             var relationLink = inboundLinks.FirstOrDefault(x => _mappingHelper.IsRelation(x.LinkType));
 
-            return relationLink != null ? RemoteManager.DataService.GetEntity(relationLink.Source.Id, LoadLevel.DataOnly) : null;
+            return relationLink != null ? _entityService.GetEntity(relationLink.Source.Id, LoadLevel.DataOnly) : null;
         }
 
         public Entity GetParentChannelNode(StructureEntity structureEntity)
         {
+            // TODO: Cache the result from here, with structureEntity.EntityId as some sort of key
+            // TODO: Remember to empty this cache after the export is done
+
             var channelNodesInPath = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeInPath(structureEntity.Path, "ChannelNode");
             var entity = channelNodesInPath.LastOrDefault();
-            return entity != null ? RemoteManager.DataService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
+            return entity != null ? _entityService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
         }
 
         public string GetChannelIdentifier(Entity channelEntity)
@@ -138,50 +142,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return defaultWeightBaseField.Data.ToString();
-        }
-
-        public List<XElement> GetParentXElements(Entity parentEntity)
-        {
-            var elements = new List<XElement>();
-
-            if (parentEntity == null)
-            {
-                return elements;
-            }
-
-            if (parentEntity.EntityType.Id == "Item" && _config.ItemsToSkus)
-            {
-                var parents = _catalogElementFactory.SkuItemIds(parentEntity);
-                elements.AddRange(parents.Select(parent => new XElement("parent", _catalogCodeGenerator.GetPrefixedCode(parent))));
-            }
-            else
-            {
-                elements.Add(new XElement("parent", _catalogCodeGenerator.GetEpiserverCode(parentEntity)));
-            }
-
-            return elements;
-        }
-
-        public Dictionary<string, bool> ShouldEntityExistInChannelNodes(int entityId, List<StructureEntity> channelNodes, int channelId)
-        {
-            Dictionary<string, bool> dictionary = new Dictionary<string, bool>();
-
-            var entities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(channelId, entityId);
-            foreach (var node in channelNodes)
-            {
-                bool result = entities.Any(x => x.ParentId == node.EntityId);
-                if (result)
-                {
-                    IntegrationLogger.Write(LogLevel.Debug, $"Entity {entityId} exists in channel node {node.EntityId}");
-                }
-
-                if (!dictionary.ContainsKey(node.EntityId.ToString()))
-                {
-                    dictionary.Add(_catalogCodeGenerator.GetEpiserverCode(node.EntityId), result);
-                }
-            }
-
-            return dictionary;
         }
 
         private void UpdateChannelSettings(Entity channel)

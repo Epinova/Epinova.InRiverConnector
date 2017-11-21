@@ -28,7 +28,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private CatalogCodeGenerator _catalogCodeGenerator;
         private ChannelPublisher _publisher;
         private PimFieldAdapter _pimFieldAdapter;
-        private EntityService _entityService;
+        private IEntityService _entityService;
         private CvlUpdater _cvlUpdater;
         private DocumentFileHelper _documentFileHelper;
 
@@ -55,8 +55,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _catalogCodeGenerator = new CatalogCodeGenerator(_config, _entityService);
                 _epiApi = new EpiApi(_config, _catalogCodeGenerator, _pimFieldAdapter);
                 _catalogElementFactory = new CatalogElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
-                _channelHelper = new ChannelHelper(_config, _catalogElementFactory, _epiMappingHelper, _catalogCodeGenerator);
-                _catalogDocumentFactory = new CatalogDocumentFactory(_config, _epiApi, _catalogElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator);
+                _channelHelper = new ChannelHelper(_config, _epiMappingHelper, _entityService);
+                _catalogDocumentFactory = new CatalogDocumentFactory(_config, _epiApi, _catalogElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator, _entityService);
                 _resourceElementFactory = new ResourceElementFactory(_catalogElementFactory, _epiMappingHelper, _catalogCodeGenerator, _config, _entityService);
                 
                 _documentFileHelper = new DocumentFileHelper(_config, _channelHelper);
@@ -230,7 +230,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 throw;
             }
         }
-
+        
         private void DoWithInitCheck(int channelId, ConnectorEventType eventType, Func<Entity, ConnectorEvent> thingsToDo)
         {
             if (channelId != _config.ChannelId)
@@ -246,7 +246,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             try
             {
                 var connectorEvent = thingsToDo(channelEntity);
-
+                _entityService.FlushCache();
                 var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
 
                 ConnectorEventHelper.UpdateEvent(connectorEvent, message, 100);

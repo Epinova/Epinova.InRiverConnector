@@ -12,14 +12,35 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private readonly IConfiguration _config;
         private readonly EpiMappingHelper _mappingHelper;
 
+        /// <summary>
+        /// Very simple local cache of all entities. FlushCache() empties the list. GetEntity should retrieve from this list if possible, to
+        /// avoid hitting the InRiver server API all the time. Saving loads of time on large publishes.
+        /// </summary>
+        private List<Entity> _cachedEntities;
+
         public EntityService(IConfiguration config, EpiMappingHelper mappingHelper)
         {
             _config = config;
             _mappingHelper = mappingHelper;
+
+            _cachedEntities = new List<Entity>();
         }
+
         public Entity GetEntity(int id, LoadLevel loadLevel)
         {
-            return RemoteManager.DataService.GetEntity(id, loadLevel);
+            var existingEntity = _cachedEntities.FirstOrDefault(x => x.Id == id);
+
+            if (existingEntity != null && loadLevel <= existingEntity.LoadLevel)
+                return existingEntity;
+
+            var fetchedEntity = RemoteManager.DataService.GetEntity(id, loadLevel);
+
+            if (existingEntity != null)
+                _cachedEntities.Remove(existingEntity);
+
+            _cachedEntities.Add(fetchedEntity);
+
+            return fetchedEntity;
         }
 
         public List<StructureEntity> GetAllStructureEntitiesInChannel(List<EntityType> entityTypes)
@@ -112,6 +133,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string parentPath = targetStructureEntity.Path.Substring(0, endIndex);
 
             return structureEntities.Find(i => i.Path.Equals(parentPath) && i.EntityId.Equals(sourceEntityId));
+        }
+
+        public void FlushCache()
+        {
+            _cachedEntities = new List<Entity>();
         }
 
 

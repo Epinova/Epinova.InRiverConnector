@@ -19,7 +19,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         private readonly EpiMappingHelper _epiMappingHelper;
         private readonly ChannelHelper _channelHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
-        
+        private readonly IEntityService _entityService;
+
         private CatalogElementContainer _epiElementContainer;
 
         public CatalogDocumentFactory(IConfiguration config, 
@@ -27,7 +28,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                                   CatalogElementFactory catalogElementFactory, 
                                   EpiMappingHelper epiMappingHelper, 
                                   ChannelHelper channelHelper,
-                                  CatalogCodeGenerator catalogCodeGenerator)
+                                  CatalogCodeGenerator catalogCodeGenerator,
+                                  IEntityService entityService)
         {
             _config = config;
             _epiApi = epiApi;
@@ -35,6 +37,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             _epiMappingHelper = epiMappingHelper;
             _channelHelper = channelHelper;
             _catalogCodeGenerator = catalogCodeGenerator;
+            _entityService = entityService;
         }
 
         public XDocument CreateImportDocument(Entity channelEntity, XElement metaClasses, XElement associationTypes, CatalogElementContainer epiElements)
@@ -183,7 +186,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             foreach (var structureEntity in batch.Where(x => x.EntityId != _config.ChannelId && !x.IsChannelNode()))
             {
-                Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataAndLinks);
+                Entity entity = _entityService.GetEntity(structureEntity.EntityId, LoadLevel.DataAndLinks);
 
                 if (ShouldCreateSkus(structureEntity))
                 {
@@ -263,7 +266,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {           
             foreach (var structureEntity in structureEntitiesBatch.Where(x => x.EntityId != _config.ChannelId && x.Type != "Resource"))
             {
-                Entity entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
+                Entity entity = _entityService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
 
                 var distinctStructureEntities = GetDistinctStructureEntities(allChannelStructureEntities, entity);
 
@@ -317,7 +320,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
             foreach (var structureEntity in nodeStructureEntities)
             {
-                var entity = RemoteManager.DataService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
+                var entity = _entityService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
 
                 if (_config.ChannelId == structureEntity.ParentId)
                 {
@@ -562,7 +565,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             string associationName = _epiMappingHelper.GetAssociationName(distinctStructureEntity);
 
-            Entity source = RemoteManager.DataService.GetEntity(distinctStructureEntity.ParentId, LoadLevel.DataOnly);
+            Entity source = _entityService.GetEntity(distinctStructureEntity.ParentId, LoadLevel.DataOnly);
 
             var skuCodes = _catalogElementFactory.SkuItemIds(source);
             for (var i = 0; i < skuCodes.Count; i++)
