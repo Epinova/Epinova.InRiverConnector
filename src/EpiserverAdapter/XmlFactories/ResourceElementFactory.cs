@@ -20,6 +20,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         private readonly IConfiguration _config;
         private readonly IEntityService _entityService;
 
+        private Dictionary<string, bool> _isImageCache;
+        
         public ResourceElementFactory(CatalogElementFactory catalogElementFactory, 
                                       EpiMappingHelper mappingHelper, 
                                       CatalogCodeGenerator catalogCodeGenerator, 
@@ -31,6 +33,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             _catalogCodeGenerator = catalogCodeGenerator;
             _config = config;
             _entityService = entityService;
+
+            _isImageCache = new Dictionary<string, bool>();
         }
 
         public XElement CreateResourceElement(Entity resource, string action)
@@ -295,11 +299,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         private bool IsImage(Entity resource)
         {
-            var fileEnding = resource.GetField("ResourceFilename")?.Data?.ToString().Split('.').Last();
-            var imageServiceConfigs = RemoteManager.UtilityService.GetAllImageServiceConfigurations();
-            var configsHasExtension = imageServiceConfigs.Exists(x => string.Compare(x.Extension, fileEnding, StringComparison.OrdinalIgnoreCase) == 0);
+            var fileEnding = resource.GetField("ResourceFilename")?.Data?.ToString().Split('.').LastOrDefault();
 
-            return !string.IsNullOrWhiteSpace(fileEnding) && configsHasExtension;
+            if (string.IsNullOrWhiteSpace(fileEnding))
+                return false;
+
+            if (_isImageCache.ContainsKey(fileEnding))
+                return _isImageCache[fileEnding];
+
+            var imageServiceConfigs = RemoteManager.UtilityService.GetAllImageServiceConfigurations();
+            var configsHasExtension = imageServiceConfigs.Any(x => x.Extension.Equals(fileEnding, StringComparison.InvariantCultureIgnoreCase));
+            _isImageCache.Add(fileEnding, configsHasExtension);
+
+            return configsHasExtension;
+        }
+
+        public void FlushCache()
+        {
+            _isImageCache = new Dictionary<string, bool>();
         }
 
         private string GetFolderName(string displayConfiguration, Entity resource)

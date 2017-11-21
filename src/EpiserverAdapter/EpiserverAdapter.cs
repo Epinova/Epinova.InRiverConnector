@@ -247,6 +247,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 var connectorEvent = thingsToDo(channelEntity);
                 _entityService.FlushCache();
+                _resourceElementFactory.FlushCache();
+
                 var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
 
                 ConnectorEventHelper.UpdateEvent(connectorEvent, message, 100);
