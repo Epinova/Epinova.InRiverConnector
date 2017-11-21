@@ -13,7 +13,7 @@ This is a major modification of inRiver's own connector, located at https://gith
 3. Locate the installed nuget package in `packages\Epinova.InRiverConnector.x.x.x.x\`. The files beneath `OutboundConnectors` must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
 4. Restart the `inRiver Connect` service and create a new connector. Configure it as explained below the *Connector configuration* section.
 
-Visit `<yourSiteRoot>/inriverapi/inriverdataimport/get` (for example `www.example.com/inriverapi/inriverdataimport/get` , with an added HTTP header `apikey: <key-from-your-settings>`. This should return 200 OK along with a greeting.
+To see if it's installed correctly in the Episerver website, visit `<yourSiteRoot>/inriverapi/inriverdataimport/get` (for example `www.example.com/inriverapi/inriverdataimport/get` , with an added HTTP header `apikey: <key-from-your-settings>`. If this returns 200 OK along with a greeting, the connector is installed correctly.
 
 Note: This connector logs quite extensively in debug mode. If that's not needed, make sure your inRiver connect service runs with a higher log level, as this might affect performance.
 
@@ -54,6 +54,16 @@ These settings should be added to your `web.config` file under `<appSettings>` a
           // Do your stuff
       }
 
+
+## Special fields and settings in inRiver
+
+- `EPiMetaFieldName` - if you give your fields a Setting with this name, the value you give it will be the property name when exported to Episerver. For instance, if you add `EPiMetaFieldName: Foo` to a field with the name `Bar`, you'll need a property `Foo` on your entry in Episerver (`public virtual string Foo { get; set; }`). Without setting this on the field, it'll be named `Bar`.
+- If you add the fields `ItemStartDate` and `ItemEndDate` to your `Item` entity type, these will be transferred to Episerver in the correct properties. (This can be done for all entity types, just replace the `Item` portion of the field name with whatever entity you're setting them for).
+- `ChannelPrefix` - The value of this field will prefix all IDs (Typically the `Code` property) in Episerver. *Important:* Only use integers for this, since ResourceFileId which is used to uniquely identify resources is an integer. *Should only be used if you have multiple channels containing the same entities in one Episerver solution.*
+- `ChannelDefaultLanguage` - The default language for the catalog. Defaults to `en-us` if the field is not present on your channel.
+- `ChannelDefaultWeightbase` - The default weightbase for the catalog.
+- `ChannelDefaultCurrency` - The default currency for the catalog.
+- Specifications in inRiver PIM will be transferred as HTML tables in a special property. To add it to your catalog entries, give it the following property: `public virtual XhtmlString SpecificationField { get; set; }`
 
 
 ## Troubleshooting
