@@ -39,18 +39,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         public XElement CreateResourceElement(Entity resource, string action)
         {
-            var allResourceStructureEntities = _entityService.GetAllStructureEntitiesInChannel("Resource");
             IntegrationLogger.Write(LogLevel.Debug, $"Creating resource element for resource ID {resource.Id} resource entities found.");
 
             Dictionary<string, int?> parents = new Dictionary<string, int?>();
             
-            var allResourceLocations = allResourceStructureEntities.FindAll(i => i.EntityId.Equals(resource.Id));
+            var allResourceLocations = _entityService.GetAllResourceLocations(resource.Id);
             
             var links = new List<Link>();
 
             foreach (Link inboundLink in resource.InboundLinks)
             {
-                if (allResourceLocations.Exists(i => i.ParentId.Equals(inboundLink.Source.Id)))
+                if (allResourceLocations.Any(i => i.ParentId == inboundLink.Source.Id))
                 {
                     links.Add(inboundLink);
                 }

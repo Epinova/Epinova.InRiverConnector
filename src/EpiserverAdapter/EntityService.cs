@@ -19,6 +19,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private List<Entity> _cachedEntities;
 
         private Dictionary<string, List<StructureEntity>> _cachedChannelNodeStructureEntities;
+        private List<StructureEntity> _allResourceStructureEntities;
 
         public EntityService(IConfiguration config, EpiMappingHelper mappingHelper)
         {
@@ -60,9 +61,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         result.Where(x => FilterLinkedContentNotBelongingToChannelNode(x, result)).ToList();
         }
 
-        public List<StructureEntity> GetAllStructureEntitiesInChannel(string type)
+        public List<StructureEntity> GetAllResourceLocations(int resourceEntityId)
         {
-            return RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, type);
+            if(_allResourceStructureEntities == null)
+                _allResourceStructureEntities = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForType(_config.ChannelId, "Resource");
+
+            return _allResourceStructureEntities.Where(x => x.EntityId == resourceEntityId).ToList();
         }
 
         public List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId)
@@ -152,6 +156,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             _cachedEntities = new List<Entity>();
             _cachedChannelNodeStructureEntities = new Dictionary<string, List<StructureEntity>>();
+            _allResourceStructureEntities = null;
         }
         
 

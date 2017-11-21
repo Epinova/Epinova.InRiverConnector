@@ -7,7 +7,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
     {
         Entity GetEntity(int id, LoadLevel loadLevel);
         List<StructureEntity> GetAllStructureEntitiesInChannel(List<EntityType> entityTypes);
-        List<StructureEntity> GetAllStructureEntitiesInChannel(string type);
+        List<StructureEntity> GetAllResourceLocations(int resourceEntityId);
         List<StructureEntity> GetEntityInChannelWithParent(int channelId, int entityId, int parentId);
         string GetTargetEntityPath(int targetEntityId, List<StructureEntity> channelEntities, int? parentId = null);
         List<StructureEntity> GetChildrenEntitiesInChannel(int entityId, string path);
