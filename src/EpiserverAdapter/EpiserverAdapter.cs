@@ -222,11 +222,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             try
             {
-                Directory.CreateDirectory(_config.PublicationsRootPath);
+                var directoryInfo = Directory.CreateDirectory(_config.PublicationsRootPath);
+
+                var accessCheckerFileName = "Access_check";
+                var filename = Path.Combine(directoryInfo.FullName, accessCheckerFileName);
+
+                File.WriteAllText(filename, "Access-checker");
+                File.Delete(filename);
             }
             catch (Exception ex)
             {
-                IntegrationLogger.Write(LogLevel.Error, $"Root directory {_config.PublicationsRootPath} is missing, and not creatable.\n", ex);
+                IntegrationLogger.Write(LogLevel.Error, $"Attempt to write to {_config.PublicationsRootPath} failed.", ex);
                 throw;
             }
         }
@@ -245,8 +251,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             try
             {
-                var connectorEvent = thingsToDo(channelEntity);
                 _entityService.FlushCache();
+
+                var connectorEvent = thingsToDo(channelEntity);
+                
                 _resourceElementFactory.FlushCache();
 
                 var message = $"{eventType} done for channel {channelEntity.Id} ({channelEntity.DisplayName})";
