@@ -74,7 +74,6 @@
     <Compile Include="CatalogCodeGenerator.cs" />
     <Compile Include="Helpers\ConnectorEventHelper.cs" />
     <Compile Include="ResourceImporter.cs" />
-    <Compile Include="InRiverImportResource.cs" />
     <Compile Include="Poco\Data.cs" />
     <Compile Include="Poco\EntryCode.cs" />
     <Compile Include="Poco\Item.cs" />

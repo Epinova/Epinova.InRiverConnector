@@ -34,13 +34,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public new void Start()
         {
-            var startEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
+            ConnectorEvent startEvent = null;
 
             try
             {
                 _config = new Configuration(Id);
                 ConnectorEventHelper.CleanupOngoingEvents(_config);
-                
+                startEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
+
                 Entity channel = RemoteManager.DataService.GetEntity(_config.ChannelId, LoadLevel.Shallow);
                 if (channel == null || channel.EntityType.Id != "Channel")
                 {

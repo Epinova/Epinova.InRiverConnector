@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using Epinova.InRiverConnector.Interfaces;
 
-namespace Epinova.InRiverConnector.EpiserverAdapter
+namespace Epinova.InRiverConnector.Interfaces
 {
     /// <summary>
     /// Describes a resource coming from inRiver.

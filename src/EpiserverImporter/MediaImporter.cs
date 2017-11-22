@@ -279,6 +279,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 return null;
             }
 
+            _logger.Debug($"Attempting to create and import file from path: {inriverResource.Path}");
+
             var fileInfo = new FileInfo(inriverResource.Path);
 
             IEnumerable<Type> mediaTypes = _contentMediaResolver.ListAllMatching(fileInfo.Extension);

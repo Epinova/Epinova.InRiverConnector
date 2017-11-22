@@ -213,7 +213,6 @@
     <Compile Include="ICatalogImporter.cs" />
     <Compile Include="ICatalogService.cs" />
     <Compile Include="InriverDataImportController.cs" />
-    <Compile Include="InRiverImportResource.cs" />
     <Compile Include="MediaImporter.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
