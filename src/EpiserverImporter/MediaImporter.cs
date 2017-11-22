@@ -283,6 +283,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             var fileInfo = new FileInfo(inriverResource.Path);
 
+            
+
             IEnumerable<Type> mediaTypes = _contentMediaResolver.ListAllMatching(fileInfo.Extension);
 
             _logger.Debug($"Found {mediaTypes.Count()} matching media types for extension {fileInfo.Extension}.");
@@ -290,7 +292,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             var contentTypeType = mediaTypes.FirstOrDefault(x => x.GetInterfaces().Contains(typeof(IInRiverResource))) ??
                                   _contentMediaResolver.GetFirstMatching(fileInfo.Extension);
 
-            _logger.Debug($"Chosen content type-type is {contentTypeType.Name}.");
+            if(contentTypeType == null)
+                _logger.Warning($"Can't find suitable content type when trying to import {inriverResource.Path}");
+
+            else
+                _logger.Debug($"Chosen content type-type is {contentTypeType.Name}.");
 
             var contentType = _contentTypeRepository.Load(contentTypeType);
 
@@ -323,8 +329,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             newFile.BinaryData = blob;
 
             var contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
-            _contentRepository.Get<MediaData>(contentReference);
-            return newFile;
+            var mediaData = _contentRepository.Get<MediaData>(contentReference);
+            _logger.Debug($"Saved file {fileInfo.Name} with Content ID {contentReference?.ID}.");
+            return mediaData;
         }
 
         private void HandleUnlink(IInRiverImportResource inriverResource)
