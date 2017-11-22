@@ -34,13 +34,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public new void Start()
         {
-            _config = new Configuration(Id);
-            ConnectorEventHelper.CleanupOngoingEvents(_config);
-
             var startEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Start, "Connector is starting", 0);
 
             try
             {
+                _config = new Configuration(Id);
+                ConnectorEventHelper.CleanupOngoingEvents(_config);
+                
                 Entity channel = RemoteManager.DataService.GetEntity(_config.ChannelId, LoadLevel.Shallow);
                 if (channel == null || channel.EntityType.Id != "Channel")
                 {
@@ -48,7 +48,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     ConnectorEventHelper.UpdateEvent(startEvent, "Channel id is not valid: Entity with given ID is not a channel, or doesn't exist. Unable to start", -1, true);
                     return;
                 }
-                
+
                 _pimFieldAdapter = new PimFieldAdapter(_config);
                 _epiMappingHelper = new EpiMappingHelper(_config, _pimFieldAdapter);
                 _entityService = new EntityService(_config, _epiMappingHelper);
