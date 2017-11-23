@@ -61,9 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             {
                 return;
             }
-
-            var importResources = resources.Cast<IInRiverImportResource>().ToList();
-            
+           
             ImportStatusContainer.Instance.Message = "importing";
             ImportStatusContainer.Instance.IsImporting = true;
             var errors = 0;
@@ -75,7 +73,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 {
                     foreach (IResourceImporterHandler handler in importerHandlers)
                     {
-                        handler.PreImport(importResources);
+                        handler.PreImport(resources);
                     }
                 }
 
@@ -98,7 +96,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 {
                     foreach (IResourceImporterHandler handler in importerHandlers)
                     {
-                        handler.PostImport(importResources);
+                        handler.PostImport(resources);
                     }
                 }
             }
@@ -116,7 +114,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             ImportStatusContainer.Instance.IsImporting = false;
         }
 
-        private void ImportResource(IInRiverImportResource resource)
+        private void ImportResource(InRiverImportResource resource)
         {
             if (resource.Action == ImporterActions.Added || resource.Action == ImporterActions.Updated)
             {
@@ -166,7 +164,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
-        private void ImportImageAndAttachToEntry(IInRiverImportResource inriverResource)
+        private void ImportImageAndAttachToEntry(InRiverImportResource inriverResource)
         {
             var mediaGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
             if (_contentRepository.TryGet(mediaGuid, out MediaData existingMediaData))
@@ -183,6 +181,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             else
             {
                 existingMediaData = CreateNewFile(inriverResource);
+                if (existingMediaData == null)
+                    return;
+
                 AddLinksFromMediaToCodes(existingMediaData, inriverResource.EntryCodes);
             }
         }
@@ -227,7 +228,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
         }
 
-        private void UpdateMetaData(IInRiverResource resource, IInRiverImportResource updatedResource)
+        private void UpdateMetaData(IInRiverResource resource, InRiverImportResource updatedResource)
         {
             MediaData editableMediaData = (MediaData)((MediaData)resource).CreateWritableClone();
 
@@ -252,18 +253,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 }
 
                 editableMediaData.BinaryData = blob;
-
-                string rawFilename = null;
-                if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
-                {
-                    rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
-                }
-                else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
-                {
-                    rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
-                }
-
-                editableMediaData.RouteSegment = _urlSegmentGenerator.Create(rawFilename);
+                editableMediaData.RouteSegment = GetUrlSlug(updatedResource);
             }
 
             ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
@@ -271,11 +261,26 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
-        private MediaData CreateNewFile(IInRiverImportResource inriverResource)
+        private string GetUrlSlug(InRiverImportResource updatedResource)
+        {
+            string rawFilename = null;
+            if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
+            {
+                rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
+            }
+            else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
+            {
+                rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
+            }
+            return _urlSegmentGenerator.Create(rawFilename);
+        }
+
+        private MediaData CreateNewFile(InRiverImportResource inriverResource)
         {
             ResourceMetaField resourceFileId = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
-            if (resourceFileId == null || string.IsNullOrEmpty(resourceFileId.Values.First().Data))
+            if (string.IsNullOrEmpty(resourceFileId?.Values.FirstOrDefault()?.Data))
             {
+                _logger.Debug($"ResourceFileId is null, won't do stuff.");
                 return null;
             }
 
@@ -283,9 +288,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             var fileInfo = new FileInfo(inriverResource.Path);
 
-            
-
-            IEnumerable<Type> mediaTypes = _contentMediaResolver.ListAllMatching(fileInfo.Extension);
+            IEnumerable<Type> mediaTypes = _contentMediaResolver.ListAllMatching(fileInfo.Extension).ToList();
 
             _logger.Debug($"Found {mediaTypes.Count()} matching media types for extension {fileInfo.Extension}.");
 
@@ -303,6 +306,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             var newFile = _contentRepository.GetDefault<MediaData>(GetFolder(fileInfo, contentType), contentType.ID);
             newFile.Name = fileInfo.Name;
             newFile.ContentGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
+            newFile.RouteSegment = GetUrlSlug(inriverResource);
 
             if (newFile is IInRiverResource resource)
             {
@@ -328,20 +332,24 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             newFile.BinaryData = blob;
 
+            _logger.Debug($"New mediadata is ready to be saved: {newFile.Name}, from path {inriverResource.Path}");
+
             var contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
             var mediaData = _contentRepository.Get<MediaData>(contentReference);
+
             _logger.Debug($"Saved file {fileInfo.Name} with Content ID {contentReference?.ID}.");
+
             return mediaData;
         }
 
-        private void HandleUnlink(IInRiverImportResource inriverResource)
+        private void HandleUnlink(InRiverImportResource inriverResource)
         {
             var existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
 
             DeleteLinksBetweenMediaAndCodes(existingMediaData, inriverResource.Codes);
         }
 
-        private void HandleDelete(IInRiverImportResource inriverResource)
+        private void HandleDelete(InRiverImportResource inriverResource)
         {
             var existingMediaData = _contentRepository.Get<MediaData>(EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId));
 

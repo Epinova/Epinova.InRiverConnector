@@ -47,7 +47,6 @@
     <Compile Include="Enums\DeleteCompletedEventType.cs" />
     <Compile Include="Enums\ImportUpdateCompletedEventType.cs" />
     <Compile Include="EpiserverEntryIdentifier.cs" />
-    <Compile Include="IInRiverImportResource.cs" />
     <Compile Include="ImporterActions.cs" />
     <Compile Include="ImportUpdateCompletedData.cs" />
     <Compile Include="InRiverImportResource.cs" />

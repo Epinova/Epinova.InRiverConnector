@@ -17,8 +17,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter.EventHandling
 
         void PostDeleteCatalogEntry(EntryContentBase deletedEntry);
 
-        void PreDeleteResource(IInRiverImportResource resource);
+        void PreDeleteResource(InRiverImportResource resource);
 
-        void PostDeleteResource(IInRiverImportResource resource);
+        void PostDeleteResource(InRiverImportResource resource);
     }
 }

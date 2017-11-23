@@ -5,7 +5,7 @@ namespace Epinova.InRiverConnector.Interfaces
     /// <summary>
     /// Describes a resource coming from inRiver.
     /// </summary>
-    public class InRiverImportResource : IInRiverImportResource
+    public class InRiverImportResource
     {
         public InRiverImportResource()
         {
