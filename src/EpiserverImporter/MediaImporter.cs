@@ -64,7 +64,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
            
             ImportStatusContainer.Instance.Message = "importing";
             ImportStatusContainer.Instance.IsImporting = true;
-            var errors = 0;
+            
             try
             {
                 var importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
@@ -76,7 +76,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         handler.PreImport(resources);
                     }
                 }
-
+                var errors = 0;
                 foreach (var resource in resources)
                 {
                     try
@@ -90,7 +90,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     }
                 }
 
-                _logger.Debug($"Imported/deleted/updated {resources.Count} resources");
+                _logger.Debug($"Imported/deleted/updated {resources.Count} resources. {errors} errors.");
 
                 if (_config.RunResourceImporterHandlers)
                 {
@@ -106,9 +106,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 _logger.Error("Resource Import Failed", ex);
                 ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
             }
-
-            if(errors > 0) 
-                _logger.Warning($"Resource import successful, but {errors} errors occured during import. See log for details.");
 
             ImportStatusContainer.Instance.Message = "Resource Import successful";
             ImportStatusContainer.Instance.IsImporting = false;
