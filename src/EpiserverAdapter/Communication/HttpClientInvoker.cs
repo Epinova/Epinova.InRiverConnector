@@ -60,25 +60,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             if (response.IsSuccessStatusCode)
             {
                 var parsedResponse = response.Content.ReadAsAsync<string>().Result;
-
-                int tries = 0;
                 
                 while (parsedResponse == "importing")
                 {
-                    tries++;
-                    if (tries < 10)
-                    {
-                        Thread.Sleep(2000);
-                    }
-                    else if (tries < 30)
-                    {
-                        Thread.Sleep(15000);
-                    }
-                    else
-                    {
-                        Thread.Sleep(150000);
-                    }
-                    
+                    Thread.Sleep(10000);
                     parsedResponse = Get(_isImportingAction);
                 }
 
