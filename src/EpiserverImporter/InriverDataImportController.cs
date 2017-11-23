@@ -120,13 +120,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public void ImportResources(List<InRiverImportResource> resources)
         {
-            Task.Run(
-                () =>
-                {
-                    _logger.Debug($"Received list of {resources.Count} resources to import");
-
-                    _mediaImporter.ImportResources(resources);
-                });
+            DoWithErrorHandling(() =>
+            {
+                _logger.Debug($"Received list of {resources.Count} resources to import");
+                _mediaImporter.ImportResources(resources);
+            });
         }
 
         [HttpPost]

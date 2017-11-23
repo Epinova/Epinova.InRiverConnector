@@ -128,40 +128,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private bool PostToEpiserver(List<InRiverImportResource> resourcesForImport)
         {
-            var batchSize = 1000;
+            var batchSize = 200;
             for (var i = 0; i < resourcesForImport.Count; i += batchSize)
             {
                 IntegrationLogger.Write(LogLevel.Debug, $"Sending resources {i}-{i+batchSize} out of {resourcesForImport.Count} resources to Episerver");
 
                 var resourcesToPost = resourcesForImport.Skip(i).Take(batchSize);
 
-                var response = _httpClient.PostAsJsonAsync(_config.Endpoints.ImportResources, resourcesToPost).Result;
-                response.EnsureSuccessStatusCode();
-
-                var result = response.Content.ReadAsAsync<bool>().Result;
-                if (!result)
-                    continue;
-
-                var resp = GetImportStatus();
-                while (resp == "importing")
-                {
-                    Thread.Sleep(10000);
-                    resp = GetImportStatus();
-                }
-
-                if (resp.StartsWith("ERROR"))
-                {
-                    IntegrationLogger.Write(LogLevel.Error, resp);
-                    return false;
-                }
+                var response = _httpClient.PostAsJsonAsync(_config.Endpoints.ImportResources, resourcesToPost);
+                response.Wait();
+                response.Result.EnsureSuccessStatusCode();
             }
 
             return true;
-        }
-
-        private string GetImportStatus()
-        {
-            return _httpClient.Get(_config.Endpoints.IsImporting);
         }
     }
 }
