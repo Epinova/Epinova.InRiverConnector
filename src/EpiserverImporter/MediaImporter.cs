@@ -62,9 +62,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 return;
             }
            
-            ImportStatusContainer.Instance.Message = "importing";
-            ImportStatusContainer.Instance.IsImporting = true;
-            
             try
             {
                 var importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
@@ -102,13 +99,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
             catch (Exception ex)
             {
-                ImportStatusContainer.Instance.IsImporting = false;
                 _logger.Error("Resource Import Failed", ex);
-                ImportStatusContainer.Instance.Message = "ERROR: " + ex.Message;
             }
-
-            ImportStatusContainer.Instance.Message = "Resource Import successful";
-            ImportStatusContainer.Instance.IsImporting = false;
         }
 
         private void ImportResource(InRiverImportResource resource)

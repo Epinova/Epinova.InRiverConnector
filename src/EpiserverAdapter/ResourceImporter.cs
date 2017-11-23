@@ -135,9 +135,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 var resourcesToPost = resourcesForImport.Skip(i).Take(batchSize);
 
-                var response = _httpClient.PostAsJsonAsync(_config.Endpoints.ImportResources, resourcesToPost);
-                response.Wait();
-                response.Result.EnsureSuccessStatusCode();
+                _httpClient.Post(_config.Endpoints.ImportResources, resourcesToPost);
             }
 
             return true;

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -38,18 +39,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        public async Task<HttpResponseMessage> PostAsJsonAsync<T>(string url, T value)
-        {
-            return await HttpClient.PostAsJsonAsync(url, value);
-        }
-
-
         public void Post<T>(string url, T message)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
+            var timer = Stopwatch.StartNew();
 
             var response = HttpClient.PostAsJsonAsync(url, message).Result;
             response.EnsureSuccessStatusCode();
+            
+            IntegrationLogger.Write(LogLevel.Debug, $"Posted to {url}, took {timer.ElapsedMilliseconds}.");
         }
 
         public string PostWithAsyncStatusCheck<T>(string url, T message)
