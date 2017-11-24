@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("inRiver.EPiServerCommerce.CommerceAdapter")]
+[assembly: AssemblyTitle("Epinova.InRiverConnector.EpiserverAdapter")]
 [assembly: AssemblyDescription("")]
-[assembly: AssemblyCompany("inRiver AB")]
-[assembly: AssemblyProduct("inRiver.EPiServerCommerce.CommerceAdapter")]
-[assembly: AssemblyCopyright("Copyright © inRiver AB 2016")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("Epinova.InRiverConnector")]
+[assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 [assembly: AssemblyTitle("Epinova.InRiverConnector")]
 [assembly: AssemblyDescription("Connector between Episerver and inRiver PIM")]
-[assembly: AssemblyCompany("Epinova")]
+[assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Epinova.InRiverConnector")]
 [assembly: AssemblyCopyright("")]
 [assembly: AssemblyTrademark("")]
