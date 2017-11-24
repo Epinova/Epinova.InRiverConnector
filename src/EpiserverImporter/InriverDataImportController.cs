@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
+using System.Xml;
+using System.Xml.Serialization;
 using Epinova.InRiverConnector.Interfaces;
+using Epinova.InRiverConnector.Interfaces.Poco;
 using EPiServer.Logging;
 using EPiServer.ServiceLocation;
 
@@ -39,7 +42,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             if (ImportStatusContainer.Instance.IsImporting)
             {
-                return "importing";
+                return ImportStatus.IsImporting;
             }
 
             return ImportStatusContainer.Instance.Message;
@@ -110,7 +113,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         [HttpPost]
         public string ImportCatalogXml([FromBody] string path)
         {
-            ImportStatusContainer.Instance.Message = "importing";
+            ImportStatusContainer.Instance.Message = ImportStatus.IsImporting;
 
             _catalogImporter.ImportCatalogXml(path);
 
@@ -118,13 +121,22 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public void ImportResources(List<InRiverImportResource> resources)
+        public string ImportResources(ImportResourcesRequest request)
         {
             DoWithErrorHandling(() =>
             {
-                _logger.Debug($"Received list of {resources.Count} resources to import");
-                _mediaImporter.ImportResources(resources);
+                Task.Run(
+                    () =>
+                    {
+                        ImportStatusContainer.Instance.IsImporting = true;
+
+                        _mediaImporter.ImportResources(request);
+
+                        ImportStatusContainer.Instance.IsImporting = false;
+                    });
             });
+
+            return ImportStatus.IsImporting;
         }
 
         [HttpPost]

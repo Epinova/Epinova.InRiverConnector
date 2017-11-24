@@ -1,9 +1,9 @@
 using System.Xml.Serialization;
 
-namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
-{
-	public class Path
-	{		
+namespace Epinova.InRiverConnector.Interfaces.Poco
+{	
+	public class Type
+	{
 		[XmlText]
 		public string Value { get; set; }
 	}

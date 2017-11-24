@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
 using inRiver.Remoting.Log;
 
@@ -59,9 +60,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 var parsedResponse = response.Content.ReadAsAsync<string>().Result;
                 
-                while (parsedResponse == "importing")
+                while (parsedResponse == ImportStatus.IsImporting)
                 {
-                    Thread.Sleep(10000);
+                    Thread.Sleep(15000);
                     parsedResponse = Get(_isImportingAction);
                 }
 

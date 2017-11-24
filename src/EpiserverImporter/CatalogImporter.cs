@@ -176,7 +176,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 {
                     try
                     {
-                        ImportStatusContainer.Instance.Message = "importing";
+                        ImportStatusContainer.Instance.Message = ImportStatus.IsImporting;
                         ImportStatusContainer.Instance.IsImporting = true;
 
                         _logger.Information($"Importing catalog document from {path}");

@@ -3,9 +3,14 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
+using System.Text;
+using System.Xml;
+using System.Xml.Serialization;
+using Castle.Components.DictionaryAdapter;
 using Epinova.InRiverConnector.EpiserverImporter.EventHandling;
 using Epinova.InRiverConnector.EpiserverImporter.ResourceModels;
 using Epinova.InRiverConnector.Interfaces;
+using Epinova.InRiverConnector.Interfaces.Poco;
 using EPiServer;
 using EPiServer.Commerce.Catalog.ContentTypes;
 using EPiServer.Commerce.SpecializedProperties;
@@ -18,6 +23,8 @@ using EPiServer.Security;
 using EPiServer.ServiceLocation;
 using EPiServer.Web;
 using Mediachase.Commerce.Catalog;
+using EntryCode = Epinova.InRiverConnector.Interfaces.EntryCode;
+using Type = System.Type;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
@@ -55,12 +62,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
         
 
-        public void ImportResources(List<InRiverImportResource> resources)
+        public void ImportResources(ImportResourcesRequest request)
         {
-            if (resources == null || !resources.Any())
-            {
+            List<InRiverImportResource> resources = DeserializeRequest(request);
+            if (!resources.Any())
                 return;
-            }
+
+            _logger.Debug($"Starting import of {resources.Count} resources.");
            
             try
             {
@@ -73,6 +81,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         handler.PreImport(resources);
                     }
                 }
+
                 var errors = 0;
                 foreach (var resource in resources)
                 {
@@ -87,7 +96,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     }
                 }
 
-                _logger.Debug($"Imported/deleted/updated {resources.Count} resources. {errors} errors.");
+                _logger.Information($"Imported/deleted/updated {resources.Count} resources. {errors} errors.");
 
                 if (_config.RunResourceImporterHandlers)
                 {
@@ -102,6 +111,105 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 _logger.Error("Resource Import Failed", ex);
             }
         }
+
+        private List<InRiverImportResource> DeserializeRequest(ImportResourcesRequest request)
+        {
+            _logger.Debug($"Deserializing and preparing {request.ResourceXmlPath} for import.");
+
+            var serializer = new XmlSerializer(typeof(Resources));
+            Resources resources;
+            using (var reader = XmlReader.Create(request.ResourceXmlPath))
+            {
+                resources = (Resources)serializer.Deserialize(reader);
+            }
+
+            var resourcesForImport = new List<InRiverImportResource>();
+            foreach (var resource in resources.ResourceFiles.Resource)
+            {
+                var newRes = new InRiverImportResource
+                {
+                    Action = resource.action
+                };
+
+                if (resource.ParentEntries?.EntryCode != null)
+                {
+                    foreach (var entryCode in resource.ParentEntries.EntryCode)
+                    {
+                        if (string.IsNullOrEmpty(entryCode.Value))
+                            continue;
+
+                        newRes.Codes.Add(entryCode.Value);
+                        newRes.EntryCodes.Add(new EntryCode
+                        {
+                            Code = entryCode.Value,
+                            IsMainPicture = entryCode.IsMainPicture
+                        });
+                    }
+                }
+
+                if (resource.action != ImporterActions.Deleted)
+                {
+                    newRes.MetaFields = GenerateMetaFields(resource);
+
+                    // path is ".\some file.ext"
+                    if (resource.Paths?.Path != null)
+                    {
+                        var filePath = resource.Paths.Path.Value.Remove(0, 1);
+                        filePath = filePath.Replace("/", "\\");
+                        newRes.Path = request.BasePath + filePath;
+                    }
+                }
+
+                newRes.ResourceId = resource.id;
+                resourcesForImport.Add(newRes);
+            }
+
+            return resourcesForImport;
+        }
+
+        private List<ResourceMetaField> GenerateMetaFields(Resource resource)
+        {
+            List<ResourceMetaField> metaFields = new List<ResourceMetaField>();
+            if (resource.ResourceFields == null)
+                return metaFields;
+
+            foreach (var metaField in resource.ResourceFields.MetaField)
+            {
+                var resourceMetaField = new ResourceMetaField { Id = metaField.Name.Value };
+                var values = new List<Value>();
+
+                foreach (var data in metaField.Data)
+                {
+                    Value value = new Value { Languagecode = data.language };
+                    if (data.Item != null && data.Item.Count > 0)
+                    {
+                        foreach (var item in data.Item)
+                        {
+                            value.Data += item.value + ";";
+                        }
+
+                        var lastIndexOf = value.Data.LastIndexOf(';');
+                        if (lastIndexOf != -1)
+                        {
+                            value.Data = value.Data.Remove(lastIndexOf);
+                        }
+                    }
+                    else
+                    {
+                        value.Data = data.value;
+                    }
+
+                    values.Add(value);
+                }
+
+                resourceMetaField.Values = values;
+
+                metaFields.Add(resourceMetaField);
+            }
+
+            return metaFields;
+        }
+
 
         private void ImportResource(InRiverImportResource resource)
         {

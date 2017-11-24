@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Xml.Serialization;
 
-namespace Epinova.InRiverConnector.EpiserverAdapter.Poco
+namespace Epinova.InRiverConnector.Interfaces.Poco
 {
 	public class ParentEntries
 	{		
