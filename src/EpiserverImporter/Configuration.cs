@@ -5,10 +5,19 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public class Configuration
     {
-        public bool RunCatalogImportHandlers => GetBoolSetting("inRiver.RunICatalogImportHandlers");
-        public bool RunDeleteActionsHandlers => GetBoolSetting("inRiver.RunIDeleteActionsHandlers");
-        public bool RunInRiverEventsHandlers => GetBoolSetting("inRiver.RunIInRiverEventsHandlers");
-        public bool RunResourceImporterHandlers => GetBoolSetting("inRiver.RunIResourceImporterHandlers");
+        public bool RunCatalogImportHandlers => GetBoolSetting("InRiverConnector.RunICatalogImportHandlers");
+        public bool RunDeleteActionsHandlers => GetBoolSetting("InRiverConnector.RunIDeleteActionsHandlers"); // TODO: Document these three below here 
+        public bool RunInRiverEventsHandlers => GetBoolSetting("InRiverConnector.RunIInRiverEventsHandlers");
+        public bool RunResourceImporterHandlers => GetBoolSetting("InRiverConnector.RunIResourceImporterHandlers");
+
+        public int DegreesOfParallelism
+        {
+            get
+            {
+                var appSetting = ConfigurationManager.AppSettings["InRiverConnector.DegreeOfParallelism"];
+                return appSetting != null ? Int32.Parse(appSetting) : 2;
+            }
+        }
 
         private bool GetBoolSetting(string key)
         {

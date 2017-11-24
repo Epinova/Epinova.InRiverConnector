@@ -84,7 +84,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 }
 
                 var errors = 0;
-                Parallel.ForEach(resources, new ParallelOptions { MaxDegreeOfParallelism = 2 }, resource =>
+                
+                // TODO: Degree of parallelism should be configurable, default to 2.
+                Parallel.ForEach(resources, new ParallelOptions { MaxDegreeOfParallelism = _config.DegreesOfParallelism }, resource =>
                 {
                     try
                     {

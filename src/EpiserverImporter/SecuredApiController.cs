@@ -14,7 +14,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
     {
         private const string ApiKeyName = "apikey";
 
-        private static string ApiKeyValue => ConfigurationManager.AppSettings["inRiver.apikey"];
+        private static string ApiKeyValue => ConfigurationManager.AppSettings["InRiverPimConnector.APIKey"];
 
         public override Task<HttpResponseMessage> ExecuteAsync(HttpControllerContext controllerContext, CancellationToken cancellationToken)
         {

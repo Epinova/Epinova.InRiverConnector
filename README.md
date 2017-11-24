@@ -22,8 +22,9 @@ Note: This connector logs quite extensively in debug mode. If that's not needed,
 These settings should be added to your `web.config` file under `<appSettings>` as `<add key="name_given_below" value="a suitable value" />`.
 
 - Optional: `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
-- `inRiver.apikey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
-- `inRiver.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.
+- Optional: `InRiverConnector.DegreeOfParallelism` sets how many parallel threads the resource imports should run in. Defaults to 2. Increase number for fast systems with large imports. To a certain degree, a higher degree will give a faster import. At some point however, the performance gain'll stop, limited by your infrastructure (network traffic or disk IO are the most likely bottlenecks).
+- `InRiverPimConnector.apikey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
+- `InRiverConnector.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.
 
 ## Connector configuration
 
