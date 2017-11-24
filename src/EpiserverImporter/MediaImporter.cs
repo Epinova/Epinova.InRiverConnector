@@ -4,6 +4,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
 using Castle.Components.DictionaryAdapter;
@@ -83,7 +84,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 }
 
                 var errors = 0;
-                foreach (var resource in resources)
+                Parallel.ForEach(resources, new ParallelOptions { MaxDegreeOfParallelism = 2 }, resource =>
                 {
                     try
                     {
@@ -94,7 +95,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         errors++;
                         _logger.Error("Importing resource failed:", ex);
                     }
-                }
+                });
 
                 _logger.Information($"Imported/deleted/updated {resources.Count} resources. {errors} errors.");
 
