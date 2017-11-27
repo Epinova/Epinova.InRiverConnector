@@ -49,6 +49,7 @@ These settings should be added to your `web.config` file under `<appSettings>` a
 - `EPI_APIKEY` - API key to secure the importer endpoint. Must match `inRiver.apikey` setting in the Episerver website.
 - `EPI_RESTTIMEOUT` - Timeout in hours for connector calls to the Episerver website. Defaults to `1`.
 - HTTP_POST_URL - The connector will post the path to the recently imported file to the URL given here, if any. Could simply be implemented as shown below:
+- `BATCH_SIZE` - Amount of ChannelEntities to be handled at once. Useful for larger channels. Defaults to <empty>, which takes everything in one batch.
 
 
       [System.Web.Mvc.HttpPost]
