@@ -4,13 +4,13 @@
     <id>Epinova.InRiverConnector</id>
     <title>$id$</title>
     <version>$version$</version>
-    <authors>Arve Systad</authors>
-    <owners>$author$ - Arve Systad (Epinova + Optimera AS)</owners>
+    <authors>Optimera, Epinova, inRiver - Arve Systad</authors>
+    <owners>Epinova</owners>
     <iconUrl>http://www.epinova.no/favicon.ico</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <releaseNotes></releaseNotes>
-    <copyright>Copyright © 2Epinova 2016</copyright>
+    <copyright>Copyright © Epinova 2017</copyright>
     <tags>EPiServer Epinova inRiver PIM Commerce</tags>
     <dependencies>
       <dependency id="EPiServer.CMS.Core" version="[10.10.0, 11.0.0)" />
