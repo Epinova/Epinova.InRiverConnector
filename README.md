@@ -8,6 +8,8 @@ This is a major modification of inRiver's own connector, located at https://gith
 
 ## How to install:
 
+This version is built for **inRiver PIM 6.3.0 SP1**. Episerver-dependencies are set in the nuspec-file and should be handled automatically.
+
 1. Install NuGet package (For now build it yourself: `nuget pack <path-to-clone-location>/src/EpiserverImporter/EpiserverImporter.csproj`. It'll hopefully end up in the Episerver nuget feed later when it has undergone some testing.)
 2. In `web.config\appSettings`, add an API key to `inRiver.apikey`. The same key must be added to the installed connector as a configuration with key `EPI_APIKEY`.
 3. Locate the installed nuget package in `packages\Epinova.InRiverConnector.x.x.x.x\`. The files beneath `OutboundConnectors` must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
