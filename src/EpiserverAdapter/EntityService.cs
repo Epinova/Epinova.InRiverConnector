@@ -163,7 +163,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return _cachedParentEntities[entityId];
 
             var inboundLinks = RemoteManager.DataService.GetInboundLinksForEntity(entityId);
-            var relationLink = inboundLinks.FirstOrDefault(x => _mappingHelper.IsRelation(x.LinkType));
+            var relationLink = inboundLinks.OrderBy(x => x.Index)
+                                           .FirstOrDefault(x => _mappingHelper.IsRelation(x.LinkType));
 
             if (relationLink == null)
                 return null;
