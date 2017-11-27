@@ -1,13 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Xml.Linq;
-using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
 using inRiver.Integration.Logging;
-using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
@@ -16,13 +12,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
     public class ChannelHelper
     {
         private readonly IConfiguration _config;
-        private readonly EpiMappingHelper _mappingHelper;
         private readonly IEntityService _entityService;
 
-        public ChannelHelper(IConfiguration config, EpiMappingHelper mappingHelper, IEntityService entityService)
+        public ChannelHelper(IConfiguration config, IEntityService entityService)
         {
             _config = config;
-            _mappingHelper = mappingHelper;
             _entityService = entityService;
         }
 
