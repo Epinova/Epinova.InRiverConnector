@@ -206,6 +206,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 if (structureEntity.IsItem() && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce ||
                     !ShouldCreateSkus(structureEntity))
                 {
+                    if (structureEntity.IsItem() && !_channelHelper.ItemHasParentInChannel(structureEntity))
+                        continue;
+
                     var element = _catalogElementFactory.InRiverEntityToEpiEntry(entity);
 
                     var codeElement = element.Element("Code");

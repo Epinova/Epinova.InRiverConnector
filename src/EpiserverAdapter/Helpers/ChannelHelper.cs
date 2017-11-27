@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using inRiver.Integration.Logging;
+using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
@@ -66,6 +67,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             var channelNodesInPath = _entityService.GetChannelNodeStructureEntitiesInPath(structureEntity.Path);
             var entity = channelNodesInPath.LastOrDefault();
             return entity != null ? _entityService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
+        }
+
+        public bool ItemHasParentInChannel(StructureEntity itemStructureEntity)
+        {
+            var parentProduct = _entityService.GetParentProduct(itemStructureEntity);
+            var parentEntityStructureEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(_config.ChannelId, parentProduct.Id);
+            return parentEntityStructureEntities != null && parentEntityStructureEntities.Any();
         }
 
         public string GetChannelIdentifier(Entity channelEntity)
