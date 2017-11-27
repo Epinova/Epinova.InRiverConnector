@@ -165,7 +165,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
                 AddNodeElements(batch);
                 AddEntryElements(batch);
-                AddRelationElements(batch, structureEntities);
+                AddRelationElements(structureEntities);
 
                 totalLoaded += batch.Count;
 
@@ -262,56 +262,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return link.Target.EntityType.Id == "Specification";
         }
 
-        private void AddRelationElements(List<StructureEntity> structureEntitiesBatch, List<StructureEntity> allChannelStructureEntities)
+        private void AddRelationElements(List<StructureEntity> allChannelStructureEntities)
         {           
-            foreach (var structureEntity in structureEntitiesBatch.Where(x => x.EntityId != _config.ChannelId && x.Type != "Resource"))
+            foreach (var structureEntity in allChannelStructureEntities.Where(x => x.EntityId != _config.ChannelId && x.Type != "Resource"))
             {
                 Entity entity = _entityService.GetEntity(structureEntity.EntityId, LoadLevel.DataOnly);
 
-                var distinctStructureEntities = GetDistinctStructureEntities(allChannelStructureEntities, entity);
+                var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == structureEntity.LinkTypeIdFromParent);
 
-                foreach (var distinctEntity in distinctStructureEntities)
+                if (linkType == null)
+                    continue;
+
+                if (linkType.SourceEntityTypeIsChannelNode())
                 {
-                    var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == distinctEntity.LinkTypeIdFromParent);
-
-                    if (linkType == null)
-                        continue;
-
-                    if (linkType.SourceEntityTypeIsChannelNode())
-                    {
-                        AddChannelNodeRelation(linkType, distinctEntity, entity);
-                    }
+                    AddChannelNodeRelation(linkType, structureEntity, entity);
+                }
     
-                    AddRelations(linkType, distinctEntity, structureEntity, entity);
-                }
+                AddRelations(linkType, structureEntity, entity);
             }
-        }
-
-        private List<StructureEntity> GetDistinctStructureEntities(List<StructureEntity> allChannelStructureEntities, Entity entity)
-        {
-            var distinctStructureEntities = new List<StructureEntity>();
-
-            foreach (var se in allChannelStructureEntities.FindAll(i => i.EntityId == entity.Id))
-            {
-                if (!distinctStructureEntities.Any(i => i.EntityId == se.EntityId && i.ParentId == se.ParentId))
-                {
-                    distinctStructureEntities.Add(se);
-                }
-                else
-                {
-                    if (!se.LinkEntityId.HasValue)
-                        continue;
-
-                    if (!distinctStructureEntities.Any(x => x.EntityId == se.EntityId && 
-                                                            x.ParentId == se.ParentId && 
-                                                            x.LinkEntityId != null &&
-                                                            x.LinkEntityId == se.LinkEntityId))
-                    {
-                        distinctStructureEntities.Add(se);
-                    }
-                }
-            }
-            return distinctStructureEntities;
         }
 
         private void AddNodeElements(List<StructureEntity> batch)
@@ -372,23 +340,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         }
 
         private void AddChannelNodeRelation(LinkType linkType,
-                                            StructureEntity distinctStructureEntity, 
+                                            StructureEntity structureEntity, 
                                             Entity entity)
         {
-            var addedRelationName = _catalogCodeGenerator.GetRelationName(entity.Id, distinctStructureEntity.ParentId);
+            var addedRelationName = _catalogCodeGenerator.GetRelationName(entity.Id, structureEntity.ParentId);
             if (_epiElementContainer.HasRelation(addedRelationName))
                 return;
 
-            var relationElement = _catalogElementFactory.CreateNodeEntryRelation(distinctStructureEntity.ParentId, distinctStructureEntity.EntityId, distinctStructureEntity.SortOrder);
+            var relationElement = _catalogElementFactory.CreateNodeEntryRelation(structureEntity.ParentId, structureEntity.EntityId, structureEntity.SortOrder);
 
             _epiElementContainer.AddRelation(relationElement, addedRelationName);
 
             IntegrationLogger.Write(LogLevel.Debug,
-                $"Added Relation for Source {distinctStructureEntity.ParentId} and Target {distinctStructureEntity.EntityId} for LinkTypeId {linkType.Id}");
+                $"Added Relation for Source {structureEntity.ParentId} and Target {structureEntity.EntityId} for LinkTypeId {linkType.Id}");
         }
 
         private void AddRelations(LinkType linkType,
-                                  StructureEntity distinctStructureEntity, 
                                   StructureEntity structureEntity,
                                   Entity entity)
         {
@@ -414,7 +381,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             {
                 if (_epiMappingHelper.IsRelation(linkType))
                 {
-                    AddNodeEntryRelationElement(linkType, distinctStructureEntity, skuId);
+                    AddNodeEntryRelationElement(linkType, structureEntity, skuId);
                     AddEntryRelationElement(structureEntity, skuId, linkType);
                 }
                 else
@@ -423,7 +390,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     {
                         AddMissingParentRelation(structureEntity, skuId);
                     }
-                    AddAssociationElements(linkType, distinctStructureEntity, structureEntity, skuId);
+                    AddAssociationElements(linkType, structureEntity, skuId);
                 }
             }
         }
@@ -477,11 +444,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         }
 
-        private void AddNodeEntryRelationElement(LinkType linkType, StructureEntity distinctStructureEntity, string skuCode)
+        private void AddNodeEntryRelationElement(LinkType linkType, StructureEntity structureEntity, string skuCode)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"For SKU {skuCode}: Found relation between {linkType.SourceEntityTypeId} and {linkType.TargetEntityTypeId} called {linkType.Id}");
 
-            var parentNode = _channelHelper.GetParentChannelNode(distinctStructureEntity);
+            var parentNode = _channelHelper.GetParentChannelNode(structureEntity);
             if (parentNode == null)
                 return;
 
@@ -491,7 +458,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             if (_epiElementContainer.HasRelation(relationName))
                 return;
 
-            var relationElement = _catalogElementFactory.CreateNodeEntryRelation(parentCode, skuCode, distinctStructureEntity.SortOrder);
+            var relationElement = _catalogElementFactory.CreateNodeEntryRelation(parentCode, skuCode, structureEntity.SortOrder);
 
             _epiElementContainer.AddRelation(relationElement, relationName);
 
@@ -499,7 +466,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         }
 
         private void AddAssociationElements(LinkType linkType, 
-                                            StructureEntity distinctStructureEntity,
                                             StructureEntity structureEntity, 
                                             string itemCode)
         {
@@ -508,11 +474,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
             if (!_config.UseThreeLevelsInCommerce && _config.ItemsToSkus && structureEntity.IsItem())
             {
-                AddItemToSkusAssociations(linkType, distinctStructureEntity, itemCode);
+                AddItemToSkusAssociations(linkType, structureEntity, itemCode);
             }
             else
             {
-                AddNormalAssociations(distinctStructureEntity);
+                AddNormalAssociations(structureEntity);
             }
         }
 
@@ -521,12 +487,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return _config.AssociationLinkTypes.Any(x => x.Id == linkType.Id);
         }
 
-        private void AddNormalAssociations(StructureEntity distinctStructureEntity)
+        private void AddNormalAssociations(StructureEntity structureEntity)
         {
-            var entityCode = _catalogCodeGenerator.GetEpiserverCode(distinctStructureEntity.EntityId);
-            var parentCode = _catalogCodeGenerator.GetEpiserverCode(distinctStructureEntity.ParentId);
+            var entityCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId);
+            var parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);
 
-            var associationName = _epiMappingHelper.GetAssociationName(distinctStructureEntity);
+            var associationName = _epiMappingHelper.GetAssociationName(structureEntity);
 
             var associationKey = _catalogCodeGenerator.GetAssociationKey(entityCode, parentCode, associationName);
 
@@ -537,7 +503,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
             if (existingAssociation != null)
             {
-                XElement newElement = _catalogElementFactory.CreateAssociationElement(distinctStructureEntity);
+                XElement newElement = _catalogElementFactory.CreateAssociationElement(structureEntity);
 
                 if (!existingAssociation.Descendants().Any(e => e.Name.LocalName == "EntryCode" && e.Value == entityCode))
                 {
@@ -547,7 +513,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
             else
             {
-                var associationElement = _catalogElementFactory.CreateCatalogAssociationElement(distinctStructureEntity);
+                var associationElement = _catalogElementFactory.CreateCatalogAssociationElement(structureEntity);
                 _epiElementContainer.AddAssociation(associationElement, associationKey);
             }
         }
@@ -560,12 +526,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         }
 
         private void AddItemToSkusAssociations(LinkType linkType,
-                                               StructureEntity distinctStructureEntity, 
+                                               StructureEntity structureEntity, 
                                                string skuId)
         {
-            string associationName = _epiMappingHelper.GetAssociationName(distinctStructureEntity);
+            string associationName = _epiMappingHelper.GetAssociationName(structureEntity);
 
-            Entity source = _entityService.GetEntity(distinctStructureEntity.ParentId, LoadLevel.DataOnly);
+            Entity source = _entityService.GetEntity(structureEntity.ParentId, LoadLevel.DataOnly);
 
             var skuCodes = _catalogElementFactory.SkuItemIds(source);
             for (var i = 0; i < skuCodes.Count; i++)
@@ -575,7 +541,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
             foreach (var skuCode in skuCodes)
             {
-                var associationKey = _catalogCodeGenerator.GetAssociationKey(skuCode, distinctStructureEntity.ParentId.ToString(), associationName);
+                var associationKey = _catalogCodeGenerator.GetAssociationKey(skuCode, structureEntity.ParentId.ToString(), associationName);
                 if (_epiElementContainer.HasAssociation(associationKey))
                     continue;
 
@@ -585,7 +551,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
                 var associationElement = new XElement("Association",
                         new XElement("EntryCode", skuId),
-                        new XElement("SortOrder", distinctStructureEntity.SortOrder),
+                        new XElement("SortOrder", structureEntity.SortOrder),
                         new XElement("Type", linkType.Id));
 
                 if (existingCatalogAssociationElement != null)
@@ -601,7 +567,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     var catalogAssociation = new XElement("CatalogAssociation",
                         new XElement("Name", associationName),
                         new XElement("Description", linkType.Id),
-                        new XElement("SortOrder", distinctStructureEntity.SortOrder),
+                        new XElement("SortOrder", structureEntity.SortOrder),
                         new XElement("EntryCode", skuCode),
                         associationElement);
 
