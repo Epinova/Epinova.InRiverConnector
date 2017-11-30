@@ -202,14 +202,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelLinkDeleted(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, 
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkDeleted, 
                 channel => _publisher.ChannelLinkDeleted(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
             );
         }
 
         public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel =>
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkUpdated, channel =>
                 _publisher.ChannelLinkUpdated(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
             );
         }
