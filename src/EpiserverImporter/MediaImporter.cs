@@ -316,11 +316,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 if (entryCode.IsMainPicture)
                 {
                     _logger.Debug($"Setting '{contentMedia.Name}' as main media on {entryCode.Code}");
+                    media.SortOrder = 0;
                     writableContent.CommerceMediaCollection.Insert(0, media);
                 }
                 else
                 {
                     _logger.Debug($"Adding '{contentMedia.Name}' as media on {entryCode.Code}");
+                    media.SortOrder = 1;
                     writableContent.CommerceMediaCollection.Add(media);
                 }
                 
