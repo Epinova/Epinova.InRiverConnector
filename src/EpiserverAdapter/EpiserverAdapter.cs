@@ -162,7 +162,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         
         public void ChannelEntityUpdated(int channelId, int entityId, string data)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel =>
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityUpdated, channel =>
             {
                 if (channel.Id == entityId)
                 {
