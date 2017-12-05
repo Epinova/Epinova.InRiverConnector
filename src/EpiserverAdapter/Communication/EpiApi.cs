@@ -128,7 +128,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 try
                 {
-                    var result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml, filePath);
+                    var result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml, new ImportCatalogXmlRequest { Path = filePath });
 
                     IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
                 }

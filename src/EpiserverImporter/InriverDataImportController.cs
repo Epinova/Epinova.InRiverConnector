@@ -111,11 +111,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public string ImportCatalogXml([FromBody] string path)
+        public string ImportCatalogXml(ImportCatalogXmlRequest request)
         {
             ImportStatusContainer.Instance.Message = ImportStatus.IsImporting;
 
-            _catalogImporter.ImportCatalogXml(path);
+            _catalogImporter.ImportCatalogXml(request.Path);
 
             return ImportStatusContainer.Instance.Message;
         }
