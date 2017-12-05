@@ -1,6 +1,6 @@
 <configuration xmlns:xdt="http://schemas.microsoft.com/XML-Document-Transform">
   <appSettings>
-    <add key="InRiverPimConnector.APIKey" value="123" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)" />
+    <add key="InRiverConnector.APIKey" value="123" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)" />
     <add key="InRiverConnector.RunICatalogImportHandlers" value="false" xdt:Transform="InsertIfMissing" xdt:Locator="Match(key)" />
   </appSettings>
 </configuration>

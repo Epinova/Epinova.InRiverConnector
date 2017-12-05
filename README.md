@@ -11,7 +11,7 @@ This is a major modification of inRiver's own connector, located at https://gith
 This version is built for **inRiver PIM 6.3.0 SP1**. Episerver-dependencies are set in the nuspec-file and should be handled automatically.
 
 1. Install NuGet package (For now build it yourself: `nuget pack <path-to-clone-location>/src/EpiserverImporter/EpiserverImporter.csproj`. It'll hopefully end up in the Episerver nuget feed later when it has undergone some testing.)
-2. In `web.config\appSettings`, add an API key to `inRiver.apikey`. The same key must be added to the installed connector as a configuration with key `EPI_APIKEY`.
+2. In `web.config\appSettings`, add an API key to `InRiverConnector.APIKey`. The same key must be added to the installed connector as a configuration with key `EPI_APIKEY`.
 3. Locate the installed nuget package in `packages\Epinova.InRiverConnector.x.x.x.x\`. The files beneath `OutboundConnectors` must be copied to `%programfiles%\inRiver AB\inRiver Connect\OutboundConnectors`
 4. Restart the `inRiver Connect` service and create a new connector. Configure it as explained below the *Connector configuration* section.
 
@@ -23,7 +23,7 @@ Note: This connector logs quite extensively in debug mode. If that's not needed,
 
 These settings should be added to your `web.config` file under `<appSettings>` as `<add key="name_given_below" value="a suitable value" />`.
 
-- Optional: `InRiverPimConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
+- Optional: `InRiverConnector.ResourceFolderName` to set your own root folder name for the imported resources (media files in Episerver). Defaults to `ImportedResources`.
 - Optional: `InRiverConnector.DegreeOfParallelism` - integer value. sets how many parallel threads the resource imports should run in. Defaults to 2. Increase number for fast systems with large imports. 2-4 will yield the best results for most systems.
 - `InRiverConnector.APIKey` - let this contain the same value as you set in the connector configuration (`EPI_APIKEY`)
 - `InRiverConnector.RunICatalogImportHandlers` - `true` or `false`. Tells the connector whether or not to run your handlers when receiving messages from the PIM system.

@@ -521,7 +521,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         protected ContentReference GetFolder(FileInfo fileInfo, ContentType contentType)
         {
             lock(LockObject) { 
-                var rootFolderName = ConfigurationManager.AppSettings["InRiverPimConnector.ResourceFolderName"];
+                var rootFolderName = ConfigurationManager.AppSettings["InRiverConnector.ResourceFolderName"];
                 var rootFolder = _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
 
                 var firstLevelFolderName = fileInfo.Name[0].ToString().ToUpper();
