@@ -265,6 +265,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             {
                 IntegrationLogger.Write(LogLevel.Error, "Exception in ChannelEntityAdded", ex);
                 ConnectorEventHelper.InitiateEvent(_config, eventType, ex.Message, -1, true);
+
+                _entityService.FlushCache();
+                _resourceElementFactory.FlushCache();
             }
         }
 
