@@ -7,6 +7,7 @@
     <authors>Optimera, Epinova, inRiver - Arve Systad</authors>
     <owners>Epinova</owners>
     <iconUrl>http://www.epinova.no/favicon.ico</iconUrl>
+    <projectUrl>https://github.com/Epinova/Epinova.InRiverConnector</projectUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>$description$</description>
     <releaseNotes></releaseNotes>
