@@ -374,6 +374,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 }
                 catch (ValidationException exception) when (exception.Message.Contains("Name in URL"))
                 {
+                    _logger.Information("Duplicate filename found, adding counter to end.");
                     counter++;
                     editableMediaData.RouteSegment = GetUrlSlug(updatedResource, counter);
                 }
