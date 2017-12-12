@@ -372,7 +372,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
                     saveSuccess = true;
                 }
-                catch (ValidationException exception) when (exception.Message.StartsWith("\"Name in URL\" with value"))
+                catch (ValidationException exception) when (exception.Message.Contains("Name in URL"))
                 {
                     counter++;
                     editableMediaData.RouteSegment = GetUrlSlug(updatedResource, counter);
@@ -391,7 +391,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             {
                 rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
             }
-
+            
             var rawSlug = _urlSegmentGenerator.Create(rawFilename);
 
             if (counter == 0)
