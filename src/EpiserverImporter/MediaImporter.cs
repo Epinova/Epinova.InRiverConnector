@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -332,10 +333,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         private void UpdateMetaData(IInRiverResource resource, InRiverImportResource updatedResource)
         {
-            MediaData editableMediaData = (MediaData)((MediaData)resource).CreateWritableClone();
+            MediaData editableMediaData = (MediaData) ((MediaData) resource).CreateWritableClone();
 
             ResourceMetaField resourceFileId = updatedResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
-            if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
+            if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) &&
+                resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
             {
                 IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
 
@@ -358,12 +360,27 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 editableMediaData.RouteSegment = GetUrlSlug(updatedResource);
             }
 
-            ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
+            ((IInRiverResource) editableMediaData).HandleMetaData(updatedResource.MetaFields);
 
-            _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
+            var saveSuccess = false;
+
+            var counter = 0;
+            while (!saveSuccess)
+            { 
+                try
+                {
+                    _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
+                    saveSuccess = true;
+                }
+                catch (ValidationException exception) when (exception.Message.StartsWith("\"Name in URL\" with value"))
+                {
+                    counter++;
+                    editableMediaData.RouteSegment = GetUrlSlug(updatedResource, counter);
+                }
+            }
         }
 
-        private string GetUrlSlug(InRiverImportResource updatedResource)
+        private string GetUrlSlug(InRiverImportResource updatedResource, int counter = 0)
         {
             string rawFilename = null;
             if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
@@ -374,7 +391,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             {
                 rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
             }
-            return _urlSegmentGenerator.Create(rawFilename);
+
+            var rawSlug = _urlSegmentGenerator.Create(rawFilename);
+
+            if (counter == 0)
+                return rawSlug;
+
+            return $"{rawSlug}-{counter}";
         }
 
         private MediaData CreateNewFile(InRiverImportResource inriverResource)
