@@ -357,48 +357,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 }
 
                 editableMediaData.BinaryData = blob;
-                editableMediaData.RouteSegment = GetUrlSlug(updatedResource);
             }
 
             ((IInRiverResource) editableMediaData).HandleMetaData(updatedResource.MetaFields);
 
-            var saveSuccess = false;
-
-            var counter = 0;
-            while (!saveSuccess)
-            { 
-                try
-                {
-                    _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
-                    saveSuccess = true;
-                }
-                catch (ValidationException exception) when (exception.Message.Contains("Name in URL"))
-                {
-                    _logger.Information("Duplicate filename found, adding counter to end.");
-                    counter++;
-                    editableMediaData.RouteSegment = GetUrlSlug(updatedResource, counter);
-                }
-            }
-        }
-
-        private string GetUrlSlug(InRiverImportResource updatedResource, int counter = 0)
-        {
-            string rawFilename = null;
-            if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFilename"))
-            {
-                rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFilename").Values[0].Data;
-            }
-            else if (updatedResource.MetaFields.Any(f => f.Id == "ResourceFileId"))
-            {
-                rawFilename = updatedResource.MetaFields.First(f => f.Id == "ResourceFileId").Values[0].Data;
-            }
-            
-            var rawSlug = _urlSegmentGenerator.Create(rawFilename);
-
-            if (counter == 0)
-                return rawSlug;
-
-            return $"{rawSlug}-{counter}";
+            _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
         private MediaData CreateNewFile(InRiverImportResource inriverResource)
@@ -432,7 +395,6 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             var newFile = _contentRepository.GetDefault<MediaData>(GetFolder(fileInfo, contentType), contentType.ID);
             newFile.Name = fileInfo.Name;
             newFile.ContentGuid = EpiserverEntryIdentifier.EntityIdToGuid(inriverResource.ResourceId);
-            newFile.RouteSegment = GetUrlSlug(inriverResource);
 
             if (newFile is IInRiverResource resource)
             {
