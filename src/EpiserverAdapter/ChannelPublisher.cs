@@ -436,7 +436,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             var resourceIncluded = false;
             var resourceDocument = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
-            _documentFileHelper.SaveDocument(resourceDocument, folderDateTime);
+            var resourcesBasePath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
+            _documentFileHelper.SaveDocument(resourceDocument, resourcesBasePath);
             
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
 
