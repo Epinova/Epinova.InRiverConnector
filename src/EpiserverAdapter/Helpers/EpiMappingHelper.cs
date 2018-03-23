@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using inRiver.Integration.Logging;
 using inRiver.Remoting;
+using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
@@ -224,7 +227,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             Field nameField = null;
             if (_config.EpiNameMapping.ContainsKey(entity.EntityType.Id))
             {
-                nameField = entity.GetField(_config.EpiNameMapping[entity.EntityType.Id]);
+                IntegrationLogger.Write(LogLevel.Debug, $"what do i have ? {entity.ToXml()}");
+                nameField = GetField(entity, _config.EpiNameMapping[entity.EntityType.Id]);
             }
 
             string returnString = string.Empty;
@@ -255,6 +259,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
 
             return returnString;
+        }
+
+        private Field GetField(Entity entity, string fieldTypeId)
+        {
+            if (string.IsNullOrEmpty(fieldTypeId))
+                return (Field)null;
+
+            return entity.Fields.FirstOrDefault<Field>((Func<Field, bool>)(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower()));
         }
 
         public string GetEpiserverFieldName(FieldType fieldType)
