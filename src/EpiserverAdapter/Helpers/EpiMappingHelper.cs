@@ -55,9 +55,18 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         /// </summary>
         public bool IsRelation(LinkType linkType)
         {
+            IntegrationLogger.Write(LogLevel.Debug, "SourceEntityTypeId is: " + linkType.SourceEntityTypeId);
+            IntegrationLogger.Write(LogLevel.Debug, "TargetEntityTypeId is: " + linkType.TargetEntityTypeId);
+            if (linkType.SourceEntityTypeId.Equals("Item") && linkType.TargetEntityTypeId.Equals("Item"))
+                return false;
+
             if ((_config.BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.BundleEntityTypes.Contains(linkType.TargetEntityTypeId)) ||
                 (_config.PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.PackageEntityTypes.Contains(linkType.TargetEntityTypeId)) || 
                 (_config.DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId)))
+            {
+                return true;
+            }
+            if (linkType.SourceEntityTypeId.Equals("ChannelNode") && linkType.TargetEntityTypeId.Equals("Product"))
             {
                 return true;
             }
@@ -227,7 +236,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             Field nameField = null;
             if (_config.EpiNameMapping.ContainsKey(entity.EntityType.Id))
             {
-                IntegrationLogger.Write(LogLevel.Debug, $"what do i have ? {entity.ToXml()}");
                 nameField = GetField(entity, _config.EpiNameMapping[entity.EntityType.Id]);
             }
 
@@ -266,7 +274,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             if (string.IsNullOrEmpty(fieldTypeId))
                 return (Field)null;
 
-            return entity.Fields.FirstOrDefault<Field>((Func<Field, bool>)(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower()));
+            return entity.Fields.FirstOrDefault(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower());
         }
 
         public string GetEpiserverFieldName(FieldType fieldType)

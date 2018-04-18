@@ -393,6 +393,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     {
                         AddMissingParentRelation(structureEntity, skuId);
                     }
+                    IntegrationLogger.Write(LogLevel.Debug, "AddAssociationElements");
                     AddAssociationElements(linkType, structureEntity, skuId);
                 }
             }
@@ -472,6 +473,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                                             StructureEntity structureEntity, 
                                             string itemCode)
         {
+            IntegrationLogger.Write(LogLevel.Debug, "AddAssociationElements");
+
             if (!IsAssociationLinkType(linkType))
                 return;
 
@@ -492,6 +495,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         private void AddNormalAssociations(StructureEntity structureEntity)
         {
+
+            IntegrationLogger.Write(LogLevel.Debug, "AddNormalAssociations");
+
             var entityCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId);
             var parentCode = _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId);
 

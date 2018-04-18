@@ -226,6 +226,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
         public void DeleteLink(string sourceCode, string targetCode, bool isRelation)
         {
+            IntegrationLogger.Write(LogLevel.Debug, "LINK is: " + isRelation);
             lock (EpiLockObject.Instance)
             {
                 _httpClient.Post(_config.Endpoints.DeleteLink, new DeleteLinkRequest
