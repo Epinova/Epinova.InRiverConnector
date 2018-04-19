@@ -72,7 +72,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (startDateField == null || startDateField.IsEmpty())
             {
-                return DateTime.UtcNow.ToString("u");
+                return DateTime.UtcNow.AddMinutes(-5).ToString("u");
             }
 
             return ((DateTime)startDateField.Data).ToUniversalTime().ToString("u");
