@@ -220,27 +220,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
         internal async Task DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                var data = new DeleteCompletedData
-                {
-                    CatalogName = catalogName,
-                    EventType = eventType
-                };
-
-                await _httpClient.PostAsync(_config.Endpoints.DeleteCompleted, data);
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"Failed to fire DeleteCompleted for catalog {catalogName}.",
-                    exception);
-                throw;
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCompleted, new DeleteCompletedData
+                    {
+                        CatalogName = catalogName,
+                        EventType = eventType
+                    }), LogLevel.Error, $"Failed to fire DeleteCompleted for catalog {catalogName}."
+            );
         }
 
         internal async Task NotifyEpiserverPostImport(string filepath)
@@ -248,60 +235,60 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             if (string.IsNullOrEmpty(_config.HttpPostUrl))
                 return;
 
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostAsync(_config.HttpPostUrl, new {filePath = filepath});
-            }
-
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.HttpPostUrl, new {filePath = filepath})
+            );
         }
 
         public async Task DeleteResource(Guid resourceGuid)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostAsync(_config.Endpoints.DeleteResource,
-                    new DeleteResourceRequest {ResourceGuid = resourceGuid});
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteResource,
+                        new DeleteResourceRequest {ResourceGuid = resourceGuid})
+            );
         }
 
         public async Task DeleteLink(string sourceCode, string targetCode, bool isRelation)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostAsync(_config.Endpoints.DeleteLink, new DeleteLinkRequest
-                {
-                    SourceCode = sourceCode,
-                    TargetCode = targetCode,
-                    IsRelation = isRelation
-                });
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteLink, new DeleteLinkRequest
+                    {
+                        SourceCode = sourceCode,
+                        TargetCode = targetCode,
+                        IsRelation = isRelation
+                    })
+            );
         }
 
         public async Task DeleteLink(Guid resourceGuid, string targetCode)
         {
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteResource, new DeleteResourceRequest
+                    {
+                        ResourceGuid = resourceGuid,
+                        EntryToRemoveFrom = targetCode
+                    })
+            );
+        }
+
+        private async Task ExecuteWithinLockAsync(Func<Task> action, LogLevel loglevel = LogLevel.Error,
+            string errorString = null)
+        {
             await Semaphore.WaitAsync();
             try
             {
-                await _httpClient.PostAsync(_config.Endpoints.DeleteResource, new DeleteResourceRequest
-                {
-                    ResourceGuid = resourceGuid,
-                    EntryToRemoveFrom = targetCode
-                });
+                await action();
+            }
+            catch (Exception exception)
+            {
+                IntegrationLogger.Write(loglevel,
+                    errorString,
+                    exception);
+                throw;
             }
             finally
             {
