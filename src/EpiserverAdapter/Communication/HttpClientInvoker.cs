@@ -53,7 +53,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                 IntegrationLogger.Write(LogLevel.Debug, $"Posted to {url}, took {timer.ElapsedMilliseconds}.");
             }
-            catch (TaskCanceledException)
+            catch (Exception ex) when (
+                ex is TaskCanceledException ||
+                ex is HttpRequestException)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying agian..");
                 Thread.Sleep(15000);
@@ -87,8 +89,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 var errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
                 IntegrationLogger.Write(LogLevel.Error, errorMsg);
             }
-            catch (TaskCanceledException)
-            {
+            catch (Exception ex) when (
+            ex is TaskCanceledException ||
+            ex is HttpRequestException)
+             {
                 IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying agian..");
                 Thread.Sleep(15000);
                 return await PostWithAsyncStatusCheck(url, message);

@@ -36,186 +36,85 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
         internal async Task DeleteCatalog(int catalogId)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalog, catalogId);
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog with id: {catalogId}", exception);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalog, catalogId), $"Failed to delete catalog with id: {catalogId}"
+            );
         }
 
         internal async Task DeleteCatalogNode(Entity catalogNode, int catalogId)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                var code = _catalogCodeGenerator.GetEpiserverCode(catalogNode);
-                await _httpClient.PostAsync(_config.Endpoints.DeleteCatalogNode, code);
-            }
-            catch (Exception ex)
-            {
-                IntegrationLogger.Write(LogLevel.Error,
-                    $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}", ex);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogNode, _catalogCodeGenerator.GetEpiserverCode(catalogNode)), $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}"
+            );
         }
 
         internal async Task DeleteSku(string skuId)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, skuId);
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on SKU ID: {skuId}",
-                    exception);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, skuId), $"Failed to delete catalog entry based on SKU ID: {skuId}"
+            );
         }
 
         internal async Task DeleteCatalogEntry(Entity entity)
         {
             var code = _catalogCodeGenerator.GetEpiserverCode(entity);
-
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code));
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry with catalog entry ID: {code}",
-                    exception);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code)), $"Failed to delete catalog entry with catalog entry ID: {code}"
+            );
         }
 
         internal async Task DeleteSkus(List<string> skuIds)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                await _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(skuIds));
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"Failed to delete skus: {string.Join(",", skuIds)}",
-                    exception);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(skuIds)), $"Failed to delete skus: {string.Join(",", skuIds)}"
+            );
         }
 
         internal async Task MoveNodeToRootIfNeeded(int entityId)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                var entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
-                await _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Warning,
-                    "Failed when calling the interface function: CheckAndMoveNodeIfNeeded", exception);
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            var entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId), "Failed when calling the interface function : CheckAndMoveNodeIfNeeded"
+            );
         }
 
         internal async Task ImportCatalog(string filePath)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                var result = await _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml,
-                    new ImportCatalogXmlRequest {Path = filePath});
-
-                IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error, $"Failed to import catalog xml file {filePath} into Episerver.",
-                    exception);
-                throw;
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml,
+                        new ImportCatalogXmlRequest { Path = filePath }), $"Failed to import catalog xml file {filePath} into Episerver."
+            );
         }
 
         internal async Task ImportResources(string resourceDocumentFilePath, string baseFilePath)
         {
-            await Semaphore.WaitAsync();
-            try
-            {
-                var importer = new ResourceImporter(_config, _httpClient);
-                importer.ImportResources(resourceDocumentFilePath, baseFilePath);
-
-                IntegrationLogger.Write(LogLevel.Information,
-                    $"Resource file {resourceDocumentFilePath} imported to Episerver.");
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error,
-                    $"Failed to import resource file {resourceDocumentFilePath} to Episerver.", exception);
-                throw;
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+            var importer = new ResourceImporter(_config, _httpClient);
+            await ExecuteWithinLockAsync(
+                () =>
+                    importer.ImportResources(resourceDocumentFilePath, baseFilePath), $"Failed to import resource file {resourceDocumentFilePath} to Episerver."
+            );
         }
 
         internal async Task ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType,
             bool resourceIncluded)
         {
-            await Semaphore.WaitAsync();
-            try
+            var data = new ImportUpdateCompletedData
             {
-                var data = new ImportUpdateCompletedData
-                {
-                    CatalogName = catalogName,
-                    EventType = eventType,
-                    ResourcesIncluded = resourceIncluded
-                };
-
-                var result = await _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportUpdateCompleted, data);
-                IntegrationLogger.Write(LogLevel.Debug, $"ImportUpdateCompleted returned: {result}");
-            }
-            catch (Exception exception)
-            {
-                IntegrationLogger.Write(LogLevel.Error,
-                    $"Failed to fire import update completed for catalog {catalogName}.", exception);
-                throw;
-            }
-            finally
-            {
-                Semaphore.Release();
-            }
+                CatalogName = catalogName,
+                EventType = eventType,
+                ResourcesIncluded = resourceIncluded
+            };
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportUpdateCompleted, data)
+            );
         }
 
         internal async Task DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
@@ -226,7 +125,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     {
                         CatalogName = catalogName,
                         EventType = eventType
-                    }), LogLevel.Error, $"Failed to fire DeleteCompleted for catalog {catalogName}."
+                    }), $"Failed to fire DeleteCompleted for catalog {catalogName}."
             );
         }
 
@@ -275,7 +174,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        private async Task ExecuteWithinLockAsync(Func<Task> action, LogLevel loglevel = LogLevel.Error,
+        private async Task ExecuteWithinLockAsync(Func<Task> action,
             string errorString = null)
         {
             await Semaphore.WaitAsync();
@@ -285,7 +184,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
             catch (Exception exception)
             {
-                IntegrationLogger.Write(loglevel,
+                IntegrationLogger.Write(LogLevel.Error,
                     errorString,
                     exception);
                 throw;
