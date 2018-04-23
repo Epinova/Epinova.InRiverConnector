@@ -80,7 +80,6 @@
     <Compile Include="EpiserverAdapter.cs" />
     <Compile Include="Communication\EpiApi.cs" />
     <Compile Include="Communication\HttpClientInvoker.cs" />
-    <Compile Include="Communication\EpiLockObject.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Enums\CVLDataMode.cs" />
     <Compile Include="XmlFactories\CatalogDocumentFactory.cs" />
