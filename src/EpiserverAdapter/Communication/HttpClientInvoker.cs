@@ -40,25 +40,26 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        public void Post<T>(string url, T message)
+        public async Task PostAsync<T>(string url, T message)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
             var timer = Stopwatch.StartNew();
 
-            var response = HttpClient.PostAsJsonAsync(url, message).Result;
+            var response = await HttpClient.PostAsJsonAsync(url, message);
             response.EnsureSuccessStatusCode();
             
             IntegrationLogger.Write(LogLevel.Debug, $"Posted to {url}, took {timer.ElapsedMilliseconds}.");
         }
 
-        public string PostWithAsyncStatusCheck<T>(string url, T message)
+        public async Task<string> PostWithAsyncStatusCheck<T>(string url, T message)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
-            var response = HttpClient.PostAsJsonAsync(url, message).Result;
+            var response = await HttpClient.PostAsJsonAsync(url, message);
+
             if (response.IsSuccessStatusCode)
             {
-                var parsedResponse = response.Content.ReadAsAsync<string>().Result;
+                var parsedResponse = await response.Content.ReadAsAsync<string>();
                 
                 while (parsedResponse == ImportStatus.IsImporting)
                 {
