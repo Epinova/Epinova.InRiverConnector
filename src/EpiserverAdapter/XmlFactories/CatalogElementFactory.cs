@@ -16,9 +16,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         private readonly IConfiguration _config;
         private readonly EpiMappingHelper _mappingHelper;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
-        private readonly PimFieldAdapter _pimFieldAdapter;
+        private readonly IPimFieldAdapter _pimFieldAdapter;
 
-        public CatalogElementFactory(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, PimFieldAdapter pimFieldAdapter)
+        public CatalogElementFactory(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, IPimFieldAdapter pimFieldAdapter)
         {
             _config = config;
             _mappingHelper = mappingHelper;
@@ -156,42 +156,39 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         public XElement CreateSEOInfoElement(Entity entity)
         {
-            XElement seoInfo = new XElement("SeoInfo");
-            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+            var seoInfo = new XElement("SeoInfo");
+            foreach (var culturePair in _config.LanguageMapping)
             {
-                string uri = _pimFieldAdapter.GetFieldValue(entity, "seouri", culturePair.Value);
-                string title = _pimFieldAdapter.GetFieldValue(entity, "seotitle", culturePair.Value);
-                string description = _pimFieldAdapter.GetFieldValue(entity, "seodescription", culturePair.Value);
-                string keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
-                string urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
+                var uri = _pimFieldAdapter.GetFieldValue(entity, "seouri", culturePair.Value);
+                var title = _pimFieldAdapter.GetFieldValue(entity, "seotitle", culturePair.Value);
+                var description = _pimFieldAdapter.GetFieldValue(entity, "seodescription", culturePair.Value);
+                var keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
+                var urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
 
-                if (string.IsNullOrEmpty(uri) && 
-                    string.IsNullOrEmpty(title) && 
-                    string.IsNullOrEmpty(description) && 
-                    string.IsNullOrEmpty(keywords) && 
+                if (string.IsNullOrEmpty(uri) &&
+                    string.IsNullOrEmpty(title) &&
+                    string.IsNullOrEmpty(description) &&
+                    string.IsNullOrEmpty(keywords) &&
                     string.IsNullOrEmpty(urisegment))
-                {
                     continue;
-                }
 
                 seoInfo.Add(
                     new XElement("Seo",
                         new XElement("LanguageCode", culturePair.Key.Name.ToLower()),
-                        new XElement("Uri", uri),
-                        new XElement("Title", title),
-                        new XElement("Description", description),
-                        new XElement("Keywords", keywords),
-                        new XElement("UriSegment", urisegment)));
+                        string.IsNullOrEmpty(uri) ? null : new XElement("Uri", uri),
+                        string.IsNullOrEmpty(title) ? null : new XElement("Title", title),
+                        string.IsNullOrEmpty(description) ? null : new XElement("Description", description),
+                        string.IsNullOrEmpty(keywords) ? null : new XElement("Keywords", keywords),
+                        string.IsNullOrEmpty(urisegment) ? null : new XElement("UriSegment", urisegment)));
             }
-
             return seoInfo;
         }
-        
+
         public XElement InRiverEntityToEpiEntry(Entity entity)
         {
             var metaFields = from f in entity.Fields
-                where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
-                select GetMetaFieldValueElement(f);
+                             where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
+                             select GetMetaFieldValueElement(f);
 
             return new XElement("Entry",
                 new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
@@ -227,7 +224,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("Name", _mappingHelper.GetEpiserverFieldName(field.FieldType)),
                 new XElement("Type", _mappingHelper.GetEpiserverDataType(field.FieldType))
             );
-            
+
             if (field.FieldType.DataType.Equals(DataType.LocaleString))
             {
                 var ls = field.Data as LocaleString;
@@ -510,7 +507,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             XElement skuElement = skuDoc.Element("SKUs");
             if (skuElement == null)
                 return skuElements;
-            
+
             foreach (XElement sku in skuElement.Elements())
             {
                 string skuId = sku.Attribute("id").Value;

@@ -71,7 +71,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CatalogElementFactoryTests.cs" />
     <Compile Include="EntityFactory.cs" />
+    <Compile Include="Fakes\FakeCatalogCodeGenerator.cs" />
+    <Compile Include="Fakes\FakeEpiMappingHelper.cs" />
+    <Compile Include="Fakes\FakePimFieldAdapter.cs" />
     <Compile Include="FieldFactory.cs" />
     <Compile Include="CatalogCodeGeneratorTests.cs" />
     <Compile Include="Helpers\EpiMappingHelperTests.cs" />
