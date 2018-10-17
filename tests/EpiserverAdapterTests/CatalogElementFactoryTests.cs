@@ -41,7 +41,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [InlineData("seodescription")]
         [InlineData("seokeywords")]
         [InlineData("seourisegment")]
-        public void asdaf(string name)
+        public void SeoFieldValueIsEmpty_CreateSEOInfoElement_DoesNotReturnEmptyNode(string name)
         {
             _pimFieldAdapterMock
                 .Setup(m => m.GetFieldValue(It.IsAny<Entity>(), name, It.IsAny<CultureInfo>()))
