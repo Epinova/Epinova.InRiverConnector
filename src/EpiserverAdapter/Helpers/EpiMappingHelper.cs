@@ -294,12 +294,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 return true;
             }
-
-            if (linkType.SourceEntityTypeId.Equals("ChannelNode") && linkType.TargetEntityTypeId.Equals("Product"))
-            {
-                return true;
-            }
-
             return linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && linkType.Index == FirstProductItemLinkType;
         }
 

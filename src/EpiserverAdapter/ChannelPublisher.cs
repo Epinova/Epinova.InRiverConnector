@@ -180,11 +180,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 structureEntities.AddRange(RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
             }
 
-            // Remove duplicates
-            structureEntities = structureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
-
             //Adding existing Entities. If it occurs more than one time in channel. We can not remove duplicates.
             structureEntities.AddRange(existingEntitiesInChannel);
+
+            // Remove duplicates
+            structureEntities = structureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
@@ -354,6 +354,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private void DeleteLink(Entity removalSource, Entity removalTarget, string linkTypeId, bool overrideIsRelation = false)
         {
             bool isRelation = _mappingHelper.IsRelation(linkTypeId) || overrideIsRelation;
+
+            LinkType linktype = _config.LinkTypes.Find(lt => lt.Id == linkTypeId);
+            if (linktype.SourceEntityTypeId.Equals("ChannelNode") && linktype.TargetEntityTypeId.Equals("Product"))
+            {
+                isRelation = true;
+            }
 
             string sourceCode = _catalogCodeGenerator.GetEpiserverCode(removalSource);
             string targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
