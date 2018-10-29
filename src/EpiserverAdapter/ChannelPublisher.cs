@@ -180,11 +180,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 structureEntities.AddRange(RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
             }
 
-            //Adding existing Entities. If it occurs more than one time in channel. We can not remove duplicates.
-            structureEntities.AddRange(existingEntitiesInChannel);
+           
 
             // Remove duplicates
             structureEntities = structureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
+
+            //Adding existing Entities. If it occurs more than one time in channel. We can not remove duplicates.
+            structureEntities.AddRange(existingEntitiesInChannel);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
