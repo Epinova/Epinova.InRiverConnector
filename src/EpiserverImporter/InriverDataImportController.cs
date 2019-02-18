@@ -133,10 +133,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         _mediaImporter.ImportResources(request);
 
                         ImportStatusContainer.Instance.IsImporting = false;
+                        ImportStatusContainer.Instance.Message = "Import Sucessful";
                     });
             });
-
-            return ImportStatus.IsImporting;
+            return ImportStatusContainer.Instance.Message;
         }
 
         [HttpPost]

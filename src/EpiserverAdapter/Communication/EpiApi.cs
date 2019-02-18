@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.Interfaces;
 using Epinova.InRiverConnector.Interfaces.Enums;
@@ -13,14 +13,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class EpiApi
     {
-        private readonly IConfiguration _config;
+        private static readonly SemaphoreSlim Semaphore;
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
+        private readonly IConfiguration _config;
+        private readonly HttpClientInvoker _httpClient;
         private readonly PimFieldAdapter _pimFieldAdapter;
-        private readonly HttpClientInvoker _httpClient; 
 
-        public EpiApi(IConfiguration config, 
-                      CatalogCodeGenerator catalogCodeGenerator, 
-                      PimFieldAdapter pimFieldAdapter)
+        static EpiApi()
+        {
+            Semaphore = new SemaphoreSlim(1, 1);
+        }
+
+        public EpiApi(IConfiguration config,
+            CatalogCodeGenerator catalogCodeGenerator,
+            PimFieldAdapter pimFieldAdapter)
         {
             _config = config;
             _catalogCodeGenerator = catalogCodeGenerator;
@@ -28,224 +34,164 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             _httpClient = new HttpClientInvoker(config);
         }
 
-        internal void DeleteCatalog(int catalogId)
+        internal async Task DeleteCatalog(int catalogId)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalog, catalogId);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog with id: {catalogId}", exception);
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalog, catalogId), $"Failed to delete catalog with id: {catalogId}"
+            );
         }
 
-        internal void DeleteCatalogNode(Entity catalogNode, int catalogId)
+        internal async Task DeleteCatalogNode(Entity catalogNode, int catalogId)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    var code = _catalogCodeGenerator.GetEpiserverCode(catalogNode);
-                    _httpClient.Post(_config.Endpoints.DeleteCatalogNode, code);
-                }
-                catch (Exception ex)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}", ex);
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogNode, _catalogCodeGenerator.GetEpiserverCode(catalogNode)), $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}"
+            );
         }
 
-        internal void DeleteSku(string skuId)
+        internal async Task DeleteSku(string skuId)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, skuId);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry based on SKU ID: {skuId}", exception);
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.DeleteCatalogEntry, skuId), $"Failed to delete catalog entry based on SKU ID: {skuId}"
+            );
         }
 
-        internal void DeleteCatalogEntry(Entity entity)
+        internal async Task DeleteCatalogEntry(Entity entity)
         {
             var code = _catalogCodeGenerator.GetEpiserverCode(entity);
-
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    _httpClient.Post(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code));
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete catalog entry with catalog entry ID: {code}", exception);
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code)), $"Failed to delete catalog entry with catalog entry ID: {code}"
+            );
         }
 
-        internal void DeleteSkus(List<string> skuIds)
+        internal async Task DeleteSkus(List<string> skuIds)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    _httpClient.Post(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(skuIds));
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to delete skus: {string.Join(",", skuIds)}", exception);
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(skuIds)), $"Failed to delete skus: {string.Join(",", skuIds)}"
+            );
         }
 
-        internal void MoveNodeToRootIfNeeded(int entityId)
+        internal async Task MoveNodeToRootIfNeeded(int entityId)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    string entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Warning, "Failed when calling the interface function: CheckAndMoveNodeIfNeeded", exception);
-                }
-            }
+            var entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId), "Failed when calling the interface function : CheckAndMoveNodeIfNeeded"
+            );
         }
 
-        internal void ImportCatalog(string filePath)
+        internal async Task ImportCatalog(string filePath)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    var result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml, new ImportCatalogXmlRequest { Path = filePath });
-
-                    IntegrationLogger.Write(LogLevel.Debug, $"Import catalog returned: {result}");
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import catalog xml file {filePath} into Episerver.", exception);
-                    throw;
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportCatalogXml,
+                        new ImportCatalogXmlRequest { Path = filePath }), $"Failed to import catalog xml file {filePath} into Episerver."
+            );
         }
 
-        internal void ImportResources(string resourceDocumentFilePath, string baseFilePath)
+        internal async Task ImportResources(string resourceDocumentFilePath, string baseFilePath)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    var importer = new ResourceImporter(_config, _httpClient);
-                    importer.ImportResources(resourceDocumentFilePath, baseFilePath);
-
-                    IntegrationLogger.Write(LogLevel.Information, $"Resource file {resourceDocumentFilePath} imported to Episerver.");
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to import resource file {resourceDocumentFilePath} to Episerver.", exception);
-                    throw;
-                }
-            }
+            var importer = new ResourceImporter(_config, _httpClient);
+            await ExecuteWithinLockAsync(
+                () =>
+                    importer.ImportResources(resourceDocumentFilePath, baseFilePath), $"Failed to import resource file {resourceDocumentFilePath} to Episerver."
+            );
         }
 
-        internal void ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded)
+        internal async Task ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType,
+            bool resourceIncluded)
         {
-            lock (EpiLockObject.Instance)
+            var data = new ImportUpdateCompletedData
             {
-                try
-                {
-                    var data = new ImportUpdateCompletedData
-                                {
-                                    CatalogName = catalogName,
-                                    EventType = eventType,
-                                    ResourcesIncluded = resourceIncluded
-                                };
-
-                    string result = _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportUpdateCompleted, data);
-                    IntegrationLogger.Write(LogLevel.Debug, $"ImportUpdateCompleted returned: {result}");
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to fire import update completed for catalog {catalogName}.", exception);
-                    throw;
-                }
-            }
+                CatalogName = catalogName,
+                EventType = eventType,
+                ResourcesIncluded = resourceIncluded
+            };
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.ImportUpdateCompleted, data)
+            );
         }
 
-        internal void DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
+        internal async Task DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
         {
-            lock (EpiLockObject.Instance)
-            {
-                try
-                {
-                    var data = new DeleteCompletedData
-                                {
-                                   CatalogName = catalogName,
-                                   EventType = eventType
-                               };
-
-                    _httpClient.Post(_config.Endpoints.DeleteCompleted, data);
-                }
-                catch (Exception exception)
-                {
-                    IntegrationLogger.Write(LogLevel.Error, $"Failed to fire DeleteCompleted for catalog {catalogName}.", exception);
-                    throw;
-                }
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCompleted, new DeleteCompletedData
+                    {
+                        CatalogName = catalogName,
+                        EventType = eventType
+                    }), $"Failed to fire DeleteCompleted for catalog {catalogName}."
+            );
         }
 
-        internal void NotifyEpiserverPostImport(string filepath)
+        internal async Task NotifyEpiserverPostImport(string filepath)
         {
             if (string.IsNullOrEmpty(_config.HttpPostUrl))
                 return;
 
-            lock (EpiLockObject.Instance)
-            {
-                _httpClient.Post(_config.HttpPostUrl, new { filePath = filepath });
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.HttpPostUrl, new {filePath = filepath})
+            );
         }
 
-        public void DeleteResource(Guid resourceGuid)
+        public async Task DeleteResource(Guid resourceGuid)
         {
-            lock (EpiLockObject.Instance)
-            {
-                _httpClient.Post(_config.Endpoints.DeleteResource, new DeleteResourceRequest { ResourceGuid = resourceGuid });
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteResource,
+                        new DeleteResourceRequest {ResourceGuid = resourceGuid})
+            );
         }
 
-        public void DeleteLink(string sourceCode, string targetCode, bool isRelation)
+        public async Task DeleteLink(string sourceCode, string targetCode, bool isRelation)
         {
-            lock (EpiLockObject.Instance)
-            {
-                _httpClient.Post(_config.Endpoints.DeleteLink, new DeleteLinkRequest
-                {
-                    SourceCode = sourceCode,
-                    TargetCode = targetCode,
-                    IsRelation = isRelation
-                });
-            }
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteLink, new DeleteLinkRequest
+                    {
+                        SourceCode = sourceCode,
+                        TargetCode = targetCode,
+                        IsRelation = isRelation
+                    })
+            );
         }
 
-        public void DeleteLink(Guid resourceGuid, string targetCode)
+        public async Task DeleteLink(Guid resourceGuid, string targetCode)
         {
-            lock (EpiLockObject.Instance)
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteResource, new DeleteResourceRequest
+                    {
+                        ResourceGuid = resourceGuid,
+                        EntryToRemoveFrom = targetCode
+                    })
+            );
+        }
+
+        private async Task ExecuteWithinLockAsync(Func<Task> action,
+            string errorString = null)
+        {
+            await Semaphore.WaitAsync();
+            try
             {
-                _httpClient.Post(_config.Endpoints.DeleteResource, new DeleteResourceRequest
-                {
-                    ResourceGuid = resourceGuid,
-                    EntryToRemoveFrom = targetCode
-                });
+                await action();
+            }
+            catch (Exception exception)
+            {
+                IntegrationLogger.Write(LogLevel.Error,
+                    errorString,
+                    exception);
+                throw;
+            }
+            finally
+            {
+                Semaphore.Release();
             }
         }
     }

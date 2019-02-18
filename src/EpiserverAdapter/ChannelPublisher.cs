@@ -292,16 +292,34 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public ConnectorEvent ChannelLinkUpdated(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
+            var targetEntityStructure = _entityService.GetEntityInChannelWithParent(_config.ChannelId, targetEntityId, sourceEntityId);
+           
+            var parentStructureEntity = _entityService.GetParentStructureEntity(_config.ChannelId, sourceEntityId, targetEntityId, targetEntityStructure);
+
+        
+            var channelName = _mappingHelper.GetNameForEntity(channel, 100);
+            if (parentStructureEntity == null)
+            {
+                //throw new Exception($"Can't find parent structure entity {sourceEntityId} with target entity id {targetEntityId}");
+                //Relation has been unactivated
+                
+                 var deleteEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
+                     $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName.Data}", 0);
+                 Entity removalTarget = _entityService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
+                 Entity removalSource = _entityService.GetEntity(sourceEntityId, LoadLevel.DataAndLinks);
+                 DeleteLink(removalSource, removalTarget, linkTypeId, true);
+                 _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted);
+                 return deleteEvent;
+                 
+                // _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, true);
+
+                //                return connectorEvent;
+            }
+
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded,
                 $"Received link update for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}.", 0);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Fetching channel entities...", 1);
-
-            var targetEntityStructure = _entityService.GetEntityInChannelWithParent(_config.ChannelId, targetEntityId, sourceEntityId);
-            var parentStructureEntity = _entityService.GetParentStructureEntity(_config.ChannelId, sourceEntityId, targetEntityId, targetEntityStructure);
-
-            if (parentStructureEntity == null)
-                throw new Exception($"Can't find parent structure entity {sourceEntityId} with target entity id {targetEntityId}");
 
             var structureEntities = new List<StructureEntity>
             {
@@ -315,7 +333,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             PublishEntities(channel, connectorEvent, structureEntities);
 
-            var channelName = _mappingHelper.GetNameForEntity(channel, 100);
+           
             _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, true);
 
             return connectorEvent;
@@ -375,9 +393,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _epiApi.DeleteLink(resourceGuid, targetCode);
         }
 
-        private void DeleteLink(Entity removalSource, Entity removalTarget, string linkTypeId)
+        private void DeleteLink(Entity removalSource, Entity removalTarget, string linkTypeId, bool overrideIsRelation = false)
         {
-            var isRelation = _mappingHelper.IsRelation(linkTypeId);
+            var isRelation = _mappingHelper.IsRelation(linkTypeId) || overrideIsRelation;
 
             var sourceCode = _catalogCodeGenerator.GetEpiserverCode(removalSource);
             var targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
@@ -436,7 +454,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             var resourceIncluded = false;
             var resourceDocument = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
-            _documentFileHelper.SaveDocument(resourceDocument, folderDateTime);
+            var resourcesBasePath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
+            _documentFileHelper.SaveDocument(resourceDocument, resourcesBasePath);
             
             IntegrationLogger.Write(LogLevel.Debug, "Resources saved, Starting automatic resource import!");
 

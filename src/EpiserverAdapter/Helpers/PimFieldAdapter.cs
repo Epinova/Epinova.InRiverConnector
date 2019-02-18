@@ -68,11 +68,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public string GetStartDate(Entity entity)
         {
-            Field startDateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("startdate"));
+            Field startDateField = entity?.Fields?.FirstOrDefault(f => f.FieldType?.Id.ToLower().Contains("startdate") ?? false);
 
             if (startDateField == null || startDateField.IsEmpty())
             {
-                return DateTime.UtcNow.ToString("u");
+                return DateTime.UtcNow.AddMinutes(-5).ToString("u");
             }
 
             return ((DateTime)startDateField.Data).ToUniversalTime().ToString("u");
@@ -80,7 +80,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public string GetEndDate(Entity entity)
         {
-            Field endDateField = entity.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("enddate"));
+            Field endDateField = entity?.Fields?.FirstOrDefault(f => f.FieldType?.Id.ToLower().Contains("enddate") ?? false);
 
             if (endDateField == null || endDateField.IsEmpty())
             {

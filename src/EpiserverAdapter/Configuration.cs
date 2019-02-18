@@ -347,8 +347,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                         continue;
 
                     if (BundleEntityTypes.Contains(linkType.SourceEntityTypeId) || 
-                        PackageEntityTypes.Contains(linkType.SourceEntityTypeId) ||
-                        DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId))
+                        PackageEntityTypes.Contains(linkType.SourceEntityTypeId))
                         continue;
 
                     if (ExportEnabledEntityTypes.Any(x => x.Id == linkType.SourceEntityTypeId) && 
