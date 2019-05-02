@@ -17,7 +17,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly IConfiguration _config;
         private readonly HttpClientInvoker _httpClient;
-        private readonly PimFieldAdapter _pimFieldAdapter;
 
         static EpiApi()
         {
@@ -30,8 +29,41 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         {
             _config = config;
             _catalogCodeGenerator = catalogCodeGenerator;
-            _pimFieldAdapter = pimFieldAdapter;
             _httpClient = new HttpClientInvoker(config);
+        }
+
+        public async Task DeleteLink(string sourceCode, string targetCode, bool isRelation)
+        {
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteLink, new DeleteLinkRequest
+                    {
+                        SourceCode = sourceCode,
+                        TargetCode = targetCode,
+                        IsRelation = isRelation
+                    })
+            );
+        }
+
+        public async Task DeleteLink(Guid resourceGuid, string targetCode)
+        {
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteResource, new DeleteResourceRequest
+                    {
+                        ResourceGuid = resourceGuid,
+                        EntryToRemoveFrom = targetCode
+                    })
+            );
+        }
+
+        public async Task DeleteResource(Guid resourceGuid)
+        {
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteResource,
+                        new DeleteResourceRequest { ResourceGuid = resourceGuid })
+            );
         }
 
         internal async Task DeleteCatalog(int catalogId)
@@ -42,11 +74,33 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
+        internal async Task DeleteCatalogEntry(Entity entity)
+        {
+            string code = _catalogCodeGenerator.GetEpiserverCode(entity);
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code)), $"Failed to delete catalog entry with catalog entry ID: {code}"
+            );
+        }
+
         internal async Task DeleteCatalogNode(Entity catalogNode, int catalogId)
         {
             await ExecuteWithinLockAsync(
                 () =>
-                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogNode, _catalogCodeGenerator.GetEpiserverCode(catalogNode)), $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}"
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogNode, _catalogCodeGenerator.GetEpiserverCode(catalogNode)),
+                $"Failed to delete catalogNode with id: {catalogNode.Id} for channel: {catalogId}"
+            );
+        }
+
+        internal async Task DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
+        {
+            await ExecuteWithinLockAsync(
+                () =>
+                    _httpClient.PostAsync(_config.Endpoints.DeleteCompleted, new DeleteCompletedData
+                    {
+                        CatalogName = catalogName,
+                        EventType = eventType
+                    }), $"Failed to fire DeleteCompleted for catalog {catalogName}."
             );
         }
 
@@ -58,29 +112,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteCatalogEntry(Entity entity)
-        {
-            var code = _catalogCodeGenerator.GetEpiserverCode(entity);
-            await ExecuteWithinLockAsync(
-                () =>
-                    _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(code)), $"Failed to delete catalog entry with catalog entry ID: {code}"
-            );
-        }
-
         internal async Task DeleteSkus(List<string> skuIds)
         {
             await ExecuteWithinLockAsync(
                 () =>
                     _httpClient.PostAsync(_config.Endpoints.DeleteCatalogEntry, new DeleteRequest(skuIds)), $"Failed to delete skus: {string.Join(",", skuIds)}"
-            );
-        }
-
-        internal async Task MoveNodeToRootIfNeeded(int entityId)
-        {
-            var entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
-            await ExecuteWithinLockAsync(
-                () =>
-                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId), "Failed when calling the interface function : CheckAndMoveNodeIfNeeded"
             );
         }
 
@@ -117,15 +153,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
+        internal async Task MoveNodeToRootIfNeeded(int entityId)
         {
+            string entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
             await ExecuteWithinLockAsync(
                 () =>
-                    _httpClient.PostAsync(_config.Endpoints.DeleteCompleted, new DeleteCompletedData
-                    {
-                        CatalogName = catalogName,
-                        EventType = eventType
-                    }), $"Failed to fire DeleteCompleted for catalog {catalogName}."
+                    _httpClient.PostWithAsyncStatusCheck(_config.Endpoints.CheckAndMoveNodeIfNeeded, entryNodeId), "Failed when calling the interface function : CheckAndMoveNodeIfNeeded"
             );
         }
 
@@ -136,41 +169,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
             await ExecuteWithinLockAsync(
                 () =>
-                    _httpClient.PostAsync(_config.HttpPostUrl, new {filePath = filepath})
-            );
-        }
-
-        public async Task DeleteResource(Guid resourceGuid)
-        {
-            await ExecuteWithinLockAsync(
-                () =>
-                    _httpClient.PostAsync(_config.Endpoints.DeleteResource,
-                        new DeleteResourceRequest {ResourceGuid = resourceGuid})
-            );
-        }
-
-        public async Task DeleteLink(string sourceCode, string targetCode, bool isRelation)
-        {
-            await ExecuteWithinLockAsync(
-                () =>
-                    _httpClient.PostAsync(_config.Endpoints.DeleteLink, new DeleteLinkRequest
-                    {
-                        SourceCode = sourceCode,
-                        TargetCode = targetCode,
-                        IsRelation = isRelation
-                    })
-            );
-        }
-
-        public async Task DeleteLink(Guid resourceGuid, string targetCode)
-        {
-            await ExecuteWithinLockAsync(
-                () =>
-                    _httpClient.PostAsync(_config.Endpoints.DeleteResource, new DeleteResourceRequest
-                    {
-                        ResourceGuid = resourceGuid,
-                        EntryToRemoveFrom = targetCode
-                    })
+                    _httpClient.PostAsync(_config.HttpPostUrl, new { filePath = filepath })
             );
         }
 

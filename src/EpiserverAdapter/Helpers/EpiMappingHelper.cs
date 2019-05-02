@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
@@ -10,6 +9,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class EpiMappingHelper
     {
+        private static int _firstProductItemLinkType = -2;
         private readonly IConfiguration _config;
         private readonly IPimFieldAdapter _pimFieldAdapter;
 
@@ -18,8 +18,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _config = config;
             _pimFieldAdapter = pimFieldAdapter;
         }
-
-        private static int _firstProductItemLinkType = -2;
 
         public static int FirstProductItemLinkType
         {
@@ -40,46 +38,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
         }
 
-        public string GetParentClassForEntityType(string entityTypeName)
-        {
-            if (entityTypeName.ToLower().Contains("channelnode"))
-            {
-                return "CatalogNode";
-            }
-
-            return "CatalogEntry";
-        }
-
-        /// <summary>
-        /// A LinkType is a relation if it represents a product-item, bundle, package or dynamic package in Episerver
-        /// </summary>
-        public bool IsRelation(LinkType linkType)
-        {
-            IntegrationLogger.Write(LogLevel.Debug, "SourceEntityTypeId is: " + linkType.SourceEntityTypeId);
-            IntegrationLogger.Write(LogLevel.Debug, "TargetEntityTypeId is: " + linkType.TargetEntityTypeId);
-            if (linkType.SourceEntityTypeId.Equals("Item") && linkType.TargetEntityTypeId.Equals("Item"))
-                return false;
-
-            if ((_config.BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.BundleEntityTypes.Contains(linkType.TargetEntityTypeId)) ||
-                (_config.PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.PackageEntityTypes.Contains(linkType.TargetEntityTypeId)) || 
-                (_config.DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId)))
-            {
-                return true;
-            }
-            if (linkType.SourceEntityTypeId.Equals("ChannelNode") && linkType.TargetEntityTypeId.Equals("Product"))
-            {
-                return true;
-            }
-
-            return linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && linkType.Index == FirstProductItemLinkType;
-        }
-
-        public bool IsRelation(string linkTypeId)
-        {
-            LinkType linktype = _config.LinkTypes.Find(lt => lt.Id == linkTypeId);
-            return IsRelation(linktype);
-        }
-
         /// <summary>
         /// Creates the unique name as required for by Episerver
         /// </summary>
@@ -90,43 +48,29 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return structureEntity.LinkTypeIdFromParent;
         }
 
-        public string GetTableNameForEntityType(string entityTypeName, string name)
+        public string GetEntryType(string entityTypeId)
         {
-            if (entityTypeName.ToLower().Contains("channelnode"))
+            if (entityTypeId.Equals("Item"))
             {
-                return "CatalogNodeEx_" + name;
-            }
-
-            return "CatalogEntryEx_" + name;
-        }
-
-        public bool SkipField(FieldType fieldType)
-        {
-            bool result = _config.EPiFieldsIninRiver.Contains(fieldType.Id.ToLower());
-            return result;
-        }
-
-        public int GetMetaFieldLength(FieldType fieldType)
-        {
-            int defaultLength = 150;
-
-            if (fieldType.Settings.ContainsKey("MetaFieldLength"))
-            {
-                if (!int.TryParse(fieldType.Settings["MetaFieldLength"], out defaultLength))
+                if (!(_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
                 {
-                    return 150;
+                    return "Variation";
                 }
             }
-
-            if (fieldType.Settings.ContainsKey("AdvancedTextObject"))
+            else if (_config.BundleEntityTypes.Contains(entityTypeId))
             {
-                if (fieldType.Settings["AdvancedTextObject"] == "1")
-                {
-                    return 65000;
-                }
+                return "Bundle";
+            }
+            else if (_config.PackageEntityTypes.Contains(entityTypeId))
+            {
+                return "Package";
+            }
+            else if (_config.DynamicPackageEntityTypes.Contains(entityTypeId))
+            {
+                return "DynamicPackage";
             }
 
-            return defaultLength;
+            return "Product";
         }
 
         public string GetEpiserverDataType(FieldType fieldType)
@@ -231,6 +175,43 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return type;
         }
 
+        public string GetEpiserverFieldName(FieldType fieldType)
+        {
+            string name = fieldType.Id;
+
+            if (fieldType.Settings != null &&
+                fieldType.Settings.ContainsKey(FieldNames.EPiCommonField) &&
+                !string.IsNullOrEmpty(fieldType.Settings[FieldNames.EPiCommonField]))
+            {
+                name = fieldType.Settings[FieldNames.EPiCommonField];
+            }
+
+            return name;
+        }
+
+        public int GetMetaFieldLength(FieldType fieldType)
+        {
+            var defaultLength = 150;
+
+            if (fieldType.Settings.ContainsKey("MetaFieldLength"))
+            {
+                if (!int.TryParse(fieldType.Settings["MetaFieldLength"], out defaultLength))
+                {
+                    return 150;
+                }
+            }
+
+            if (fieldType.Settings.ContainsKey("AdvancedTextObject"))
+            {
+                if (fieldType.Settings["AdvancedTextObject"] == "1")
+                {
+                    return 65000;
+                }
+            }
+
+            return defaultLength;
+        }
+
         public string GetNameForEntity(Entity entity, int maxLength)
         {
             Field nameField = null;
@@ -246,7 +227,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else if (nameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                LocaleString ls = (LocaleString)nameField.Data;
+                var ls = (LocaleString) nameField.Data;
                 if (!string.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
                     returnString = ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]];
@@ -269,59 +250,71 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return returnString;
         }
 
-        private Field GetField(Entity entity, string fieldTypeId)
+        public string GetParentClassForEntityType(string entityTypeName)
         {
-            if (string.IsNullOrEmpty(fieldTypeId))
-                return (Field)null;
+            if (entityTypeName.ToLower().Contains("channelnode"))
+            {
+                return "CatalogNode";
+            }
 
-            return entity.Fields.FirstOrDefault(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower());
+            return "CatalogEntry";
         }
 
-        public string GetEpiserverFieldName(FieldType fieldType)
+        public string GetTableNameForEntityType(string entityTypeName, string name)
         {
-            string name = fieldType.Id;
-
-            if (fieldType.Settings != null && 
-                fieldType.Settings.ContainsKey(FieldNames.EPiCommonField) &&
-                !string.IsNullOrEmpty(fieldType.Settings[FieldNames.EPiCommonField]))
+            if (entityTypeName.ToLower().Contains("channelnode"))
             {
-                name = fieldType.Settings[FieldNames.EPiCommonField];
+                return "CatalogNodeEx_" + name;
             }
 
-            return name;
-        }
-
-        public string GetEntryType(string entityTypeId)
-        {
-            if (entityTypeId.Equals("Item"))
-            {
-                if (!(_config.UseThreeLevelsInCommerce && _config.ItemsToSkus))
-                {
-                    return "Variation";
-                }
-            }
-            else if (_config.BundleEntityTypes.Contains(entityTypeId))
-            {
-                return "Bundle";
-            }
-            else if (_config.PackageEntityTypes.Contains(entityTypeId))
-            {
-                return "Package";
-            }
-            else if (_config.DynamicPackageEntityTypes.Contains(entityTypeId))
-            {
-                return "DynamicPackage";
-            }
-
-            return "Product";
+            return "CatalogEntryEx_" + name;
         }
 
         public bool IsChannelNodeLink(string linkTypeId)
         {
-            var linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == linkTypeId);
+            LinkType linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == linkTypeId);
 
             return linkType?.SourceEntityTypeId == "ChannelNode" ||
                    (linkType?.SourceEntityTypeId == "Channel" && linkType?.TargetEntityTypeId == "ChannelNode");
+        }
+
+        /// <summary>
+        /// A LinkType is a relation if it represents a product-item, bundle, package or dynamic package in Episerver
+        /// </summary>
+        public bool IsRelation(LinkType linkType)
+        {
+            IntegrationLogger.Write(LogLevel.Debug, "SourceEntityTypeId is: " + linkType.SourceEntityTypeId);
+            IntegrationLogger.Write(LogLevel.Debug, "TargetEntityTypeId is: " + linkType.TargetEntityTypeId);
+            if (linkType.SourceEntityTypeId.Equals("Item") && linkType.TargetEntityTypeId.Equals("Item"))
+                return false;
+
+            if ((_config.BundleEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.BundleEntityTypes.Contains(linkType.TargetEntityTypeId)) ||
+                (_config.PackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.PackageEntityTypes.Contains(linkType.TargetEntityTypeId)) ||
+                (_config.DynamicPackageEntityTypes.Contains(linkType.SourceEntityTypeId) && !_config.DynamicPackageEntityTypes.Contains(linkType.TargetEntityTypeId)))
+            {
+                return true;
+            }
+            return linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && linkType.Index == FirstProductItemLinkType;
+        }
+
+        public bool IsRelation(string linkTypeId)
+        {
+            LinkType linktype = _config.LinkTypes.Find(lt => lt.Id == linkTypeId);
+            return IsRelation(linktype);
+        }
+
+        public bool SkipField(FieldType fieldType)
+        {
+            bool result = _config.EPiFieldsIninRiver.Contains(fieldType.Id.ToLower());
+            return result;
+        }
+
+        private Field GetField(Entity entity, string fieldTypeId)
+        {
+            if (string.IsNullOrEmpty(fieldTypeId))
+                return (Field) null;
+
+            return entity.Fields.FirstOrDefault(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower());
         }
     }
 }
