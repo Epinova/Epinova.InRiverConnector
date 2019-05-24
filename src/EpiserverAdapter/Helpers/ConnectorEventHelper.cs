@@ -11,12 +11,40 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class ConnectorEventHelper
     {
+        internal static void CleanupOngoingEvents(IConfiguration configuration)
+        {
+            try
+            {
+                List<ConnectorEventSession> sessions = RemoteManager.ChannelService.GetOngoingConnectorEventSessions(configuration.ChannelId, configuration.Id);
+                foreach (ConnectorEventSession connectorEventSession in sessions)
+                {
+                    ConnectorEvent latestConnectorEvent = connectorEventSession.ConnectorEvents.First();
+                    var connectorEvent = new ConnectorEvent
+                    {
+                        SessionId = latestConnectorEvent.SessionId,
+                        ChannelId = latestConnectorEvent.ChannelId,
+                        ConnectorId = latestConnectorEvent.ConnectorId,
+                        ConnectorEventType = latestConnectorEvent.ConnectorEventType,
+                        Percentage = latestConnectorEvent.Percentage,
+                        IsError = true,
+                        Message = "Event stopped due to closedown of connector",
+                        EventTime = DateTime.Now
+                    };
+                    ReportManager.Instance.WriteEvent(connectorEvent);
+                }
+            }
+            catch (Exception e)
+            {
+                IntegrationLogger.Write(LogLevel.Error, e.Message);
+            }
+        }
+
         internal static ConnectorEvent InitiateEvent(IConfiguration config, ConnectorEventType messageType, string message, int percentage, bool error = false)
         {
-            if(!error)
+            if (!error)
                 IntegrationLogger.Write(LogLevel.Debug, message);
 
-            ConnectorEvent connectorEvent = new ConnectorEvent
+            var connectorEvent = new ConnectorEvent
             {
                 ChannelId = config.ChannelId,
                 ConnectorEventType = messageType,
@@ -46,27 +74,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             connectorEvent.EventTime = DateTime.Now;
             ReportManager.Instance.WriteEvent(connectorEvent);
             return connectorEvent;
-        }
-
-        internal static void CleanupOngoingEvents(IConfiguration configuration)
-        {
-            List<ConnectorEventSession> sessions = RemoteManager.ChannelService.GetOngoingConnectorEventSessions(configuration.ChannelId, configuration.Id);
-            foreach (ConnectorEventSession connectorEventSession in sessions)
-            {
-                ConnectorEvent latestConnectorEvent = connectorEventSession.ConnectorEvents.First();
-                ConnectorEvent connectorEvent = new ConnectorEvent
-                {
-                    SessionId = latestConnectorEvent.SessionId,
-                    ChannelId = latestConnectorEvent.ChannelId,
-                    ConnectorId = latestConnectorEvent.ConnectorId,
-                    ConnectorEventType = latestConnectorEvent.ConnectorEventType,
-                    Percentage = latestConnectorEvent.Percentage,
-                    IsError = true,
-                    Message = "Event stopped due to closedown of connector",
-                    EventTime = DateTime.Now
-                };
-                ReportManager.Instance.WriteEvent(connectorEvent);
-            }
         }
     }
 }

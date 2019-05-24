@@ -333,11 +333,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         private void UpdateMetaData(IInRiverResource resource, InRiverImportResource updatedResource)
         {
-            MediaData editableMediaData = (MediaData) ((MediaData) resource).CreateWritableClone();
+            MediaData editableMediaData = (MediaData)((MediaData)resource).CreateWritableClone();
 
             ResourceMetaField resourceFileId = updatedResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
-            if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) &&
-                resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
+            if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
             {
                 IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
 

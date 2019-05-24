@@ -260,7 +260,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             var sourceReference = _referenceConverter.GetContentLink(sourceCode);
             var targetReference = _referenceConverter.GetContentLink(targetCode);
 
-            var entryRelations = _relationRepository.GetChildren<EntryRelation>(sourceReference);
+            var entryRelations = _relationRepository.GetChildren<Relation>(sourceReference);
             var relation = entryRelations.FirstOrDefault(x => x.Child.Equals(targetReference));
             if (relation != null)
             {

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Epinova.InRiverConnector.EpiserverAdapter</RootNamespace>
     <AssemblyName>Epinova.InRiverConnector.EpiserverAdapter</AssemblyName>
-    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -80,7 +80,6 @@
     <Compile Include="EpiserverAdapter.cs" />
     <Compile Include="Communication\EpiApi.cs" />
     <Compile Include="Communication\HttpClientInvoker.cs" />
-    <Compile Include="Communication\EpiLockObject.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="Enums\CVLDataMode.cs" />
     <Compile Include="XmlFactories\CatalogDocumentFactory.cs" />

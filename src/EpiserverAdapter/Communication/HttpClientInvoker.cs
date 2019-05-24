@@ -13,9 +13,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 {
     public class HttpClientInvoker
     {
+        private static bool _clientPropsSet;
         private static readonly HttpClient HttpClient;
         private readonly string _isImportingAction;
-        private static bool _clientPropsSet = false;
 
         static HttpClientInvoker()
         {
@@ -26,10 +26,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
         public HttpClientInvoker(IConfiguration config)
         {
             _isImportingAction = config.Endpoints.IsImporting;
-            IntegrationLogger.Write(LogLevel.Debug, $"Initializing HttpClientInvoker. clientPropsSet: {_clientPropsSet}");
-            
+            IntegrationLogger.Write(LogLevel.Debug,
+                $"Initializing HttpClientInvoker. clientPropsSet: {_clientPropsSet}");
+
             // INFO: Allows multiple HttpClientInvoker classes to be created while keeping one static HttpClient.
-            if (!_clientPropsSet) 
+            if (!_clientPropsSet)
             {
                 IntegrationLogger.Write(LogLevel.Debug, $"Initing clientPropsSet. ApiKey => {config.EpiApiKey}");
 
@@ -40,65 +41,85 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             }
         }
 
-        public void Post<T>(string url, T message)
+        public async Task<string> Get(string uri)
         {
-            IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
-            var timer = Stopwatch.StartNew();
+            HttpResponseMessage response = await HttpClient.GetAsync(uri);
 
-            var response = HttpClient.PostAsJsonAsync(url, message).Result;
             response.EnsureSuccessStatusCode();
-            
-            IntegrationLogger.Write(LogLevel.Debug, $"Posted to {url}, took {timer.ElapsedMilliseconds}.");
+
+            return await response.Content.ReadAsAsync<string>();
         }
 
-        public string PostWithAsyncStatusCheck<T>(string url, T message)
+        public async Task PostAsync<T>(string url, T message)
         {
-            IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
-
-            var response = HttpClient.PostAsJsonAsync(url, message).Result;
-            if (response.IsSuccessStatusCode)
+            try
             {
-                var parsedResponse = response.Content.ReadAsAsync<string>().Result;
-                
-                while (parsedResponse == ImportStatus.IsImporting)
-                {
-                    Thread.Sleep(15000);
-                    parsedResponse = Get(_isImportingAction);
-                }
+                IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
+                Stopwatch timer = Stopwatch.StartNew();
 
-                if (parsedResponse.StartsWith("ERROR"))
-                {
-                    IntegrationLogger.Write(LogLevel.Error, parsedResponse);
-                }
+                HttpResponseMessage response = await HttpClient.PostAsJsonAsync(url, message);
+                response.EnsureSuccessStatusCode();
 
-                return parsedResponse;
+                IntegrationLogger.Write(LogLevel.Debug, $"Posted to {url}, took {timer.ElapsedMilliseconds}.");
             }
-            
-            string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
-            IntegrationLogger.Write(LogLevel.Error, errorMsg);
-            throw new HttpRequestException(errorMsg);
+            catch (Exception ex) when (
+                ex is TaskCanceledException ||
+                ex is HttpRequestException)
+            {
+                IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying agian..");
+                Thread.Sleep(15000);
+                await PostAsync<T>(url, message);
+            }
         }
 
-        public string Get(string uri)
+        public async Task<string> PostWithAsyncStatusCheck<T>(string url, T message)
         {
-            HttpResponseMessage response = HttpClient.GetAsync(uri).Result;
+            try
+            {
+                IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
-            response.EnsureSuccessStatusCode();
+                HttpResponseMessage response = await HttpClient.PostAsJsonAsync(url, message);
 
-            return response.Content.ReadAsAsync<string>().Result;
+                if (response.IsSuccessStatusCode)
+                {
+                    string parsedResponse = await response.Content.ReadAsAsync<string>();
+
+                    while (parsedResponse == ImportStatus.IsImporting)
+                    {
+                        Thread.Sleep(15000);
+                        parsedResponse = await Get(_isImportingAction);
+                    }
+
+                    if (parsedResponse.StartsWith("ERROR"))
+                        IntegrationLogger.Write(LogLevel.Error, parsedResponse);
+
+                    return parsedResponse;
+                }
+
+                string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
+                IntegrationLogger.Write(LogLevel.Error, errorMsg);
+            }
+            catch (Exception ex) when (
+                ex is TaskCanceledException ||
+                ex is HttpRequestException)
+            {
+                IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying again..");
+                Thread.Sleep(15000);
+                return await PostWithAsyncStatusCheck(url, message);
+            }
+
+            return "$Posting to {url} failed";
         }
-        
+
         public List<string> PostWithStringListAsReturn<T>(string url, T message)
         {
             IntegrationLogger.Write(LogLevel.Debug, $"Posting to {url}");
 
             var uri = new Uri(url);
-            HttpResponseMessage response = HttpClient.PostAsJsonAsync<T>(uri.PathAndQuery, message).Result;
+            HttpResponseMessage response = HttpClient.PostAsJsonAsync(uri.PathAndQuery, message).Result;
 
             if (response.IsSuccessStatusCode)
-            {
                 return response.Content.ReadAsAsync<List<string>>().Result;
-            }
             string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
             IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
