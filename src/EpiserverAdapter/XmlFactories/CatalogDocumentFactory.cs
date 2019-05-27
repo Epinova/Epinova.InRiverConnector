@@ -464,9 +464,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
         }
 
-        private void AddRelations(LinkType linkType,
-            StructureEntity structureEntity,
-            Entity entity)
+        private void AddRelations(LinkType linkType, StructureEntity structureEntity, Entity entity)
         {
             var skus = new List<string> { _catalogCodeGenerator.GetEpiserverCode(entity.Id) };
 
