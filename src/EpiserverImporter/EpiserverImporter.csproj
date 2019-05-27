@@ -92,9 +92,6 @@
     <Reference Include="EPiServer.LinkAnalyzer, Version=11.11.1.0, Culture=neutral, PublicKeyToken=8fe83dea738b45b7, processorArchitecture=MSIL">
       <HintPath>..\..\packages\EPiServer.CMS.Core.11.11.1\lib\net461\EPiServer.LinkAnalyzer.dll</HintPath>
     </Reference>
-    <Reference Include="EPiServer.Logging.Log4Net, Version=2.2.0.0, Culture=neutral, PublicKeyToken=8fe83dea738b45b7, processorArchitecture=MSIL">
-      <HintPath>..\..\packages\EPiServer.Logging.Log4Net.2.2.0\lib\net461\EPiServer.Logging.Log4Net.dll</HintPath>
-    </Reference>
     <Reference Include="EPiServer.ServiceLocation.StructureMap, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\packages\EPiServer.ServiceLocation.StructureMap.2.0.0\lib\net461\EPiServer.ServiceLocation.StructureMap.dll</HintPath>
     </Reference>
