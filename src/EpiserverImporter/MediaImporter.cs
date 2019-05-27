@@ -5,6 +5,7 @@ using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Serialization;
@@ -496,8 +497,26 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             _contentRepository.Save((IContent) writableContent, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
-        private static readonly object LockObject = new object();
-       
+        private static readonly SemaphoreSlim Semaphore = new SemaphoreSlim(1, 1);
+
+        private T ExecuteWithinLock<T>(Func<T> action, string errorString = null)
+        {
+            Semaphore.Wait();
+            try
+            {
+                return action();
+            }
+            catch (Exception exception)
+            {
+                _logger.Error(errorString, exception);
+                throw;
+            }
+            finally
+            {
+                Semaphore.Release();
+            }
+        }
+
         /// <summary>
         /// Returns a reference to the inriver resource folder. It will be created if it does not already exist.
         /// </summary>
@@ -505,7 +524,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         /// <param name="contentType"></param>
         protected ContentReference GetFolder(FileInfo fileInfo, ContentType contentType)
         {
-            lock(LockObject) { 
+            return ExecuteWithinLock(() =>
+            {
                 var rootFolderName = ConfigurationManager.AppSettings["InRiverConnector.ResourceFolderName"];
                 var rootFolder = _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
 
@@ -514,7 +534,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                 var secondLevelFolderName = contentType.Name.Replace("File", "");
                 return _contentFolderCreator.CreateOrGetFolder(firstLevelFolder, secondLevelFolderName);
-            }
+            });
         }
     }
 }
