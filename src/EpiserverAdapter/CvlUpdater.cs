@@ -1,7 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
@@ -32,7 +32,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _documentFileHelper = documentFileHelper;
         }
 
-        public ConnectorEvent CVLValueUpdated(Entity channel, string cvlId, string cvlValueKey)
+        public async Task<ConnectorEvent> CVLValueUpdatedAsync(Entity channel, string cvlId, string cvlValueKey)
         {
             var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, 
                                         ConnectorEventType.CVLValueUpdated, 
@@ -56,11 +56,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var savedCatalogDocument = _documentFileHelper.SaveCatalogDocument(channel, updateDocument, folderDateTime);
 
-            _epiApi.ImportCatalog(savedCatalogDocument);
+            await _epiApi.ImportCatalogAsync(savedCatalogDocument);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.NotifyEpiserverPostImport(Path.Combine(_config.PublicationsRootPath, folderDateTime, savedCatalogDocument));
+            await _epiApi.NotifyEpiserverPostImportAsync(Path.Combine(_config.PublicationsRootPath, folderDateTime, savedCatalogDocument));
 
             return connectorEvent;
         }

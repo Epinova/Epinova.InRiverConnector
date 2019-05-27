@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
@@ -140,7 +141,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         
         public void Publish(int channelId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.Publish, channelEntity => _publisher.Publish(channelEntity));
+            DoWithInitCheck(channelId, ConnectorEventType.Publish, channelEntity => _publisher.PublishAsync(channelEntity));
         }
 
         public void UnPublish(int channelId)
@@ -157,7 +158,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelEntityAdded(int channelId, int entityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel => _publisher.ChannelEntityAdded(channel, entityId));
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityAdded, channel => _publisher.ChannelEntityAddedAsync(channel, entityId));
         }
         
         public void ChannelEntityUpdated(int channelId, int entityId, string data)
@@ -170,13 +171,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return connectorEvent;
                 }
 
-                return _publisher.ChannelEntityUpdated(channel, entityId, data);
+                return AsyncHelper.RunSync(() =>_publisher.ChannelEntityUpdatedAsync(channel, entityId, data));
             });
         }
 
         public void ChannelEntityDeleted(int channelId, Entity deletedEntity)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityDeleted, channel => _publisher.ChannelEntityDeleted(channel, deletedEntity));
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelEntityDeleted, channel => _publisher.ChannelEntityDeletedAsync(channel, deletedEntity));
         }
 
         public void ChannelEntityFieldSetUpdated(int channelId, int entityId, string fieldSetId)
@@ -196,21 +197,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void ChannelLinkAdded(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
-            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, 
-                channel => _publisher.ChannelLinkAdded(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId));
+            DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkAdded, channel => _publisher.ChannelLinkAddedAsync(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId));
         }
 
         public void ChannelLinkDeleted(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkDeleted, 
-                channel => _publisher.ChannelLinkDeleted(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
+                channel => _publisher.ChannelLinkDeletedAsync(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
             );
         }
 
         public void ChannelLinkUpdated(int channelId, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             DoWithInitCheck(channelId, ConnectorEventType.ChannelLinkUpdated, channel =>
-                _publisher.ChannelLinkUpdated(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
+                _publisher.ChannelLinkUpdatedAsync(channel, sourceEntityId, targetEntityId, linkTypeId, linkEntityId)
             );
         }
 
@@ -237,7 +237,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 throw;
             }
         }
-        
+
+        private void DoWithInitCheck(int channelId, ConnectorEventType eventType, Func<Entity, Task<ConnectorEvent>> thingsToDo)
+        {
+            DoWithInitCheck(channelId, eventType, x => AsyncHelper.RunSync(() => thingsToDo(x)));
+        }
+
         private void DoWithInitCheck(int channelId, ConnectorEventType eventType, Func<Entity, ConnectorEvent> thingsToDo)
         {
             if (channelId != _config.ChannelId)
@@ -277,7 +282,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public void CVLValueUpdated(string cvlId, string cvlValueKey)
         {
-            DoWithInitCheck(_config.ChannelId, ConnectorEventType.CVLValueUpdated, channelEntity => _cvlUpdater.CVLValueUpdated(channelEntity, cvlId, cvlValueKey));
+            DoWithInitCheck(_config.ChannelId, ConnectorEventType.CVLValueUpdated, channelEntity => _cvlUpdater.CVLValueUpdatedAsync(channelEntity, cvlId, cvlValueKey));
         }
 
         public void CVLValueDeleted(string cvlId, string cvlValueKey)

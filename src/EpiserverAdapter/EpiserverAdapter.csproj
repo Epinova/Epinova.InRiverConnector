@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="CatalogElementContainer.cs" />
     <Compile Include="ChannelPublisher.cs" />
+    <Compile Include="AsyncHelper.cs" />
     <Compile Include="ConfigDefaults.cs" />
     <Compile Include="ConfigKeys.cs" />
     <Compile Include="Constants.cs" />

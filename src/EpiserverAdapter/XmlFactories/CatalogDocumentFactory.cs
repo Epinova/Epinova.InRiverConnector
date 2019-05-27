@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
@@ -134,7 +135,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return new XElement("AssociationTypes", associationTypeElements);
         }
 
-        public CatalogElementContainer GetEPiElements(List<StructureEntity> structureEntities)
+        public async Task<CatalogElementContainer> GetEPiElementsAsync(List<StructureEntity> structureEntities)
         {
             _epiElementContainer = new CatalogElementContainer();
 
@@ -145,7 +146,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             {
                 List<StructureEntity> batch = structureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
-                AddNodeElements(batch);
+                await AddNodeElementsAsync(batch);
                 AddEntryElements(batch);
                 AddRelationElements(structureEntities);
 
@@ -340,7 +341,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             AddEntryRelationElement(structureEntity, skuId, new LinkType());
         }
 
-        private void AddNodeElements(List<StructureEntity> batch)
+        private async Task AddNodeElementsAsync(List<StructureEntity> batch)
         {
             IEnumerable<StructureEntity> nodeStructureEntities = batch.Where(x => x.IsChannelNode() && x.EntityId != _config.ChannelId);
 
@@ -350,7 +351,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
                 if (_config.ChannelId == structureEntity.ParentId)
                 {
-                    _epiApi.MoveNodeToRootIfNeeded(entity.Id);
+                    await _epiApi.MoveNodeToRootIfNeededAsync(entity.Id);
                 }
 
                 IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entity.Id} to Nodes");
