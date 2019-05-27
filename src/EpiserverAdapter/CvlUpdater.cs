@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
@@ -16,15 +18,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class CvlUpdater
     {
-        private readonly IConfiguration _config;
         private readonly CatalogDocumentFactory _catalogDocumentFactory;
-        private readonly EpiApi _epiApi;
+        private readonly IConfiguration _config;
         private readonly DocumentFileHelper _documentFileHelper;
+        private readonly EpiApi _epiApi;
 
-        public CvlUpdater(IConfiguration config, 
-                          CatalogDocumentFactory catalogDocumentFactory, 
-                          EpiApi epiApi,
-                          DocumentFileHelper documentFileHelper)
+        public CvlUpdater(IConfiguration config, CatalogDocumentFactory catalogDocumentFactory, EpiApi epiApi, DocumentFileHelper documentFileHelper)
         {
             _config = config;
             _catalogDocumentFactory = catalogDocumentFactory;
@@ -34,27 +33,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         public async Task<ConnectorEvent> CVLValueUpdatedAsync(Entity channel, string cvlId, string cvlValueKey)
         {
-            var connectorEvent = ConnectorEventHelper.InitiateEvent(_config, 
-                                        ConnectorEventType.CVLValueUpdated, 
-                                        $"CVL value updated, updating values in channel: {channel.DisplayName.Data}", 0);
+            ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config,
+                ConnectorEventType.CVLValueUpdated,
+                $"CVL value updated, updating values in channel: {channel.DisplayName.Data}", 0);
 
-            var cvlFieldTypes = RemoteManager.ModelService.GetAllFieldTypes().Where(x => x.CVLId == cvlId);
-            
-            var criterias = cvlFieldTypes.Select(cvlFieldType => new Criteria
+            IEnumerable<FieldType> cvlFieldTypes = RemoteManager.ModelService.GetAllFieldTypes().Where(x => x.CVLId == cvlId);
+
+            List<Criteria> criteria = cvlFieldTypes.Select(cvlFieldType => new Criteria
             {
                 FieldTypeId = cvlFieldType.Id,
                 Value = cvlValueKey,
                 Operator = Operator.Equal
             }).ToList();
 
-            var query = new Query { Criteria = criterias, Join = Join.Or };
-            var entities = RemoteManager.DataService.Search(query, LoadLevel.DataOnly);
+            var query = new Query { Criteria = criteria, Join = Join.Or };
+            List<Entity> entities = RemoteManager.DataService.Search(query, LoadLevel.DataOnly);
             IntegrationLogger.Write(LogLevel.Debug, $"Found {entities.Count} entities with the CVL {cvlId} to update. Value-key to update: {cvlValueKey}.");
 
-            var updateDocument = _catalogDocumentFactory.CreateUpdateDocument(channel, entities);
-            var folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
+            XDocument updateDocument = _catalogDocumentFactory.CreateUpdateDocument(channel, entities);
+            string folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
 
-            var savedCatalogDocument = _documentFileHelper.SaveCatalogDocument(channel, updateDocument, folderDateTime);
+            string savedCatalogDocument = _documentFileHelper.SaveCatalogDocument(channel, updateDocument, folderDateTime);
 
             await _epiApi.ImportCatalogAsync(savedCatalogDocument);
 

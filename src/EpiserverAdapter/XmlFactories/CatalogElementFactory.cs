@@ -13,9 +13,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 {
     public class CatalogElementFactory
     {
+        private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly IConfiguration _config;
         private readonly EpiMappingHelper _mappingHelper;
-        private readonly CatalogCodeGenerator _catalogCodeGenerator;
         private readonly IPimFieldAdapter _pimFieldAdapter;
 
         public CatalogElementFactory(IConfiguration config, EpiMappingHelper mappingHelper, CatalogCodeGenerator catalogCodeGenerator, IPimFieldAdapter pimFieldAdapter)
@@ -26,65 +26,78 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             _pimFieldAdapter = pimFieldAdapter;
         }
 
-        public XElement InRiverEntityTypeToMetaClass(string name, string entityTypeName)
+        public XElement CreateAssociationElement(StructureEntity structureEntity)
         {
             return new XElement(
-                "MetaClass",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog.User"),
-                new XElement("Name", name),
-                new XElement("FriendlyName", name),
-                new XElement("MetaClassType", "User"),
-                new XElement("ParentClass", _mappingHelper.GetParentClassForEntityType(entityTypeName)),
-                new XElement("TableName", _mappingHelper.GetTableNameForEntityType(entityTypeName, name)),
-                new XElement("Description", "From inRiver"),
-                new XElement("IsSystem", "False"),
-                new XElement("IsAbstract", "False"),
-                new XElement("FieldListChangedSqlScript"),
-                new XElement("Tag"),
-                new XElement("Attributes"));
+                "Association",
+                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId)),
+                new XElement("SortOrder", structureEntity.SortOrder),
+                new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
 
-        public XElement InRiverFieldTypeToMetaField(FieldType fieldType)
+        public XElement CreateAssociationTypeElement(LinkType linkType)
         {
             return new XElement(
-                "MetaField",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
-                new XElement("Name", _mappingHelper.GetEpiserverFieldName(fieldType)),
-                new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldType)),
-                new XElement("Description", "From inRiver"),
-                new XElement("DataType", _mappingHelper.GetEpiserverDataType(fieldType)),
-                new XElement("Length", _mappingHelper.GetMetaFieldLength(fieldType)),
-                new XElement("AllowNulls", !fieldType.Mandatory),
-                new XElement("SaveHistory", "False"),
-                new XElement("AllowSearch", _pimFieldAdapter.GetAllowSearch(fieldType)),
-                new XElement("MultiLanguageValue", _pimFieldAdapter.FieldTypeIsMultiLanguage(fieldType)),
-                new XElement("IsSystem", "False"),
-                new XElement("Tag"),
-                new XElement("Attributes",
-                    new XElement("Attribute",
-                        new XElement("Key", "useincomparing"),
-                        new XElement("Value", _pimFieldAdapter.FieldIsUseInCompare(fieldType)))),
-                new XElement("OwnerMetaClass", fieldType.EntityTypeId));
+                "AssociationType",
+                new XElement("TypeId", linkType.Id),
+                new XElement("Description", linkType.Id));
         }
 
-        public XElement CreateEpiserverLongStringField(string name)
+        public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Dictionary<int, Entity> channelEntities = null)
         {
+            string name = _mappingHelper.GetAssociationName(structureEntity);
+
             return new XElement(
-                "MetaField",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
+                "CatalogAssociation",
                 new XElement("Name", name),
-                new XElement("FriendlyName", name),
-                new XElement("Description", "From inRiver"),
-                new XElement("DataType", "LongString"),
-                new XElement("Length", 150),
-                new XElement("AllowNulls", "True"),
-                new XElement("SaveHistory", "False"),
-                new XElement("AllowSearch", "True"),
-                new XElement("MultiLanguageValue", "True"),
-                new XElement("IsSystem", "False"),
-                new XElement("Tag"),
-                new XElement("Attributes",
-                    new XElement("Attribute", new XElement("Key", "useincomparing"), new XElement("Value", "True"))));
+                new XElement("Description", structureEntity.LinkTypeIdFromParent),
+                new XElement("SortOrder", structureEntity.SortOrder),
+                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId)),
+                CreateAssociationElement(structureEntity));
+        }
+
+        public XElement CreateCatalogElement(Entity channel)
+        {
+            return new XElement("Catalog",
+                new XAttribute("name", _mappingHelper.GetNameForEntity(channel, 100)),
+                new XAttribute("lastmodified", channel.LastModified.ToString("O")),
+                new XAttribute("startDate", _pimFieldAdapter.GetStartDate(channel)),
+                new XAttribute("endDate", _pimFieldAdapter.GetEndDate(channel)),
+                new XAttribute("defaultCurrency", _config.ChannelDefaultCurrency),
+                new XAttribute("weightBase", _config.ChannelDefaultWeightBase),
+                new XAttribute("defaultLanguage", _config.ChannelDefaultLanguage.Name.ToLower()),
+                new XAttribute("sortOrder", 0),
+                new XAttribute("isActive", "True"),
+                new XAttribute("languages", string.Join(",", _pimFieldAdapter.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
+        }
+
+        public XElement CreateEntryRelationElement(string parentCode, string parentEntityType, string childCode, int sortOrder)
+        {
+            var relationType = "ProductVariation";
+
+            if (!String.IsNullOrEmpty(parentEntityType))
+            {
+                string sourceType = _mappingHelper.GetEntryType(parentEntityType);
+                switch (sourceType)
+                {
+                    case "Package":
+                    case "DynamicPackage":
+                        relationType = "PackageEntry";
+                        break;
+                    case "Bundle":
+                        relationType = "BundleEntry";
+                        break;
+                }
+            }
+
+            return new XElement(
+                "EntryRelation",
+                new XElement("ParentEntryCode", parentCode),
+                new XElement("ChildEntryCode", childCode),
+                new XElement("RelationType", relationType),
+                new XElement("Quantity", 0),
+                new XElement("GroupName", "default"),
+                new XElement("SortOrder", sortOrder));
         }
 
         public XElement CreateEpiserverLongHtmlField(string name)
@@ -108,27 +121,24 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     new XElement("Attribute", new XElement("Key", "useincomparing"), new XElement("Value", "False"))));
         }
 
-        public XElement CreateAssociationTypeElement(LinkType linkType)
+        public XElement CreateEpiserverLongStringField(string name)
         {
             return new XElement(
-                "AssociationType",
-                new XElement("TypeId", linkType.Id),
-                new XElement("Description", linkType.Id));
-        }
-
-        public XElement CreateCatalogElement(Entity channel)
-        {
-            return new XElement("Catalog",
-                new XAttribute("name", _mappingHelper.GetNameForEntity(channel, 100)),
-                new XAttribute("lastmodified", channel.LastModified.ToString("O")),
-                new XAttribute("startDate", _pimFieldAdapter.GetStartDate(channel)),
-                new XAttribute("endDate", _pimFieldAdapter.GetEndDate(channel)),
-                new XAttribute("defaultCurrency", _config.ChannelDefaultCurrency),
-                new XAttribute("weightBase", _config.ChannelDefaultWeightBase),
-                new XAttribute("defaultLanguage", _config.ChannelDefaultLanguage.Name.ToLower()),
-                new XAttribute("sortOrder", 0),
-                new XAttribute("isActive", "True"),
-                new XAttribute("languages", string.Join(",", _pimFieldAdapter.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
+                "MetaField",
+                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
+                new XElement("Name", name),
+                new XElement("FriendlyName", name),
+                new XElement("Description", "From inRiver"),
+                new XElement("DataType", "LongString"),
+                new XElement("Length", 150),
+                new XElement("AllowNulls", "True"),
+                new XElement("SaveHistory", "False"),
+                new XElement("AllowSearch", "True"),
+                new XElement("MultiLanguageValue", "True"),
+                new XElement("IsSystem", "False"),
+                new XElement("Tag"),
+                new XElement("Attributes",
+                    new XElement("Attribute", new XElement("Key", "useincomparing"), new XElement("Value", "True"))));
         }
 
         public XElement CreateNodeElement(Entity entity, int parentId, int sortOrder)
@@ -151,137 +161,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                         where !f.IsEmpty() && !_mappingHelper.SkipField(f.FieldType)
                         select GetMetaFieldValueElement(f))),
                 new XElement("ParentNode", _catalogCodeGenerator.GetEpiserverCode(parentId)),
-                CreateSEOInfoElement(entity));
-        }
-
-        public XElement CreateSEOInfoElement(Entity entity)
-        {
-            var seoInfo = new XElement("SeoInfo");
-            foreach (var culturePair in _config.LanguageMapping)
-            {
-                var uri = _pimFieldAdapter.GetFieldValue(entity, "seouri", culturePair.Value);
-                var title = _pimFieldAdapter.GetFieldValue(entity, "seotitle", culturePair.Value);
-                var description = _pimFieldAdapter.GetFieldValue(entity, "seodescription", culturePair.Value);
-                var keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
-                var urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
-
-                if (String.IsNullOrEmpty(uri) &&
-                    String.IsNullOrEmpty(title) &&
-                    String.IsNullOrEmpty(description) &&
-                    String.IsNullOrEmpty(keywords) &&
-                    String.IsNullOrEmpty(urisegment))
-                    continue;
-
-                seoInfo.Add(
-                    new XElement("Seo",
-                        new XElement("LanguageCode", culturePair.Key.Name.ToLower()),
-                        String.IsNullOrEmpty(uri) ? null : new XElement("Uri", uri),
-                        String.IsNullOrEmpty(title) ? null : new XElement("Title", title),
-                        String.IsNullOrEmpty(description) ? null : new XElement("Description", description),
-                        String.IsNullOrEmpty(keywords) ? null : new XElement("Keywords", keywords),
-                        String.IsNullOrEmpty(urisegment) ? null : new XElement("UriSegment", urisegment)));
-            }
-            return seoInfo;
-        }
-
-        public XElement InRiverEntityToEpiEntry(Entity entity)
-        {
-            var metaFields = from f in entity.Fields
-                             where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
-                             select GetMetaFieldValueElement(f);
-
-            return new XElement("Entry",
-                new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
-                new XElement("StartDate", _pimFieldAdapter.GetStartDate(entity)),
-                new XElement("EndDate", _pimFieldAdapter.GetEndDate(entity)),
-                new XElement("IsActive", "True"),
-                new XElement("DisplayTemplate", String.Empty),
-                new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
-                new XElement("EntryType", _mappingHelper.GetEntryType(entity.EntityType.Id)),
-                new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
-                new XElement(
-                    "MetaData",
-                    new XElement("MetaClass", new XElement("Name", GetMetaClassForEntity(entity))),
-                    new XElement(
-                        "MetaFields",
-                        GetDisplayFieldElement(entity.DisplayName, "DisplayName"),
-                        GetDisplayFieldElement(entity.DisplayDescription, "DisplayDescription"),
-                        metaFields)),
-                        CreateSEOInfoElement(entity)
-                        );
-        }
-
-        private Guid GetChannelEntityGuid(int channelId, int entityId)
-        {
-            var concatIds = channelId.ToString().PadLeft(16, '0') + entityId.ToString().PadLeft(16, '0');
-            return new Guid(concatIds);
-        }
-
-        public XElement GetMetaFieldValueElement(Field field)
-        {
-            XElement metaField = new XElement(
-                "MetaField",
-                new XElement("Name", _mappingHelper.GetEpiserverFieldName(field.FieldType)),
-                new XElement("Type", _mappingHelper.GetEpiserverDataType(field.FieldType))
-            );
-
-            if (field.FieldType.DataType.Equals(DataType.LocaleString))
-            {
-                var ls = field.Data as LocaleString;
-                if (!field.IsEmpty())
-                {
-                    foreach (var culturePair in _config.LanguageMapping)
-                    {
-                        if (ls != null)
-                        {
-                            metaField.Add(
-                                new XElement("Data",
-                                    new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                    new XAttribute("value", ls[culturePair.Value] ?? String.Empty)));
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (var culturePair in _config.LanguageMapping)
-                    {
-                        metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", String.Empty)));
-                    }
-                }
-            }
-            else if (field.FieldType.DataType.Equals(DataType.CVL))
-            {
-                var cvlDataElement = _pimFieldAdapter.GetCVLValues(field);
-                metaField.Add(cvlDataElement);
-            }
-            else
-            {
-                metaField.Add(
-                    new XElement("Data",
-                        new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
-                        new XAttribute("value", _pimFieldAdapter.GetFlatFieldData(field))));
-            }
-
-            return metaField;
-        }
-
-        public XElement CreateSimpleMetaFieldElement(string name, string value)
-        {
-            return new XElement(
-                "MetaField",
-                new XElement("Name", name),
-                new XElement("Type", "ShortString"),
-                new XElement("Data",
-                    new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
-                    new XAttribute("value", value)));
-        }
-
-        public XElement CreateNodeRelation(int sourceId, int targetId, int sortOrder)
-        {
-            return new XElement("NodeRelation",
-                new XElement("ChildNodeCode", _catalogCodeGenerator.GetEpiserverCode(targetId)),
-                new XElement("ParentNodeCode", _catalogCodeGenerator.GetEpiserverCode(sourceId)),
-                new XElement("SortOrder", sortOrder));
+                CreateSeoInfoElement(entity));
         }
 
         public XElement CreateNodeEntryRelation(int sourceId, int targetId, int sortOrder)
@@ -300,55 +180,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("SortOrder", sortOrder));
         }
 
-        public XElement CreateEntryRelationElement(string parentCode, string parentEntityType, string childCode, int sortOrder)
+        public XElement CreateNodeRelation(int sourceId, int targetId, int sortOrder)
         {
-            string relationType = "ProductVariation";
-
-            if (!String.IsNullOrEmpty(parentEntityType))
-            {
-                var sourceType = _mappingHelper.GetEntryType(parentEntityType);
-                switch (sourceType)
-                {
-                    case "Package":
-                    case "DynamicPackage":
-                        relationType = "PackageEntry";
-                        break;
-                    case "Bundle":
-                        relationType = "BundleEntry";
-                        break;
-                }
-            }
-
-            return new XElement(
-                "EntryRelation",
-                new XElement("ParentEntryCode", parentCode),
-                new XElement("ChildEntryCode", childCode),
-                new XElement("RelationType", relationType),
-                new XElement("Quantity", 0),
-                new XElement("GroupName", "default"),
+            return new XElement("NodeRelation",
+                new XElement("ChildNodeCode", _catalogCodeGenerator.GetEpiserverCode(targetId)),
+                new XElement("ParentNodeCode", _catalogCodeGenerator.GetEpiserverCode(sourceId)),
                 new XElement("SortOrder", sortOrder));
-        }
-
-        public XElement CreateCatalogAssociationElement(StructureEntity structureEntity, Dictionary<int, Entity> channelEntities = null)
-        {
-            string name = _mappingHelper.GetAssociationName(structureEntity);
-
-            return new XElement(
-                "CatalogAssociation",
-                new XElement("Name", name),
-                new XElement("Description", structureEntity.LinkTypeIdFromParent),
-                new XElement("SortOrder", structureEntity.SortOrder),
-                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.ParentId)),
-                CreateAssociationElement(structureEntity));
-        }
-
-        public XElement CreateAssociationElement(StructureEntity structureEntity)
-        {
-            return new XElement(
-                "Association",
-                new XElement("EntryCode", _catalogCodeGenerator.GetEpiserverCode(structureEntity.EntityId)),
-                new XElement("SortOrder", structureEntity.SortOrder),
-                    new XElement("Type", structureEntity.LinkTypeIdFromParent));
         }
 
 
@@ -358,27 +195,161 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 "ResourceMetaFields",
                 resourceType.FieldTypes.Select(
                     fieldtype =>
-                    new XElement(
-                        "ResourceMetaField",
-                        new XElement("FieldName", _mappingHelper.GetEpiserverFieldName(fieldtype)),
-                        new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldtype)),
-                        new XElement("Description", _mappingHelper.GetEpiserverFieldName(fieldtype)),
-                        new XElement("FieldType", _mappingHelper.GetEpiserverDataType(fieldtype)),
-                        new XElement("Format", "Text"),
-                        new XElement("MaximumLength", _mappingHelper.GetMetaFieldLength(fieldtype)),
-                        new XElement("AllowNulls", !fieldtype.Mandatory),
-                        new XElement("UniqueValue", fieldtype.Unique))));
+                        new XElement(
+                            "ResourceMetaField",
+                            new XElement("FieldName", _mappingHelper.GetEpiserverFieldName(fieldtype)),
+                            new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldtype)),
+                            new XElement("Description", _mappingHelper.GetEpiserverFieldName(fieldtype)),
+                            new XElement("FieldType", _mappingHelper.GetEpiserverDataType(fieldtype)),
+                            new XElement("Format", "Text"),
+                            new XElement("MaximumLength", _mappingHelper.GetMetaFieldLength(fieldtype)),
+                            new XElement("AllowNulls", !fieldtype.Mandatory),
+                            new XElement("UniqueValue", fieldtype.Unique))));
+        }
+
+        public XElement CreateSeoInfoElement(Entity entity)
+        {
+            var seoInfo = new XElement("SeoInfo");
+            foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+            {
+                string uri = _pimFieldAdapter.GetFieldValue(entity, "seouri", culturePair.Value);
+                string title = _pimFieldAdapter.GetFieldValue(entity, "seotitle", culturePair.Value);
+                string description = _pimFieldAdapter.GetFieldValue(entity, "seodescription", culturePair.Value);
+                string keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
+                string urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
+
+                if (String.IsNullOrEmpty(uri) &&
+                    String.IsNullOrEmpty(title) &&
+                    String.IsNullOrEmpty(description) &&
+                    String.IsNullOrEmpty(keywords) &&
+                    String.IsNullOrEmpty(urisegment))
+                    continue;
+
+                seoInfo.Add(
+                    new XElement("Seo",
+                        new XElement("LanguageCode", culturePair.Key.Name.ToLower()),
+                        String.IsNullOrEmpty(uri) ? null : new XElement("Uri", uri),
+                        String.IsNullOrEmpty(title) ? null : new XElement("Title", title),
+                        String.IsNullOrEmpty(description) ? null : new XElement("Description", description),
+                        String.IsNullOrEmpty(keywords) ? null : new XElement("Keywords", keywords),
+                        String.IsNullOrEmpty(urisegment) ? null : new XElement("UriSegment", urisegment)));
+            }
+
+            return seoInfo;
+        }
+
+        public XElement CreateSimpleMetaFieldElement(string name, string value)
+        {
+            return new XElement(
+                "MetaField",
+                new XElement("Name", name),
+                new XElement("Type", "ShortString"),
+                new XElement("Data",
+                    new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
+                    new XAttribute("value", value)));
+        }
+
+        public List<XElement> GenerateSkuItemElemetsFromItem(Entity item)
+        {
+            XDocument skuDoc = SkuFieldToDocument(item);
+            if (skuDoc.Root == null || skuDoc.Element("SKUs") == null)
+            {
+                return new List<XElement>();
+            }
+
+            Link specLink = item.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
+            XElement specificationMetaField = null;
+            if (specLink != null)
+            {
+                specificationMetaField = new XElement("MetaField",
+                    new XElement("Name", "SpecificationField"),
+                    new XElement("Type", "LongHtmlString"));
+
+                foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                {
+                    string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, item.Id, culturePair.Value);
+                    specificationMetaField.Add(
+                        new XElement("Data",
+                            new XAttribute("language", culturePair.Key.Name.ToLower()),
+                            new XAttribute("value", htmlData)));
+                }
+            }
+
+            var skuElements = new List<XElement>();
+            XElement skuElement = skuDoc.Element("SKUs");
+            if (skuElement == null)
+                return skuElements;
+
+            foreach (XElement sku in skuElement.Elements())
+            {
+                string skuId = sku.Attribute("id")?.Value;
+                if (String.IsNullOrEmpty(skuId))
+                {
+                    IntegrationLogger.Write(LogLevel.Information, $"Could not find the id for the SKU data for item: {item.Id}");
+                    continue;
+                }
+
+                XElement itemElement = InRiverEntityToEpiEntry(item);
+                XElement nameElement = sku.Element("Name");
+                if (nameElement != null)
+                {
+                    string name = (!String.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
+                    XElement itemElementName = itemElement.Element("Name");
+                    if (itemElementName != null)
+                    {
+                        itemElementName.Value = name;
+                    }
+                }
+
+                XElement codeElement = itemElement.Element("Code");
+                if (codeElement != null)
+                {
+                    codeElement.Value = _catalogCodeGenerator.GetPrefixedCode(skuId);
+                }
+
+                XElement entryTypeElement = itemElement.Element("EntryType");
+                if (entryTypeElement != null)
+                {
+                    entryTypeElement.Value = "Variation";
+                }
+
+                XElement skuDataElement = sku.Element(FieldNames.SKUData);
+                if (skuDataElement != null)
+                {
+                    foreach (XElement skuData in skuDataElement.Elements())
+                    {
+                        XElement metaDataElement = itemElement.Element("MetaData");
+                        if (metaDataElement?.Element("MetaFields") != null)
+                        {
+                            metaDataElement.Element("MetaFields")?.Add(CreateSimpleMetaFieldElement(skuData.Name.LocalName, skuData.Value));
+                        }
+                    }
+                }
+
+                if (specificationMetaField != null)
+                {
+                    XElement metaDataElement = itemElement.Element("MetaData");
+                    if (metaDataElement?.Element("MetaFields") != null)
+                    {
+                        metaDataElement.Element("MetaFields")?.Add(specificationMetaField);
+                    }
+                }
+
+                skuElements.Add(itemElement);
+            }
+
+            return skuElements;
         }
 
         public XElement GetMetaClassesFromFieldSets()
         {
-            List<XElement> metaClasses = new List<XElement>();
-            List<XElement> metafields = new List<XElement>();
+            var metaClasses = new List<XElement>();
+            var metafields = new List<XElement>();
 
             XElement diaplyNameElement = CreateEpiserverLongStringField("DisplayName");
             XElement displayDescriptionElement = CreateEpiserverLongStringField("DisplayDescription");
             XElement specification = CreateEpiserverLongHtmlField("SpecificationField");
-            bool addSpec = false;
+            var addSpec = false;
 
             foreach (EntityType entityType in _config.ExportEnabledEntityTypes)
             {
@@ -394,7 +365,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     addSpec = true;
                 }
 
-                Dictionary<string, List<XElement>> fieldTypesFieldSets = new Dictionary<string, List<XElement>>();
+                var fieldTypesFieldSets = new Dictionary<string, List<XElement>>();
                 metaClasses.Add(InRiverEntityTypeToMetaClass(entityType.Id, entityType.Id));
                 foreach (FieldSet fieldset in entityType.FieldSets)
                 {
@@ -456,7 +427,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                         });
                         if (existingMetaField != null)
                         {
-                            var movefields = metaField.Elements("OwnerMetaClass");
+                            IEnumerable<XElement> movefields = metaField.Elements("OwnerMetaClass");
                             existingMetaField.Add(movefields);
                         }
                     }
@@ -477,102 +448,126 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return new XElement("MetaDataPlusBackup", new XAttribute("version", "1.0"), metaClasses.ToArray(), metafields.ToArray());
         }
 
-        public List<XElement> GenerateSkuItemElemetsFromItem(Entity item)
+        public XElement GetMetaFieldValueElement(Field field)
         {
-            XDocument skuDoc = SkuFieldToDocument(item);
-            if (skuDoc.Root == null || skuDoc.Element("SKUs") == null)
+            var metaField = new XElement(
+                "MetaField",
+                new XElement("Name", _mappingHelper.GetEpiserverFieldName(field.FieldType)),
+                new XElement("Type", _mappingHelper.GetEpiserverDataType(field.FieldType))
+            );
+
+            if (field.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                return new List<XElement>();
-            }
-
-            Link specLink = item.OutboundLinks.Find(l => l.Target.EntityType.Id == "Specification");
-            XElement specificationMetaField = null;
-            if (specLink != null)
-            {
-                specificationMetaField = new XElement("MetaField",
-                        new XElement("Name", "SpecificationField"),
-                        new XElement("Type", "LongHtmlString"));
-
-                foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                var ls = field.Data as LocaleString;
+                if (!field.IsEmpty())
                 {
-                    string htmlData = RemoteManager.DataService.GetSpecificationAsHtml(specLink.Target.Id, item.Id, culturePair.Value);
-                    specificationMetaField.Add(
-                        new XElement("Data",
-                            new XAttribute("language", culturePair.Key.Name.ToLower()),
-                            new XAttribute("value", htmlData)));
-                }
-            }
-
-            List<XElement> skuElements = new List<XElement>();
-            XElement skuElement = skuDoc.Element("SKUs");
-            if (skuElement == null)
-                return skuElements;
-
-            foreach (XElement sku in skuElement.Elements())
-            {
-                string skuId = sku.Attribute("id").Value;
-                if (String.IsNullOrEmpty(skuId))
-                {
-                    IntegrationLogger.Write(LogLevel.Information, $"Could not find the id for the SKU data for item: {item.Id}");
-                    continue;
-                }
-
-                XElement itemElement = InRiverEntityToEpiEntry(item);
-                XElement nameElement = sku.Element("Name");
-                if (nameElement != null)
-                {
-                    string name = (!String.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
-                    XElement itemElementName = itemElement.Element("Name");
-                    if (itemElementName != null)
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                     {
-                        itemElementName.Value = name;
-                    }
-                }
-
-                XElement codeElement = itemElement.Element("Code");
-                if (codeElement != null)
-                {
-                    codeElement.Value = _catalogCodeGenerator.GetPrefixedCode(skuId);
-                }
-
-                XElement entryTypeElement = itemElement.Element("EntryType");
-                if (entryTypeElement != null)
-                {
-                    entryTypeElement.Value = "Variation";
-                }
-
-                XElement skuDataElement = sku.Element(FieldNames.SKUData);
-                if (skuDataElement != null)
-                {
-                    foreach (XElement skuData in skuDataElement.Elements())
-                    {
-                        XElement metaDataElement = itemElement.Element("MetaData");
-                        if (metaDataElement?.Element("MetaFields") != null)
+                        if (ls != null)
                         {
-                            metaDataElement.Element("MetaFields")?.Add(CreateSimpleMetaFieldElement(skuData.Name.LocalName, skuData.Value));
+                            metaField.Add(
+                                new XElement("Data",
+                                    new XAttribute("language", culturePair.Key.Name.ToLower()),
+                                    new XAttribute("value", ls[culturePair.Value] ?? String.Empty)));
                         }
                     }
                 }
-
-                if (specificationMetaField != null)
+                else
                 {
-                    XElement metaDataElement = itemElement.Element("MetaData");
-                    if (metaDataElement?.Element("MetaFields") != null)
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
                     {
-                        metaDataElement.Element("MetaFields")?.Add(specificationMetaField);
+                        metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", String.Empty)));
                     }
                 }
-
-                skuElements.Add(itemElement);
+            }
+            else if (field.FieldType.DataType.Equals(DataType.CVL))
+            {
+                List<XElement> cvlDataElement = _pimFieldAdapter.GetCVLValues(field);
+                metaField.Add(cvlDataElement);
+            }
+            else
+            {
+                metaField.Add(
+                    new XElement("Data",
+                        new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
+                        new XAttribute("value", _pimFieldAdapter.GetFlatFieldData(field))));
             }
 
-            return skuElements;
+            return metaField;
+        }
+
+        public XElement InRiverEntityToEpiEntry(Entity entity)
+        {
+            IEnumerable<XElement> metaFields = from f in entity.Fields
+                where UseField(entity, f) && !_mappingHelper.SkipField(f.FieldType)
+                select GetMetaFieldValueElement(f);
+
+            return new XElement("Entry",
+                new XElement("Name", _mappingHelper.GetNameForEntity(entity, 100)),
+                new XElement("StartDate", _pimFieldAdapter.GetStartDate(entity)),
+                new XElement("EndDate", _pimFieldAdapter.GetEndDate(entity)),
+                new XElement("IsActive", "True"),
+                new XElement("DisplayTemplate", String.Empty),
+                new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
+                new XElement("EntryType", _mappingHelper.GetEntryType(entity.EntityType.Id)),
+                new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
+                new XElement(
+                    "MetaData",
+                    new XElement("MetaClass", new XElement("Name", GetMetaClassForEntity(entity))),
+                    new XElement(
+                        "MetaFields",
+                        GetDisplayFieldElement(entity.DisplayName, "DisplayName"),
+                        GetDisplayFieldElement(entity.DisplayDescription, "DisplayDescription"),
+                        metaFields)),
+                CreateSeoInfoElement(entity)
+            );
+        }
+
+        public XElement InRiverEntityTypeToMetaClass(string name, string entityTypeName)
+        {
+            return new XElement(
+                "MetaClass",
+                new XElement("Namespace", "Mediachase.Commerce.Catalog.User"),
+                new XElement("Name", name),
+                new XElement("FriendlyName", name),
+                new XElement("MetaClassType", "User"),
+                new XElement("ParentClass", _mappingHelper.GetParentClassForEntityType(entityTypeName)),
+                new XElement("TableName", _mappingHelper.GetTableNameForEntityType(entityTypeName, name)),
+                new XElement("Description", "From inRiver"),
+                new XElement("IsSystem", "False"),
+                new XElement("IsAbstract", "False"),
+                new XElement("FieldListChangedSqlScript"),
+                new XElement("Tag"),
+                new XElement("Attributes"));
+        }
+
+        public XElement InRiverFieldTypeToMetaField(FieldType fieldType)
+        {
+            return new XElement(
+                "MetaField",
+                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
+                new XElement("Name", _mappingHelper.GetEpiserverFieldName(fieldType)),
+                new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldType)),
+                new XElement("Description", "From inRiver"),
+                new XElement("DataType", _mappingHelper.GetEpiserverDataType(fieldType)),
+                new XElement("Length", _mappingHelper.GetMetaFieldLength(fieldType)),
+                new XElement("AllowNulls", !fieldType.Mandatory),
+                new XElement("SaveHistory", "False"),
+                new XElement("AllowSearch", _pimFieldAdapter.GetAllowSearch(fieldType)),
+                new XElement("MultiLanguageValue", _pimFieldAdapter.FieldTypeIsMultiLanguage(fieldType)),
+                new XElement("IsSystem", "False"),
+                new XElement("Tag"),
+                new XElement("Attributes",
+                    new XElement("Attribute",
+                        new XElement("Key", "useincomparing"),
+                        new XElement("Value", _pimFieldAdapter.FieldIsUseInCompare(fieldType)))),
+                new XElement("OwnerMetaClass", fieldType.EntityTypeId));
         }
 
         public XDocument SkuFieldToDocument(Entity item)
         {
             Field skuField = item.GetField(FieldNames.SKUFieldName);
-            if (skuField == null || skuField.Data == null)
+            if (skuField?.Data == null)
             {
                 XElement itemElement = InRiverEntityToEpiEntry(item);
                 IntegrationLogger.Write(LogLevel.Information, $"Could not find SKU data for item: {item.Id}");
@@ -595,13 +590,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             XElement skusElement = skuDoc.Element("SKUs");
             if (skusElement != null)
             {
-                return
-                    (from skuElement in skusElement.Elements()
-                     where skuElement.HasAttributes
-                     select skuElement.Attribute("id").Value).ToList();
+                return skusElement.Elements()
+                    .Where(skuElement => skuElement.HasAttributes)
+                    .Select(skuElement => skuElement.Attribute("id")?.Value)
+                    .Where(id => id != null)
+                    .ToList();
             }
 
             return new List<string>();
+        }
+
+        private Guid GetChannelEntityGuid(int channelId, int entityId)
+        {
+            string concatIds = channelId.ToString().PadLeft(16, '0') + entityId.ToString().PadLeft(16, '0');
+            return new Guid(concatIds);
         }
 
         private XElement GetDisplayFieldElement(Field displayField, string name)
@@ -616,8 +618,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                         new XAttribute("value", String.Empty)));
             }
 
-            var element = GetMetaFieldValueElement(displayField);
-            var nameElement = element.Element("Name");
+            XElement element = GetMetaFieldValueElement(displayField);
+            XElement nameElement = element.Element("Name");
             if (nameElement != null)
             {
                 nameElement.Value = name;
@@ -630,6 +632,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
 
             return element;
+        }
+
+        private string GetMetaClassForEntity(Entity entity)
+        {
+            if (!String.IsNullOrEmpty(entity.FieldSetId) && entity.EntityType.FieldSets.Any(fs => fs.Id == entity.FieldSetId))
+            {
+                return entity.EntityType.Id + "_" + entity.FieldSetId;
+            }
+
+            return entity.EntityType.Id;
         }
 
         private bool UseField(Entity entity, Field field)
@@ -663,16 +675,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
 
             return true;
-        }
-
-        private string GetMetaClassForEntity(Entity entity)
-        {
-            if (!String.IsNullOrEmpty(entity.FieldSetId) && entity.EntityType.FieldSets.Any(fs => fs.Id == entity.FieldSetId))
-            {
-                return entity.EntityType.Id + "_" + entity.FieldSetId;
-            }
-
-            return entity.EntityType.Id;
         }
     }
 }

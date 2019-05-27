@@ -46,7 +46,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
                 .Setup(m => m.GetFieldValue(It.IsAny<Entity>(), It.Is<string>(s => !s.Equals(name)), It.IsAny<CultureInfo>()))
                 .Returns(String.Empty);
 
-            XElement result = _catalogElementFactory.CreateSEOInfoElement(EntityFactory.CreateItem(123));
+            XElement result = _catalogElementFactory.CreateSeoInfoElement(EntityFactory.CreateItem(123));
 
             Assert.Equal(3, result.Descendants().Count());
         }

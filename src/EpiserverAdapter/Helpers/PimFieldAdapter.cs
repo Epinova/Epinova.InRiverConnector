@@ -13,9 +13,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class PimFieldAdapter : IPimFieldAdapter
     {
-        private static List<CVL> cvls;
+        private static List<CVL> _cvls;
 
-        private static List<CVLValue> cvlValues;
+        private static List<CVLValue> _cvlValues;
         private readonly IConfiguration _config;
 
         public PimFieldAdapter(IConfiguration config)
@@ -25,14 +25,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public static List<CVL> CVLs
         {
-            get => cvls ?? (cvls = RemoteManager.ModelService.GetAllCVLs());
-            set => cvls = value;
+            get => _cvls ?? (_cvls = RemoteManager.ModelService.GetAllCVLs());
+            set => _cvls = value;
         }
 
         public static List<CVLValue> CVLValues
         {
-            get => cvlValues ?? (cvlValues = RemoteManager.ModelService.GetAllCVLValues());
-            set => cvlValues = value;
+            get => _cvlValues ?? (_cvlValues = RemoteManager.ModelService.GetAllCVLValues());
+            set => _cvlValues = value;
         }
 
         public IEnumerable<string> CultureInfosToStringArray(CultureInfo[] cultureInfo)
@@ -123,7 +123,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 var ls = (LocaleString) displayNameField.Data;
                 if (String.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
-                    returnString = string.Format("[{0}]", entity.Id);
+                    returnString = $"[{entity.Id}]";
                 }
                 else
                 {
@@ -261,20 +261,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (XElement elem in oldSkus)
             {
-                XAttribute id = elem.Attribute("id");
-                if (newSkus.Exists(e => e.Attribute("id").Value == id.Value))
+                var idValue = elem.Attribute("id")?.Value;
+                if (newSkus.Exists(e => e.Attribute("id")?.Value == idValue))
                 {
-                    if (!removables.Exists(y => y == id.Value))
+                    if (!removables.Exists(y => y == idValue))
                     {
-                        removables.Add(id.Value);
+                        removables.Add(idValue);
                     }
                 }
             }
 
             foreach (string id in removables)
             {
-                oldSkus.RemoveAll(e => e.Attribute("id").Value == id);
-                newSkus.RemoveAll(e => e.Attribute("id").Value == id);
+                oldSkus.RemoveAll(e => e.Attribute("id")?.Value == id);
+                newSkus.RemoveAll(e => e.Attribute("id")?.Value == id);
             }
 
             skusToAdd = newSkus;

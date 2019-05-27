@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
@@ -21,18 +22,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _entityService = entityService;
         }
 
-
-        public Entity InitiateChannelConfiguration(int channelId)
+        public string GetChannelDefaultWeightBase(Entity channel)
         {
-            Entity channel = _entityService.GetEntity(channelId, LoadLevel.DataOnly);
-            if (channel == null)
+            Field defaultWeightBaseField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultweightbase"));
+            if (defaultWeightBaseField == null || defaultWeightBaseField.IsEmpty())
             {
-                IntegrationLogger.Write(LogLevel.Error, "Could not find channel");
-                return null;
+                return "lbs";
             }
 
-            UpdateChannelSettings(channel);
-            return channel;
+            return defaultWeightBaseField.Data.ToString();
         }
 
         public Guid GetChannelGuid(Entity channel)
@@ -43,8 +41,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 if (channel.DisplayName.FieldType.DataType.Equals(DataType.LocaleString))
                 {
-                    var cultureInfo = _config.LanguageMapping[_config.ChannelDefaultLanguage];
-                    value = ((LocaleString)channel.DisplayName.Data)[cultureInfo];
+                    CultureInfo cultureInfo = _config.LanguageMapping[_config.ChannelDefaultLanguage];
+                    value = ((LocaleString) channel.DisplayName.Data)[cultureInfo];
                 }
                 else
                 {
@@ -62,20 +60,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return new Guid(data);
         }
 
-        public Entity GetParentChannelNode(StructureEntity structureEntity)
-        {          
-            var channelNodesInPath = _entityService.GetChannelNodeStructureEntitiesInPath(structureEntity.Path);
-            var entity = channelNodesInPath.LastOrDefault();
-            return entity != null ? _entityService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
-        }
-
-        public bool ItemHasParentInChannel(StructureEntity itemStructureEntity)
-        {
-            var parentProduct = _entityService.GetParentProduct(itemStructureEntity);
-            var parentEntityStructureEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(_config.ChannelId, parentProduct.Id);
-            return parentEntityStructureEntities != null && parentEntityStructureEntities.Any();
-        }
-
         public string GetChannelIdentifier(Entity channelEntity)
         {
             string channelIdentifier = channelEntity.Id.ToString(CultureInfo.InvariantCulture);
@@ -86,28 +70,33 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             return channelIdentifier;
         }
-        
 
-        private string GetChannelPrefix(Entity channel)
+        public Entity GetParentChannelNode(StructureEntity structureEntity)
         {
-            Field channelPrefixField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelprefix"));
-            if (channelPrefixField == null || channelPrefixField.IsEmpty())
-            {
-                return String.Empty;
-            }
-
-            return channelPrefixField.Data.ToString();
+            List<StructureEntity> channelNodesInPath = _entityService.GetChannelNodeStructureEntitiesInPath(structureEntity.Path);
+            StructureEntity entity = channelNodesInPath.LastOrDefault();
+            return entity != null ? _entityService.GetEntity(entity.EntityId, LoadLevel.DataOnly) : null;
         }
 
-        private CultureInfo GetChannelDefaultLanguage(Entity channel)
+
+        public Entity InitiateChannelConfiguration(int channelId)
         {
-            Field defaultLanguageField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultlanguage"));
-            if (defaultLanguageField == null || defaultLanguageField.IsEmpty())
+            Entity channel = _entityService.GetEntity(channelId, LoadLevel.DataOnly);
+            if (channel == null)
             {
-                return new CultureInfo("en-us");
+                IntegrationLogger.Write(LogLevel.Error, "Could not find channel");
+                return null;
             }
 
-            return new CultureInfo(defaultLanguageField.Data.ToString());
+            UpdateChannelSettings(channel);
+            return channel;
+        }
+
+        public bool ItemHasParentInChannel(StructureEntity itemStructureEntity)
+        {
+            Entity parentProduct = _entityService.GetParentProduct(itemStructureEntity);
+            List<StructureEntity> parentEntityStructureEntities = RemoteManager.ChannelService.GetAllStructureEntitiesForEntityInChannel(_config.ChannelId, parentProduct.Id);
+            return parentEntityStructureEntities != null && parentEntityStructureEntities.Any();
         }
 
         private string GetChannelDefaultCurrency(Entity channel)
@@ -121,15 +110,27 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             return defaultCurrencyField.Data.ToString();
         }
 
-        public string GetChannelDefaultWeightBase(Entity channel)
+        private CultureInfo GetChannelDefaultLanguage(Entity channel)
         {
-            Field defaultWeightBaseField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultweightbase"));
-            if (defaultWeightBaseField == null || defaultWeightBaseField.IsEmpty())
+            Field defaultLanguageField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channeldefaultlanguage"));
+            if (defaultLanguageField == null || defaultLanguageField.IsEmpty())
             {
-                return "lbs";
+                return new CultureInfo("en-us");
             }
 
-            return defaultWeightBaseField.Data.ToString();
+            return new CultureInfo(defaultLanguageField.Data.ToString());
+        }
+
+
+        private string GetChannelPrefix(Entity channel)
+        {
+            Field channelPrefixField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelprefix"));
+            if (channelPrefixField == null || channelPrefixField.IsEmpty())
+            {
+                return String.Empty;
+            }
+
+            return channelPrefixField.Data.ToString();
         }
 
         private void UpdateChannelSettings(Entity channel)

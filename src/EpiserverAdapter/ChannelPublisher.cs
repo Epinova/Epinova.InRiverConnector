@@ -279,7 +279,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             List<StructureEntity> resourceEntities = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channel.Id.ToString(), "Resource");
 
-            await PubilshToEpiserverAsync(publishEvent, catalogDocument, resourceEntities, channel);
+            await PublishToEpiserverAsync(publishEvent, catalogDocument, resourceEntities, channel);
 
             return publishEvent;
         }
@@ -293,12 +293,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             LogCatalogProperties(epiElements);
 
-            await PubilshToEpiserverAsync(connectorEvent, catalogDocument, structureEntities, channel);
+            await PublishToEpiserverAsync(connectorEvent, catalogDocument, structureEntities, channel);
         }
 
         private static void LogCatalogProperties(CatalogElementContainer epiElements)
         {
-            IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
+            IntegrationLogger.Write(LogLevel.Information, "Catalog saved with the following: " +
                                                           $"Nodes: {epiElements.Nodes.Count}. " +
                                                           $"Entries: {epiElements.Entries.Count}. " +
                                                           $"Relations: {epiElements.Relations.Count}. " +
@@ -412,7 +412,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             Field previousField = fieldHistory.FirstOrDefault(f => f.Revision == currentField.Revision - 1);
 
             string oldXml = String.Empty;
-            if (previousField != null && previousField.Data != null)
+            if (previousField?.Data != null)
             {
                 oldXml = (string) previousField.Data;
             }
@@ -423,12 +423,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 newXml = (string) currentField.Data;
             }
 
-            List<XElement> skusToDelete, skusToAdd;
-            PimFieldAdapter.CompareAndParseSkuXmls(oldXml, newXml, out skusToAdd, out skusToDelete);
+            PimFieldAdapter.CompareAndParseSkuXmls(oldXml, newXml, out List<XElement> skusToAdd, out List<XElement> skusToDelete);
 
             foreach (XElement skuToDelete in skusToDelete)
             {
-                string skuId = skuToDelete.Attribute("id").Value;
+                string skuId = skuToDelete.Attribute("id")?.Value;
                 await _epiApi.DeleteSkuAsync(skuId);
             }
 
@@ -441,7 +440,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return resourceIncluded;
         }
 
-        private async Task PubilshToEpiserverAsync(ConnectorEvent connectorEvent,
+        private async Task PublishToEpiserverAsync(ConnectorEvent connectorEvent,
             XDocument catalogDocument,
             List<StructureEntity> structureEntitiesToGetResourcesFor,
             Entity channelEntity)

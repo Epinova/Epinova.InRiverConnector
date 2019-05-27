@@ -111,25 +111,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 if (fieldType.Settings.ContainsKey("AdvancedTextObject"))
                 {
-                    if (fieldType.Settings["AdvancedTextObject"] == "1")
-                    {
-                        type = "LongHtmlString";
-                    }
-                    else
-                    {
-                        type = "LongString";
-                    }
+                    type = fieldType.Settings["AdvancedTextObject"] == "1" ? "LongHtmlString" : "LongString";
                 }
                 else if (fieldType.Settings.ContainsKey("EPiDataType"))
                 {
-                    if (fieldType.Settings["EPiDataType"] == "ShortString")
-                    {
-                        type = "ShortString";
-                    }
-                    else
-                    {
-                        type = "LongString";
-                    }
+                    type = fieldType.Settings["EPiDataType"] == "ShortString" ? "ShortString" : "LongString";
                 }
                 else
                 {
@@ -140,14 +126,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 if (fieldType.Settings.ContainsKey("EPiDataType"))
                 {
-                    if (fieldType.Settings["EPiDataType"] == "ShortString")
-                    {
-                        type = "ShortString";
-                    }
-                    else
-                    {
-                        type = "LongString";
-                    }
+                    type = fieldType.Settings["EPiDataType"] == "ShortString" ? "ShortString" : "LongString";
                 }
                 else
                 {
@@ -158,14 +137,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 if (fieldType.Settings.ContainsKey("EPiDataType"))
                 {
-                    if (fieldType.Settings["EPiDataType"] == "ShortString")
-                    {
-                        type = "ShortString";
-                    }
-                    else
-                    {
-                        type = "LongString";
-                    }
+                    type = fieldType.Settings["EPiDataType"] == "ShortString" ? "ShortString" : "LongString";
                 }
                 else
                 {
@@ -276,7 +248,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             LinkType linkType = _config.LinkTypes.FirstOrDefault(x => x.Id == linkTypeId);
 
             return linkType?.SourceEntityTypeId == "ChannelNode" ||
-                   (linkType?.SourceEntityTypeId == "Channel" && linkType?.TargetEntityTypeId == "ChannelNode");
+                   (linkType?.SourceEntityTypeId == "Channel" && linkType.TargetEntityTypeId == "ChannelNode");
         }
 
         /// <summary>
@@ -295,6 +267,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             {
                 return true;
             }
+
             return linkType.SourceEntityTypeId.Equals("Product") && linkType.TargetEntityTypeId.Equals("Item") && linkType.Index == FirstProductItemLinkType;
         }
 
@@ -313,7 +286,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         private Field GetField(Entity entity, string fieldTypeId)
         {
             if (String.IsNullOrEmpty(fieldTypeId))
-                return (Field) null;
+                return null;
 
             return entity.Fields.FirstOrDefault(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower());
         }
