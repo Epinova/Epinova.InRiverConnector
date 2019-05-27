@@ -14,8 +14,8 @@
     <copyright>Copyright © Epinova 2017</copyright>
     <tags>EPiServer Epinova inRiver PIM Commerce</tags>
     <dependencies>
-      <dependency id="EPiServer.CMS.Core" version="[11.2.1, 12.0.0)" />
-      <dependency id="EPiServer.Commerce.Core" version="[11.5.0, 12.0.0)" />
+      <dependency id="EPiServer.CMS.Core" version="[11.11.1, 12.0.0)" />
+      <dependency id="EPiServer.Commerce.Core" version="[13.0, 14.0.0)" />
       <dependency id="EPiServer.ServiceLocation.StructureMap" version="2.0.0" />
     </dependencies>
   </metadata>
