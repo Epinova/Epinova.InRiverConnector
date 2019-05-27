@@ -2,15 +2,13 @@
 
 namespace Epinova.InRiverConnector.Interfaces.Poco
 {
-
     public class Item
     {
-        // ATTRIBUTES
+        public Item()
+        {
+        }
+
         [XmlAttribute("value")]
         public string value { get; set; }
-
-        // CONSTRUCTOR
-        public Item()
-        { }
     }
 }

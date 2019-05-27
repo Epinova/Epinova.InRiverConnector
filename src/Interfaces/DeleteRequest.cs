@@ -10,7 +10,7 @@ namespace Epinova.InRiverConnector.Interfaces
 
         public DeleteRequest(string code)
         {
-            Codes = new List<string> {code};
+            Codes = new List<string> { code };
         }
 
         public DeleteRequest(List<string> codes)
