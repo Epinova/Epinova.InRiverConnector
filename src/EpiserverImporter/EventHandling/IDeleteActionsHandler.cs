@@ -5,20 +5,20 @@ namespace Epinova.InRiverConnector.EpiserverImporter.EventHandling
 {
     public interface IDeleteActionsHandler
     {
-        void PreDeleteCatalog(int catalogId);
-
         void PostDeleteCatalog(int catalogId);
-
-        void PreDeleteCatalogNode(NodeContent node);
-
-        void PostDeleteCatalogNode(NodeContent node);
-
-        void PreDeleteCatalogEntry(EntryContentBase entry);
 
         void PostDeleteCatalogEntry(EntryContentBase deletedEntry);
 
-        void PreDeleteResource(InRiverImportResource resource);
+        void PostDeleteCatalogNode(NodeContent node);
 
         void PostDeleteResource(InRiverImportResource resource);
+
+        void PreDeleteCatalog(int catalogId);
+
+        void PreDeleteCatalogEntry(EntryContentBase entry);
+
+        void PreDeleteCatalogNode(NodeContent node);
+
+        void PreDeleteResource(InRiverImportResource resource);
     }
 }

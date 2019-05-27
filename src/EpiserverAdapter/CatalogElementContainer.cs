@@ -5,6 +5,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public class CatalogElementContainer
     {
+        private readonly List<string> _addedAssociations;
+        private readonly List<string> _addedEntities;
+        private readonly List<string> _addedNodes;
+        private readonly List<string> _addedRelations;
+
         public CatalogElementContainer()
         {
             Nodes = new List<XElement>();
@@ -18,25 +23,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _addedAssociations = new List<string>();
         }
 
-        private readonly List<string> _addedEntities;
-        private readonly List<string> _addedNodes;
-        private readonly List<string> _addedRelations;
-        private readonly List<string> _addedAssociations;
-
-        public List<XElement> Nodes { get; }
-        public List<XElement> Entries { get; }
-        public List<XElement> Relations { get; set; }
         public List<XElement> Associations { get; set; }
+        public List<XElement> Entries { get; }
+        public List<XElement> Nodes { get; }
+        public List<XElement> Relations { get; set; }
 
-        public void AddRelation(XElement relation, string relationName)
+        public void AddAssociation(XElement association, string associationKey)
         {
-            Relations.Add(relation);
-            _addedRelations.Add(relationName);
+            Associations.Add(association);
+            _addedAssociations.Add(associationKey);
         }
 
-        public bool HasRelation(string relationName)
+        public void AddAssociationKey(string associationKey)
         {
-            return _addedRelations.Contains(relationName);
+            _addedAssociations.Add(associationKey);
         }
 
         public void AddEntry(XElement entry, string entryCode)
@@ -45,15 +45,26 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _addedEntities.Add(entryCode);
         }
 
-        public bool HasEntry(string entryCode)
-        {
-            return _addedEntities.Contains(entryCode);
-        }
-
         public void AddNode(XElement node, string nodeCode)
         {
             Nodes.Add(node);
             _addedNodes.Add(nodeCode);
+        }
+
+        public void AddRelation(XElement relation, string relationName)
+        {
+            Relations.Add(relation);
+            _addedRelations.Add(relationName);
+        }
+
+        public bool HasAssociation(string associationKey)
+        {
+            return _addedAssociations.Contains(associationKey);
+        }
+
+        public bool HasEntry(string entryCode)
+        {
+            return _addedEntities.Contains(entryCode);
         }
 
         public bool HasNode(string nodeCode)
@@ -61,20 +72,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return _addedNodes.Contains(nodeCode);
         }
 
-        public void AddAssociationKey(string associationKey)
+        public bool HasRelation(string relationName)
         {
-            _addedAssociations.Add(associationKey);
-        }
-
-        public void AddAssociation(XElement association, string associationKey)
-        {
-            Associations.Add(association);
-            _addedAssociations.Add(associationKey);
-        }
-
-        public bool HasAssociation(string associationKey)
-        {
-            return _addedAssociations.Contains(associationKey);
+            return _addedRelations.Contains(relationName);
         }
     }
 }

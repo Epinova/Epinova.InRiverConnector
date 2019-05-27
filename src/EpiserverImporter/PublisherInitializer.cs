@@ -2,24 +2,30 @@
 using EPiServer.Framework;
 using EPiServer.Framework.Initialization;
 using EPiServer.ServiceLocation;
+using InitializationModule = EPiServer.Web.InitializationModule;
 
 namespace Epinova.InRiverConnector.EpiserverImporter
 {
     [InitializableModule]
-    [ModuleDependency(typeof(EPiServer.Web.InitializationModule))]
+    [ModuleDependency(typeof(InitializationModule))]
     public class PublisherInitializer : IConfigurableModule
     {
+        public void ConfigureContainer(ServiceConfigurationContext context)
+        {
+            context.Services.AddTransient<ICatalogImporter, CatalogImporter>();
+            context.Services.AddTransient<ICatalogService, CatalogService>();
+        }
+
         /// <summary>
-        /// Initializate the inRiver Web API.
+        /// Initialize the inRiver Web API.
         /// </summary>
         /// <remarks>
         /// This method is called once after CMS has been initialized
         /// </remarks>
-        /// <param name="context"></param>
         public void Initialize(InitializationEngine context)
         {
-            var config = GlobalConfiguration.Configuration;
-            
+            HttpConfiguration config = GlobalConfiguration.Configuration;
+
             //// For debug purposes, turn this on. This should be done in the web project
             //// and not in a packaged library.
             config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Always;
@@ -29,22 +35,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 new { id = RouteParameter.Optional });
         }
 
-        public void Preload(string[] parameters)
-        {
-        }
-
         public void Uninitialize(InitializationEngine context)
         {
         }
-
-        public void ConfigureContainer(ServiceConfigurationContext context)
-        {
-            context.StructureMap().Configure(x =>
-            {
-                x.For<ICatalogImporter>().Use<CatalogImporter>();
-                x.For<ICatalogService>().Use<CatalogService>();
-            });
-        }
     }
-
 }

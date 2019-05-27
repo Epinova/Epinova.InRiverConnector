@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.Interfaces;
 using Epinova.InRiverConnector.Interfaces.Enums;
 using inRiver.Integration.Logging;
@@ -23,16 +22,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             Semaphore = new SemaphoreSlim(1, 1);
         }
 
-        public EpiApi(IConfiguration config,
-            CatalogCodeGenerator catalogCodeGenerator,
-            PimFieldAdapter pimFieldAdapter)
+        public EpiApi(IConfiguration config, CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _catalogCodeGenerator = catalogCodeGenerator;
             _httpClient = new HttpClientInvoker(config);
         }
 
-        public async Task DeleteLink(string sourceCode, string targetCode, bool isRelation)
+        public async Task DeleteLinkAsync(string sourceCode, string targetCode, bool isRelation)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -45,7 +42,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        public async Task DeleteLink(Guid resourceGuid, string targetCode)
+        public async Task DeleteLinkAsync(Guid resourceGuid, string targetCode)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -57,7 +54,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        public async Task DeleteResource(Guid resourceGuid)
+        public async Task DeleteResourceAsync(Guid resourceGuid)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -66,7 +63,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteCatalog(int catalogId)
+        internal async Task DeleteCatalogAsync(int catalogId)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -74,7 +71,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteCatalogEntry(Entity entity)
+        internal async Task DeleteCatalogEntryAsync(Entity entity)
         {
             string code = _catalogCodeGenerator.GetEpiserverCode(entity);
             await ExecuteWithinLockAsync(
@@ -83,7 +80,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteCatalogNode(Entity catalogNode, int catalogId)
+        internal async Task DeleteCatalogNodeAsync(Entity catalogNode, int catalogId)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -92,7 +89,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteCompleted(string catalogName, DeleteCompletedEventType eventType)
+        internal async Task DeleteCompletedAsync(string catalogName, DeleteCompletedEventType eventType)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -104,7 +101,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteSku(string skuId)
+        internal async Task DeleteSkuAsync(string skuId)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -112,7 +109,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task DeleteSkus(List<string> skuIds)
+        internal async Task DeleteSkusAsync(List<string> skuIds)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -120,7 +117,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task ImportCatalog(string filePath)
+        internal async Task ImportCatalogAsync(string filePath)
         {
             await ExecuteWithinLockAsync(
                 () =>
@@ -129,7 +126,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task ImportResources(string resourceDocumentFilePath, string baseFilePath)
+        internal async Task ImportResourcesAsync(string resourceDocumentFilePath, string baseFilePath)
         {
             var importer = new ResourceImporter(_config, _httpClient);
             await ExecuteWithinLockAsync(
@@ -138,8 +135,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task ImportUpdateCompleted(string catalogName, ImportUpdateCompletedEventType eventType,
-            bool resourceIncluded)
+        internal async Task ImportUpdateCompletedAsync(string catalogName, ImportUpdateCompletedEventType eventType, bool resourceIncluded)
         {
             var data = new ImportUpdateCompletedData
             {
@@ -153,7 +149,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task MoveNodeToRootIfNeeded(int entityId)
+        internal async Task MoveNodeToRootIfNeededAsync(int entityId)
         {
             string entryNodeId = _catalogCodeGenerator.GetEpiserverCode(entityId);
             await ExecuteWithinLockAsync(
@@ -162,9 +158,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             );
         }
 
-        internal async Task NotifyEpiserverPostImport(string filepath)
+        internal async Task NotifyEpiserverPostImportAsync(string filepath)
         {
-            if (string.IsNullOrEmpty(_config.HttpPostUrl))
+            if (String.IsNullOrEmpty(_config.HttpPostUrl))
                 return;
 
             await ExecuteWithinLockAsync(

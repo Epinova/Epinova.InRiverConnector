@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
@@ -93,7 +95,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
             if (updatedEntity.EntityType.Id == "ChannelNode")
             {
-                updatedNode = GetUpdatedNode(channelEntity, updatedEntity, updatedNode);
+                updatedNode = GetUpdatedNode(channelEntity, updatedEntity);
             }
             else if (shouldGetUpdatedEntry)
             {
@@ -134,7 +136,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return new XElement("AssociationTypes", associationTypeElements);
         }
 
-        public CatalogElementContainer GetEPiElements(List<StructureEntity> structureEntities)
+        public async Task<CatalogElementContainer> GetEPiElementsAsync(List<StructureEntity> structureEntities)
         {
             _epiElementContainer = new CatalogElementContainer();
 
@@ -145,7 +147,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             {
                 List<StructureEntity> batch = structureEntities.Skip(totalLoaded).Take(batchSize).ToList();
 
-                AddNodeElements(batch);
+                await AddNodeElementsAsync(batch);
                 AddEntryElements(batch);
                 AddRelationElements(structureEntities);
 
@@ -157,9 +159,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return _epiElementContainer;
         }
 
-        private void AddAssociationElements(LinkType linkType,
-            StructureEntity structureEntity,
-            string itemCode)
+        private void AddAssociationElements(LinkType linkType, StructureEntity structureEntity, string itemCode)
         {
             IntegrationLogger.Write(LogLevel.Debug, "AddAssociationElements");
 
@@ -176,9 +176,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
         }
 
-        private void AddChannelNodeRelation(LinkType linkType,
-            StructureEntity structureEntity,
-            Entity entity)
+        private void AddChannelNodeRelation(LinkType linkType, StructureEntity structureEntity, Entity entity)
         {
             string addedRelationName = _catalogCodeGenerator.GetRelationName(entity.Id, structureEntity.ParentId);
             if (_epiElementContainer.HasRelation(addedRelationName))
@@ -240,9 +238,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
         }
 
-        private void AddEntryRelationElement(StructureEntity structureEntity,
-            string skuCode,
-            LinkType linkType)
+        private void AddEntryRelationElement(StructureEntity structureEntity, string skuCode, LinkType linkType)
         {
             Entity parentProduct = _entityService.GetParentProduct(structureEntity);
             if (parentProduct == null)
@@ -265,9 +261,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             IntegrationLogger.Write(LogLevel.Debug, $"Added EntryRelation for {skuCode} to product {parentCode}. Relation name: {addedRelationsName}.");
         }
 
-        private void AddItemToSkusAssociations(LinkType linkType,
-            StructureEntity structureEntity,
-            string skuId)
+        private void AddItemToSkusAssociations(LinkType linkType, StructureEntity structureEntity, string skuId)
         {
             string associationName = _epiMappingHelper.GetAssociationName(structureEntity);
 
@@ -288,7 +282,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 XElement existingCatalogAssociationElement = _epiElementContainer.Associations.FirstOrDefault(
                     x => x.Element("Name")?.Value == associationName &&
                          x.Element("EntryCode")?.Value == skuCode);
-                ;
 
                 var associationElement = new XElement("Association",
                     new XElement("EntryCode", skuId),
@@ -340,7 +333,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             AddEntryRelationElement(structureEntity, skuId, new LinkType());
         }
 
-        private void AddNodeElements(List<StructureEntity> batch)
+        private async Task AddNodeElementsAsync(List<StructureEntity> batch)
         {
             IEnumerable<StructureEntity> nodeStructureEntities = batch.Where(x => x.IsChannelNode() && x.EntityId != _config.ChannelId);
 
@@ -350,7 +343,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
                 if (_config.ChannelId == structureEntity.ParentId)
                 {
-                    _epiApi.MoveNodeToRootIfNeeded(entity.Id);
+                    await _epiApi.MoveNodeToRootIfNeededAsync(entity.Id);
                 }
 
                 IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entity.Id} to Nodes");
@@ -379,7 +372,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                         {
                             string oldSortOrder = sortOrderElement.Value;
                             sortOrderElement.Value = linkIndex.ToString(CultureInfo.InvariantCulture);
-                            linkIndex = int.Parse(oldSortOrder);
+                            linkIndex = Int32.Parse(oldSortOrder);
                         }
                     }
 
@@ -471,9 +464,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
         }
 
-        private void AddRelations(LinkType linkType,
-            StructureEntity structureEntity,
-            Entity entity)
+        private void AddRelations(LinkType linkType, StructureEntity structureEntity, Entity entity)
         {
             var skus = new List<string> { _catalogCodeGenerator.GetEpiserverCode(entity.Id) };
 
@@ -557,7 +548,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return specificationMetaField;
         }
 
-        private XElement GetUpdatedNode(Entity channelEntity, Entity updatedEntity, XElement updatedNode)
+        private XElement GetUpdatedNode(Entity channelEntity, Entity updatedEntity)
         {
             Link nodeLink = updatedEntity.Links.Find(l => l.Source.Id == channelEntity.Id);
             var sortOrder = 0;

@@ -20,8 +20,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             if (!ValidateApiKey(controllerContext.Request))
             {
-                HttpResponseMessage resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
-                TaskCompletionSource<HttpResponseMessage> tsc = new TaskCompletionSource<HttpResponseMessage>();
+                var resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
+                var tsc = new TaskCompletionSource<HttpResponseMessage>();
                 tsc.SetResult(resp);
                 return tsc.Task;
             }
@@ -31,7 +31,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         protected virtual bool ValidateApiKey(HttpRequestMessage request)
         {
-            if (string.IsNullOrEmpty(ApiKeyValue))
+            if (String.IsNullOrEmpty(ApiKeyValue))
                 return false;
 
             return request.Headers.GetValues(ApiKeyName).FirstOrDefault() == ApiKeyValue;

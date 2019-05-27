@@ -16,9 +16,9 @@ namespace EpiserverRestApi
         [Route("GetVariations/{nodeName}")]
         public IEnumerable<string> GetVariations(string nodeName)
         {
-            authenticate();
+            Authenticate();
 
-            int channelId = int.Parse(ConfigurationManager.AppSettings["channelId"]);
+            int channelId = Int32.Parse(ConfigurationManager.AppSettings["channelId"]);
             Entity node = RemoteManager.ChannelService.GetEntitiesForChannelAndEntityType(channelId, "ChannelNode")
                 .FirstOrDefault(x => x.DisplayName.Data.ToString().Equals(nodeName, StringComparison.InvariantCultureIgnoreCase));
             if (node == null)
@@ -28,9 +28,10 @@ namespace EpiserverRestApi
                 .Select(x => x.Name);
         }
 
-        private void authenticate()
+        private static void Authenticate()
         {
-            AuthenticationTicket ticket = RemoteManager.Authenticate(ConfigurationManager.AppSettings["authenticationUrl"], ConfigurationManager.AppSettings["username"], ConfigurationManager.AppSettings["password"]);
+            AuthenticationTicket ticket = RemoteManager.Authenticate(ConfigurationManager.AppSettings["authenticationUrl"], ConfigurationManager.AppSettings["username"],
+                ConfigurationManager.AppSettings["password"]);
 
             // Initialize RemoteManager 
             RemoteManager.CreateInstance(ConfigurationManager.AppSettings["authenticationUrl"], ticket);

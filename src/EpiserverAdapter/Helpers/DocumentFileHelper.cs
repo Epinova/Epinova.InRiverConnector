@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Packaging;
 using System.Linq;
 using System.Xml.Linq;
 using inRiver.Integration.Logging;
@@ -13,8 +12,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public class DocumentFileHelper
     {
-        private readonly IConfiguration _config;
         private readonly ChannelHelper _channelHelper;
+        private readonly IConfiguration _config;
 
         public DocumentFileHelper(IConfiguration config, ChannelHelper channelHelper)
         {
@@ -22,23 +21,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             _channelHelper = channelHelper;
         }
 
-        public string SaveDocument(XDocument doc, string path)
+        public static void CopyStream(FileStream inputStream, Stream outputStream)
         {
-            if (!Directory.Exists(path))
+            const long maxBufferSize = 4096;
+            long bufferSize = inputStream.Length < maxBufferSize ? inputStream.Length : maxBufferSize;
+            var buffer = new byte[bufferSize];
+            int bytesRead;
+            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
             {
-                Directory.CreateDirectory(path);
+                outputStream.Write(buffer, 0, bytesRead);
             }
-
-            var filePath = Path.Combine(path, Constants.ResourceExportFilename);
-
-            IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath}.");
-            doc.Save(filePath);
-            return filePath;
         }
 
         public string SaveCatalogDocument(Entity channel, XDocument doc, string folderNameTimestampComponent)
         {
-            var dirPath = Path.Combine(_config.PublicationsRootPath, folderNameTimestampComponent);
+            string dirPath = Path.Combine(_config.PublicationsRootPath, folderNameTimestampComponent);
 
             if (!Directory.Exists(dirPath))
             {
@@ -55,75 +52,42 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 IntegrationLogger.Write(LogLevel.Error, "Fail to verify the document: ", exception);
             }
 
-            var filePath = Path.Combine(dirPath, Constants.CatalogExportFilename);
+            string filePath = Path.Combine(dirPath, Constants.CatalogExportFilename);
 
-            var channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
+            string channelIdentifier = _channelHelper.GetChannelIdentifier(channel);
             IntegrationLogger.Write(LogLevel.Information, $"Saving verified document to path {filePath} for channel: {channelIdentifier}");
 
             doc.Save(filePath);
             return filePath;
         }
-        
-        public static void CopyStream(FileStream inputStream, Stream outputStream)
+
+        public string SaveDocument(XDocument doc, string path)
         {
-            const long MaxbuffertSize = 4096;
-            long bufferSize = inputStream.Length < MaxbuffertSize ? inputStream.Length : MaxbuffertSize;
-            byte[] buffer = new byte[bufferSize];
-            int bytesRead;
-            while ((bytesRead = inputStream.Read(buffer, 0, buffer.Length)) != 0)
+            if (!Directory.Exists(path))
             {
-                outputStream.Write(buffer, 0, bytesRead);
-            }
-        }
-        
-        private XDocument VerifyAndCorrectDocument(XDocument doc)
-        {
-            var unwantedEntityTypes = CreateUnwantedEntityTypeList();
-            XDocument result = new XDocument(doc);
-            XElement root = result.Root;
-            if (root == null)
-            {
-                throw new Exception("Can't verify the Catalog.cml as it's empty.");
+                Directory.CreateDirectory(path);
             }
 
-            var entryElements = root.Descendants("Entry");
-            var codesToBeRemoved = new List<string>();
-            foreach (XElement entryElement in entryElements)
-            {
-                var code = entryElement.Elements("Code").First().Value;
-                var metaClassName = entryElement.Elements("MetaData")
-                                                .Elements("MetaClass")
-                                                .Elements("Name")
-                                                .First().Value;
+            string filePath = Path.Combine(path, Constants.ResourceExportFilename);
 
-                if (!unwantedEntityTypes.Contains(metaClassName))
-                    continue;
-
-                IntegrationLogger.Write(LogLevel.Debug, $"Code {code} will be removed as it has wrong metaclass name ({metaClassName})");
-                codesToBeRemoved.Add(code);
-            }
-
-            foreach (var code in codesToBeRemoved)
-            {
-                root.Descendants("Entry").Where(x => x.Element("Code")?.Value == code).Remove();
-            }
-
-            return result;
+            IntegrationLogger.Write(LogLevel.Information, $"Saving document to path {filePath}.");
+            doc.Save(filePath);
+            return filePath;
         }
 
         private List<string> CreateUnwantedEntityTypeList()
         {
-            List<string> typeIds = new List<string>
-                                       {
-                                           "Channel",
-                                           "Assortment",
-                                           "Resource",
-                                           "Task",
-                                           "Section",
-                                           "Publication"
-                                       };
+            var typeIds = new List<string>
+            {
+                "Channel",
+                "Assortment",
+                "Resource",
+                "Task",
+                "Section",
+                "Publication"
+            };
 
-            List<string> result = new List<string>();
+            var result = new List<string>();
             foreach (string typeId in typeIds)
             {
                 List<FieldSet> fieldSets = RemoteManager.ModelService.GetFieldSetsForEntityType(typeId);
@@ -145,6 +109,41 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                         result.Add(value);
                     }
                 }
+            }
+
+            return result;
+        }
+
+        private XDocument VerifyAndCorrectDocument(XDocument doc)
+        {
+            List<string> unwantedEntityTypes = CreateUnwantedEntityTypeList();
+            var result = new XDocument(doc);
+            XElement root = result.Root;
+            if (root == null)
+            {
+                throw new Exception("Can't verify the Catalog.cml as it's empty.");
+            }
+
+            IEnumerable<XElement> entryElements = root.Descendants("Entry");
+            var codesToBeRemoved = new List<string>();
+            foreach (XElement entryElement in entryElements)
+            {
+                string code = entryElement.Elements("Code").First().Value;
+                string metaClassName = entryElement.Elements("MetaData")
+                    .Elements("MetaClass")
+                    .Elements("Name")
+                    .First().Value;
+
+                if (!unwantedEntityTypes.Contains(metaClassName))
+                    continue;
+
+                IntegrationLogger.Write(LogLevel.Debug, $"Code {code} will be removed as it has wrong metaclass name ({metaClassName})");
+                codesToBeRemoved.Add(code);
+            }
+
+            foreach (string code in codesToBeRemoved)
+            {
+                root.Descendants("Entry").Where(x => x.Element("Code")?.Value == code).Remove();
             }
 
             return result;

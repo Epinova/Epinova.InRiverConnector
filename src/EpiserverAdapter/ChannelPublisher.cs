@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter.Communication;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
@@ -52,7 +53,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _catalogCodeGenerator = catalogCodeGenerator;
         }
 
-        public ConnectorEvent ChannelEntityAdded(Entity channel, int entityId)
+        public async Task<ConnectorEvent> ChannelEntityAddedAsync(Entity channel, int entityId)
         {
             ConnectorEvent connectorEvent =
                 ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityAdded, $"Received entity added for entity {entityId} in channel {channel.DisplayName}", 0);
@@ -79,28 +80,28 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             structureEntities.AddRange(childLinks);
 
-            PublishEntities(channel, connectorEvent, structureEntities);
+            await PublishEntitiesAsync(channel, connectorEvent, structureEntities);
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityAdded, true);
+            await _epiApi.ImportUpdateCompletedAsync(channelName, ImportUpdateCompletedEventType.EntityAdded, true);
             return connectorEvent;
         }
 
-        public ConnectorEvent ChannelEntityDeleted(Entity channel, Entity deletedEntity)
+        public async Task<ConnectorEvent> ChannelEntityDeletedAsync(Entity channel, Entity deletedEntity)
         {
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config,
                 ConnectorEventType.ChannelEntityDeleted,
                 $"Received entity deleted for entity {deletedEntity.Id} in channel {channelName}.", 0);
 
-            Delete(channel, deletedEntity);
+            await DeleteAsync(channel, deletedEntity);
 
-            _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.EntitiyDeleted);
+            await _epiApi.DeleteCompletedAsync(channelName, DeleteCompletedEventType.EntitiyDeleted);
 
             return connectorEvent;
         }
 
-        public ConnectorEvent ChannelEntityUpdated(Entity channel, int entityId, string data)
+        public async Task<ConnectorEvent> ChannelEntityUpdatedAsync(Entity channel, int entityId, string data)
         {
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelEntityUpdated,
                 $"Received entity update for entity {entityId} in channel {channel.DisplayName}", 0);
@@ -117,7 +118,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (updatedEntity.EntityType.Id.Equals("Resource"))
             {
-                resourceIncluded = HandleResourceUpdate(updatedEntity, folderDateTime);
+                resourceIncluded = await HandleResourceUpdateAsync(updatedEntity, folderDateTime);
             }
             else
             {
@@ -125,11 +126,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 if (updatedEntity.EntityType.Id.Equals("Item") && data != null && data.Split(',').Contains("SKUs"))
                 {
-                    HandleSkuUpdate(entityId, channel, connectorEvent, structureEntities, out resourceIncluded);
+                    resourceIncluded = await HandleSkuUpdateAsync(entityId, channel, connectorEvent, structureEntities);
                 }
                 else if (updatedEntity.EntityType.Id.Equals("ChannelNode"))
                 {
-                    HandleChannelNodeUpdate(channel, structureEntities, connectorEvent);
+                    await HandleChannelNodeUpdateAsync(channel, structureEntities, connectorEvent);
                     return connectorEvent;
                 }
 
@@ -139,16 +140,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 IntegrationLogger.Write(LogLevel.Debug, "Starting automatic import!");
 
-                _epiApi.ImportCatalog(catalogDocumentName);
-                _epiApi.NotifyEpiserverPostImport(catalogDocumentName);
+                await _epiApi.ImportCatalogAsync(catalogDocumentName);
+                await _epiApi.NotifyEpiserverPostImportAsync(catalogDocumentName);
             }
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
+            await _epiApi.ImportUpdateCompletedAsync(channelName, ImportUpdateCompletedEventType.EntityUpdated, resourceIncluded);
             return connectorEvent;
         }
 
-        public ConnectorEvent ChannelLinkAdded(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+        public async Task<ConnectorEvent> ChannelLinkAddedAsync(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkAdded,
                 $"Received link added for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName}", 0);
@@ -167,8 +168,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 for (var i = 0; i < parentIds.Count - 1; i++)
                 {
-                    int entityId = int.Parse(parentIds[i]);
-                    int parentId = int.Parse(parentIds[i + 1]);
+                    int entityId = Int32.Parse(parentIds[i]);
+                    int parentId = Int32.Parse(parentIds[i + 1]);
 
                     structureEntities.AddRange(RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channel.Id, entityId, parentId));
                 }
@@ -180,8 +181,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 structureEntities.AddRange(RemoteManager.ChannelService.GetAllChannelStructureEntitiesFromPath(targetEntityPath));
             }
 
-           
-
             // Remove duplicates
             structureEntities = structureEntities.GroupBy(x => x.EntityId).Select(x => x.First()).ToList();
 
@@ -190,15 +189,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
-            PublishEntities(channel, connectorEvent, structureEntities);
+            await PublishEntitiesAsync(channel, connectorEvent, structureEntities);
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkAdded, true);
+            await _epiApi.ImportUpdateCompletedAsync(channelName, ImportUpdateCompletedEventType.LinkAdded, true);
 
             return connectorEvent;
         }
 
-        public ConnectorEvent ChannelLinkDeleted(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+        public async Task<ConnectorEvent> ChannelLinkDeletedAsync(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             ConnectorEvent connectorEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.ChannelLinkDeleted,
                 $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName.Data}", 0);
@@ -208,20 +207,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             if (removalTarget.EntityType.Id == "Resource")
             {
-                DeleteResourceLink(removalTarget, removalSource);
+                await DeleteResourceLinkAsync(removalTarget, removalSource);
             }
             else
             {
-                DeleteLink(removalSource, removalTarget, linkTypeId);
+                await DeleteLinkAsync(removalSource, removalTarget, linkTypeId);
             }
 
             string channelName = _mappingHelper.GetNameForEntity(channel, 100);
-            _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted);
+            await _epiApi.DeleteCompletedAsync(channelName, DeleteCompletedEventType.LinkDeleted);
 
             return connectorEvent;
         }
 
-        public ConnectorEvent ChannelLinkUpdated(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
+        public async Task<ConnectorEvent> ChannelLinkUpdatedAsync(Entity channel, int sourceEntityId, int targetEntityId, string linkTypeId, int? linkEntityId)
         {
             List<StructureEntity> targetEntityStructure = _entityService.GetEntityInChannelWithParent(_config.ChannelId, targetEntityId, sourceEntityId);
 
@@ -234,8 +233,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     $"Received link deleted for sourceEntityId {sourceEntityId} and targetEntityId {targetEntityId} in channel {channel.DisplayName.Data}", 0);
                 Entity removalTarget = _entityService.GetEntity(targetEntityId, LoadLevel.DataAndLinks);
                 Entity removalSource = _entityService.GetEntity(sourceEntityId, LoadLevel.DataAndLinks);
-                DeleteLink(removalSource, removalTarget, linkTypeId, true);
-                _epiApi.DeleteCompleted(channelName, DeleteCompletedEventType.LinkDeleted);
+                await DeleteLinkAsync(removalSource, removalTarget, linkTypeId, true);
+                await _epiApi.DeleteCompletedAsync(channelName, DeleteCompletedEventType.LinkDeleted);
                 return deleteEvent;
             }
 
@@ -254,15 +253,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done fetching channel entities", 10);
 
-            PublishEntities(channel, connectorEvent, structureEntities);
+            await PublishEntitiesAsync(channel, connectorEvent, structureEntities);
 
-
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.LinkUpdated, true);
+            await _epiApi.ImportUpdateCompletedAsync(channelName, ImportUpdateCompletedEventType.LinkUpdated, true);
 
             return connectorEvent;
         }
 
-        public ConnectorEvent Publish(Entity channel)
+        public async Task<ConnectorEvent> PublishAsync(Entity channel)
         {
             ConnectorEvent publishEvent = ConnectorEventHelper.InitiateEvent(_config, ConnectorEventType.Publish, $"Publish started for channel: {channel.DisplayName.Data}", 0);
             ConnectorEventHelper.UpdateEvent(publishEvent, "Fetching all channel entities...", 1);
@@ -271,7 +269,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             ConnectorEventHelper.UpdateEvent(publishEvent, "Fetched all channel entities. Generating catalog.xml...", 10);
 
-            CatalogElementContainer epiElements = _catalogDocumentFactory.GetEPiElements(channelStructureEntities);
+            CatalogElementContainer epiElements = await _catalogDocumentFactory.GetEPiElementsAsync(channelStructureEntities);
             XElement metaClasses = _catalogElementFactory.GetMetaClassesFromFieldSets();
             XElement associationTypes = _catalogDocumentFactory.GetAssociationTypes();
 
@@ -281,51 +279,51 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             List<StructureEntity> resourceEntities = RemoteManager.ChannelService.GetAllChannelStructureEntitiesForTypeFromPath(channel.Id.ToString(), "Resource");
 
-            PubilshToEpiserver(publishEvent, catalogDocument, resourceEntities, channel);
+            await PublishToEpiserverAsync(publishEvent, catalogDocument, resourceEntities, channel);
 
             return publishEvent;
         }
 
-        internal void PublishEntities(Entity channel, ConnectorEvent connectorEvent, List<StructureEntity> structureEntities)
+        internal async Task PublishEntitiesAsync(Entity channel, ConnectorEvent connectorEvent, List<StructureEntity> structureEntities)
         {
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Generating catalog.xml...", 11);
-            CatalogElementContainer epiElements = _catalogDocumentFactory.GetEPiElements(structureEntities);
+            CatalogElementContainer epiElements = await _catalogDocumentFactory.GetEPiElementsAsync(structureEntities);
 
             XDocument catalogDocument = _catalogDocumentFactory.CreateImportDocument(channel, null, null, epiElements);
 
             LogCatalogProperties(epiElements);
 
-            PubilshToEpiserver(connectorEvent, catalogDocument, structureEntities, channel);
+            await PublishToEpiserverAsync(connectorEvent, catalogDocument, structureEntities, channel);
         }
 
         private static void LogCatalogProperties(CatalogElementContainer epiElements)
         {
-            IntegrationLogger.Write(LogLevel.Information, $"Catalog saved with the following: " +
+            IntegrationLogger.Write(LogLevel.Information, "Catalog saved with the following: " +
                                                           $"Nodes: {epiElements.Nodes.Count}. " +
                                                           $"Entries: {epiElements.Entries.Count}. " +
                                                           $"Relations: {epiElements.Relations.Count}. " +
                                                           $"Associations: {epiElements.Associations.Count}. ");
         }
 
-        private void Delete(Entity channelEntity, Entity deletedEntity)
+        private async Task DeleteAsync(Entity channelEntity, Entity deletedEntity)
         {
             switch (deletedEntity.EntityType.Id)
             {
                 case "Resource":
                     Guid resourceGuid = EpiserverEntryIdentifier.EntityIdToGuid(deletedEntity.Id);
-                    _epiApi.DeleteResource(resourceGuid);
+                    await _epiApi.DeleteResourceAsync(resourceGuid);
 
                     break;
                 case "Channel":
-                    _epiApi.DeleteCatalog(deletedEntity.Id);
+                    await _epiApi.DeleteCatalogAsync(deletedEntity.Id);
                     break;
                 case "ChannelNode":
-                    _epiApi.DeleteCatalogNode(deletedEntity, channelEntity.Id);
+                    await _epiApi.DeleteCatalogNodeAsync(deletedEntity, channelEntity.Id);
                     break;
                 case "Item":
                     if ((_config.ItemsToSkus && _config.UseThreeLevelsInCommerce) || !_config.ItemsToSkus)
                     {
-                        _epiApi.DeleteCatalogEntry(deletedEntity);
+                        await _epiApi.DeleteCatalogEntryAsync(deletedEntity);
                     }
 
                     if (_config.ItemsToSkus)
@@ -343,17 +341,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                             }
                         }
 
-                        _epiApi.DeleteSkus(entitiesToDelete);
+                        await _epiApi.DeleteSkusAsync(entitiesToDelete);
                     }
 
                     break;
                 default:
-                    _epiApi.DeleteCatalogEntry(deletedEntity);
+                    await _epiApi.DeleteCatalogEntryAsync(deletedEntity);
                     break;
             }
         }
 
-        private void DeleteLink(Entity removalSource, Entity removalTarget, string linkTypeId, bool overrideIsRelation = false)
+        private async Task DeleteLinkAsync(Entity removalSource, Entity removalTarget, string linkTypeId, bool overrideIsRelation = false)
         {
             bool isRelation = _mappingHelper.IsRelation(linkTypeId) || overrideIsRelation;
 
@@ -366,26 +364,25 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string sourceCode = _catalogCodeGenerator.GetEpiserverCode(removalSource);
             string targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
 
-            _epiApi.DeleteLink(sourceCode, targetCode, isRelation);
+            await _epiApi.DeleteLinkAsync(sourceCode, targetCode, isRelation);
         }
 
-        private void DeleteResourceLink(Entity removedResource, Entity removalTarget)
+        private async Task DeleteResourceLinkAsync(Entity removedResource, Entity removalTarget)
         {
             Guid resourceGuid = EpiserverEntryIdentifier.EntityIdToGuid(removedResource.Id);
             string targetCode = _catalogCodeGenerator.GetEpiserverCode(removalTarget);
 
-            _epiApi.DeleteLink(resourceGuid, targetCode);
+            await _epiApi.DeleteLinkAsync(resourceGuid, targetCode);
         }
 
-        private void HandleChannelNodeUpdate(Entity channel, List<StructureEntity> structureEntities, ConnectorEvent entityUpdatedConnectorEvent)
+        private async Task HandleChannelNodeUpdateAsync(Entity channel, List<StructureEntity> structureEntities, ConnectorEvent entityUpdatedConnectorEvent)
         {
-            PublishEntities(channel, entityUpdatedConnectorEvent, structureEntities);
-            _epiApi.ImportUpdateCompleted(_pimFieldAdapter.GetDisplayName(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
+            await PublishEntitiesAsync(channel, entityUpdatedConnectorEvent, structureEntities);
+            await _epiApi.ImportUpdateCompletedAsync(_pimFieldAdapter.GetDisplayName(channel, 100), ImportUpdateCompletedEventType.EntityUpdated, true);
         }
 
-        private bool HandleResourceUpdate(Entity updatedEntity, string folderDateTime)
+        private async Task<bool> HandleResourceUpdateAsync(Entity updatedEntity, string folderDateTime)
         {
-            var resourceIncluded = false;
             XDocument resourceDocument = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
             string resourcesBasePath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
             _documentFileHelper.SaveDocument(resourceDocument, resourcesBasePath);
@@ -395,56 +392,55 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string baseFilePath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
             string resourceXmlPath = Path.Combine(baseFilePath, "Resources.xml");
 
-            _epiApi.ImportResources(resourceXmlPath, baseFilePath);
+            await _epiApi.ImportResourcesAsync(resourceXmlPath, baseFilePath);
 
-            _epiApi.NotifyEpiserverPostImport(resourceXmlPath);
-            resourceIncluded = true;
+            await _epiApi.NotifyEpiserverPostImportAsync(resourceXmlPath);
 
-            return resourceIncluded;
+            return true;
         }
 
-        private void HandleSkuUpdate(int entityId,
+        private async Task<bool> HandleSkuUpdateAsync(int entityId,
             Entity channelEntity,
             ConnectorEvent connectorEvent,
-            List<StructureEntity> structureEntities,
-            out bool resourceIncluded)
+            List<StructureEntity> structureEntities)
         {
-            resourceIncluded = false;
+            var resourceIncluded = false;
             Field currentField = RemoteManager.DataService.GetField(entityId, "SKUs");
 
             List<Field> fieldHistory = RemoteManager.DataService.GetFieldHistory(entityId, "SKUs");
 
             Field previousField = fieldHistory.FirstOrDefault(f => f.Revision == currentField.Revision - 1);
 
-            string oldXml = string.Empty;
-            if (previousField != null && previousField.Data != null)
+            string oldXml = String.Empty;
+            if (previousField?.Data != null)
             {
                 oldXml = (string) previousField.Data;
             }
 
-            string newXml = string.Empty;
+            string newXml = String.Empty;
             if (currentField.Data != null)
             {
                 newXml = (string) currentField.Data;
             }
 
-            List<XElement> skusToDelete, skusToAdd;
-            PimFieldAdapter.CompareAndParseSkuXmls(oldXml, newXml, out skusToAdd, out skusToDelete);
+            PimFieldAdapter.CompareAndParseSkuXmls(oldXml, newXml, out List<XElement> skusToAdd, out List<XElement> skusToDelete);
 
             foreach (XElement skuToDelete in skusToDelete)
             {
-                string skuId = skuToDelete.Attribute("id").Value;
-                _epiApi.DeleteSku(skuId);
+                string skuId = skuToDelete.Attribute("id")?.Value;
+                await _epiApi.DeleteSkuAsync(skuId);
             }
 
             if (skusToAdd.Count > 0)
             {
-                PublishEntities(channelEntity, connectorEvent, structureEntities);
+                await PublishEntitiesAsync(channelEntity, connectorEvent, structureEntities);
                 resourceIncluded = true;
             }
+
+            return resourceIncluded;
         }
 
-        private void PubilshToEpiserver(ConnectorEvent connectorEvent,
+        private async Task PublishToEpiserverAsync(ConnectorEvent connectorEvent,
             XDocument catalogDocument,
             List<StructureEntity> structureEntitiesToGetResourcesFor,
             Entity channelEntity)
@@ -461,22 +457,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done generating/saving Resource.xml, sending Catalog.xml to EPiServer...", 50);
 
-            _epiApi.ImportCatalog(savedCatalogDocument);
+            await _epiApi.ImportCatalogAsync(savedCatalogDocument);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Catalog.xml to EPiServer", 75);
 
-            _epiApi.NotifyEpiserverPostImport(savedCatalogDocument);
+            await _epiApi.NotifyEpiserverPostImportAsync(savedCatalogDocument);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Sending Resources to EPiServer...", 76);
 
-            _epiApi.ImportResources(resourceDocumentPath, resourcesBasePath);
+            await _epiApi.ImportResourcesAsync(resourceDocumentPath, resourcesBasePath);
 
             ConnectorEventHelper.UpdateEvent(connectorEvent, "Done sending Resources to EPiServer...", 99);
 
-            _epiApi.NotifyEpiserverPostImport(resourceDocumentPath);
+            await _epiApi.NotifyEpiserverPostImportAsync(resourceDocumentPath);
             string channelName = _mappingHelper.GetNameForEntity(channelEntity, 100);
 
-            _epiApi.ImportUpdateCompleted(channelName, ImportUpdateCompletedEventType.Publish, true);
+            await _epiApi.ImportUpdateCompletedAsync(channelName, ImportUpdateCompletedEventType.Publish, true);
         }
     }
 }

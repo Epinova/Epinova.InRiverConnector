@@ -14,12 +14,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             _entityService = entityService;
         }
 
+        public string GetAssociationKey(string entityCode, string parentCode, string associationName)
+        {
+            return $"{entityCode}_{parentCode}_{associationName}";
+        }
+
         public string GetEpiserverCode(int entityId)
         {
             if (entityId == 0)
                 return null;
 
-            var entity = _entityService.GetEntity(entityId, LoadLevel.DataOnly);
+            Entity entity = _entityService.GetEntity(entityId, LoadLevel.DataOnly);
             return GetEpiserverCode(entity);
         }
 
@@ -33,17 +38,22 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             if (entity.LoadLevel < LoadLevel.DataOnly)
                 entity = _entityService.GetEntity(entity.Id, LoadLevel.DataOnly);
 
-            var entityTypeId = entity.EntityType.Id;
-            
+            string entityTypeId = entity.EntityType.Id;
+
             if (_config.EpiCodeMapping.ContainsKey(entityTypeId))
             {
-                var mappedCodeFieldId = _config.EpiCodeMapping[entityTypeId];
-                var mappedCodeField = entity.Fields.FirstOrDefault(x => x.FieldType.Id == mappedCodeFieldId);
+                string mappedCodeFieldId = _config.EpiCodeMapping[entityTypeId];
+                Field mappedCodeField = entity.Fields.FirstOrDefault(x => x.FieldType.Id == mappedCodeFieldId);
                 if (mappedCodeField != null)
                     return GetPrefixedValue(mappedCodeField.Data);
             }
 
             return GetPrefixedValue(entity.Id);
+        }
+
+        public string GetPrefixedCode(string skuCode)
+        {
+            return GetPrefixedValue(skuCode);
         }
 
         public string GetRelationName(string skuId, string parentCode)
@@ -56,19 +66,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             return $"{_config.ChannelIdPrefix}_{entityId}_{parentEntityId}";
         }
 
-        public string GetPrefixedCode(string skuCode)
-        {
-            return GetPrefixedValue(skuCode);
-        }
-
         private string GetPrefixedValue(object data)
         {
             return $"{_config.ChannelIdPrefix}{data}";
-        }
-
-        public string GetAssociationKey(string entityCode, string parentCode, string associationName)
-        {
-            return $"{entityCode}_{parentCode}_{associationName}";
         }
     }
 }

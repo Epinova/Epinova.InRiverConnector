@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading;
 using System.Threading.Tasks;
 using Epinova.InRiverConnector.Interfaces;
 using inRiver.Integration.Logging;
@@ -67,8 +66,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 ex is HttpRequestException)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying agian..");
-                Thread.Sleep(15000);
-                await PostAsync<T>(url, message);
+                await Task.Delay(15000);
+                await PostAsync(url, message);
             }
         }
 
@@ -86,7 +85,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
                     while (parsedResponse == ImportStatus.IsImporting)
                     {
-                        Thread.Sleep(15000);
+                        await Task.Delay(15000);
                         parsedResponse = await Get(_isImportingAction);
                     }
 
@@ -104,7 +103,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                 ex is HttpRequestException)
             {
                 IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying again..");
-                Thread.Sleep(15000);
+                await Task.Delay(15000);
                 return await PostWithAsyncStatusCheck(url, message);
             }
 
