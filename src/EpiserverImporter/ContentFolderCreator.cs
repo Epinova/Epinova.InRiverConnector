@@ -17,8 +17,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public ContentReference CreateOrGetFolder(ContentReference parent, string folderName)
         {
-            var existingFolder = _contentRepo.GetChildren<ContentFolder>(parent)
-                                             .FirstOrDefault(x => x.Name == folderName);
+            ContentFolder existingFolder = _contentRepo.GetChildren<ContentFolder>(parent).FirstOrDefault(x => x.Name == folderName);
 
             if (existingFolder != null)
                 return existingFolder.ContentLink;

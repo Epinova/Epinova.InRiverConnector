@@ -10,8 +10,8 @@
 
         public static ImportStatusContainer Instance => _instance ?? (_instance = new ImportStatusContainer());
 
-        public string Message { get; set; }
-
         public bool IsImporting { get; set; }
+
+        public string Message { get; set; }
     }
 }

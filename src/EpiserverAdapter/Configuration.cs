@@ -293,7 +293,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
         }
 
-        public int EpiRestTimeout => int.Parse(_settings[ConfigKeys.EpiTimeout]);
+        public int EpiRestTimeout => Int32.Parse(_settings[ConfigKeys.EpiTimeout]);
 
         public List<EntityType> ExportEnabledEntityTypes
         {

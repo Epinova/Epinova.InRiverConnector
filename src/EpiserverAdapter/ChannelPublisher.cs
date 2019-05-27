@@ -168,8 +168,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 for (var i = 0; i < parentIds.Count - 1; i++)
                 {
-                    int entityId = int.Parse(parentIds[i]);
-                    int parentId = int.Parse(parentIds[i + 1]);
+                    int entityId = Int32.Parse(parentIds[i]);
+                    int parentId = Int32.Parse(parentIds[i + 1]);
 
                     structureEntities.AddRange(RemoteManager.ChannelService.GetAllStructureEntitiesForEntityWithParentInChannel(channel.Id, entityId, parentId));
                 }

@@ -18,7 +18,7 @@ namespace EpiserverRestApi
         {
             authenticate();
 
-            int channelId = int.Parse(ConfigurationManager.AppSettings["channelId"]);
+            int channelId = Int32.Parse(ConfigurationManager.AppSettings["channelId"]);
             Entity node = RemoteManager.ChannelService.GetEntitiesForChannelAndEntityType(channelId, "ChannelNode")
                 .FirstOrDefault(x => x.DisplayName.Data.ToString().Equals(nodeName, StringComparison.InvariantCultureIgnoreCase));
             if (node == null)

@@ -6,9 +6,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter.ResourceModels
 {
     public interface IInRiverResource : IContentData
     {
-        int ResourceFileId { get; set; }
-        
         int EntityId { get; set; }
+
+        int ResourceFileId { get; set; }
 
         void HandleMetaData(List<ResourceMetaField> metaFields);
     }

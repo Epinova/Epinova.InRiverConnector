@@ -371,7 +371,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                         {
                             string oldSortOrder = sortOrderElement.Value;
                             sortOrderElement.Value = linkIndex.ToString(CultureInfo.InvariantCulture);
-                            linkIndex = int.Parse(oldSortOrder);
+                            linkIndex = Int32.Parse(oldSortOrder);
                         }
                     }
 

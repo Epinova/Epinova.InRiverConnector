@@ -20,8 +20,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             if (!ValidateApiKey(controllerContext.Request))
             {
-                HttpResponseMessage resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
-                TaskCompletionSource<HttpResponseMessage> tsc = new TaskCompletionSource<HttpResponseMessage>();
+                var resp = new HttpResponseMessage(HttpStatusCode.Forbidden);
+                var tsc = new TaskCompletionSource<HttpResponseMessage>();
                 tsc.SetResult(resp);
                 return tsc.Task;
             }
