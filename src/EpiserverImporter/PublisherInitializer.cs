@@ -12,20 +12,16 @@ namespace Epinova.InRiverConnector.EpiserverImporter
     {
         public void ConfigureContainer(ServiceConfigurationContext context)
         {
-            context.StructureMap().Configure(x =>
-            {
-                x.For<ICatalogImporter>().Use<CatalogImporter>();
-                x.For<ICatalogService>().Use<CatalogService>();
-            });
+            context.Services.AddTransient<ICatalogImporter, CatalogImporter>();
+            context.Services.AddTransient<ICatalogService, CatalogService>();
         }
 
         /// <summary>
-        /// Initializate the inRiver Web API.
+        /// Initialize the inRiver Web API.
         /// </summary>
         /// <remarks>
         /// This method is called once after CMS has been initialized
         /// </remarks>
-        /// <param name="context"></param>
         public void Initialize(InitializationEngine context)
         {
             HttpConfiguration config = GlobalConfiguration.Configuration;
