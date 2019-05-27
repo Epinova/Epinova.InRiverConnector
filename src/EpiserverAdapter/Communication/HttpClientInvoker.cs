@@ -68,7 +68,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             {
                 IntegrationLogger.Write(LogLevel.Error, "Unable to connect to episerver, trying agian..");
                 Thread.Sleep(15000);
-                await PostAsync<T>(url, message);
+                await PostAsync(url, message);
             }
         }
 

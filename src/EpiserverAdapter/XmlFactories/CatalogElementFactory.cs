@@ -139,7 +139,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("EndDate", _pimFieldAdapter.GetEndDate(entity)),
                 new XElement("IsActive", true.ToString()),
                 new XElement("SortOrder", sortOrder),
-                new XElement("DisplayTemplate", string.Empty),
+                new XElement("DisplayTemplate", String.Empty),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
                 new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
                 new XElement("MetaData",
@@ -165,21 +165,21 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 var keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
                 var urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
 
-                if (string.IsNullOrEmpty(uri) &&
-                    string.IsNullOrEmpty(title) &&
-                    string.IsNullOrEmpty(description) &&
-                    string.IsNullOrEmpty(keywords) &&
-                    string.IsNullOrEmpty(urisegment))
+                if (String.IsNullOrEmpty(uri) &&
+                    String.IsNullOrEmpty(title) &&
+                    String.IsNullOrEmpty(description) &&
+                    String.IsNullOrEmpty(keywords) &&
+                    String.IsNullOrEmpty(urisegment))
                     continue;
 
                 seoInfo.Add(
                     new XElement("Seo",
                         new XElement("LanguageCode", culturePair.Key.Name.ToLower()),
-                        string.IsNullOrEmpty(uri) ? null : new XElement("Uri", uri),
-                        string.IsNullOrEmpty(title) ? null : new XElement("Title", title),
-                        string.IsNullOrEmpty(description) ? null : new XElement("Description", description),
-                        string.IsNullOrEmpty(keywords) ? null : new XElement("Keywords", keywords),
-                        string.IsNullOrEmpty(urisegment) ? null : new XElement("UriSegment", urisegment)));
+                        String.IsNullOrEmpty(uri) ? null : new XElement("Uri", uri),
+                        String.IsNullOrEmpty(title) ? null : new XElement("Title", title),
+                        String.IsNullOrEmpty(description) ? null : new XElement("Description", description),
+                        String.IsNullOrEmpty(keywords) ? null : new XElement("Keywords", keywords),
+                        String.IsNullOrEmpty(urisegment) ? null : new XElement("UriSegment", urisegment)));
             }
             return seoInfo;
         }
@@ -195,7 +195,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("StartDate", _pimFieldAdapter.GetStartDate(entity)),
                 new XElement("EndDate", _pimFieldAdapter.GetEndDate(entity)),
                 new XElement("IsActive", "True"),
-                new XElement("DisplayTemplate", string.Empty),
+                new XElement("DisplayTemplate", String.Empty),
                 new XElement("Code", _catalogCodeGenerator.GetEpiserverCode(entity)),
                 new XElement("EntryType", _mappingHelper.GetEntryType(entity.EntityType.Id)),
                 new XElement("Guid", GetChannelEntityGuid(_config.ChannelId, entity.Id)),
@@ -237,7 +237,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                             metaField.Add(
                                 new XElement("Data",
                                     new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                    new XAttribute("value", ls[culturePair.Value] ?? string.Empty)));
+                                    new XAttribute("value", ls[culturePair.Value] ?? String.Empty)));
                         }
                     }
                 }
@@ -245,7 +245,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 {
                     foreach (var culturePair in _config.LanguageMapping)
                     {
-                        metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", string.Empty)));
+                        metaField.Add(new XElement("Data", new XAttribute("language", culturePair.Key.Name.ToLower()), new XAttribute("value", String.Empty)));
                     }
                 }
             }
@@ -304,7 +304,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             string relationType = "ProductVariation";
 
-            if (!string.IsNullOrEmpty(parentEntityType))
+            if (!String.IsNullOrEmpty(parentEntityType))
             {
                 var sourceType = _mappingHelper.GetEntryType(parentEntityType);
                 switch (sourceType)
@@ -511,7 +511,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             foreach (XElement sku in skuElement.Elements())
             {
                 string skuId = sku.Attribute("id").Value;
-                if (string.IsNullOrEmpty(skuId))
+                if (String.IsNullOrEmpty(skuId))
                 {
                     IntegrationLogger.Write(LogLevel.Information, $"Could not find the id for the SKU data for item: {item.Id}");
                     continue;
@@ -521,7 +521,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 XElement nameElement = sku.Element("Name");
                 if (nameElement != null)
                 {
-                    string name = (!string.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
+                    string name = (!String.IsNullOrEmpty(nameElement.Value)) ? nameElement.Value : skuId;
                     XElement itemElementName = itemElement.Element("Name");
                     if (itemElementName != null)
                     {
@@ -613,7 +613,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     new XElement("Type", "LongHtmlString"),
                     new XElement("Data",
                         new XAttribute("language", _config.ChannelDefaultLanguage.Name.ToLower()),
-                        new XAttribute("value", string.Empty)));
+                        new XAttribute("value", String.Empty)));
             }
 
             var element = GetMetaFieldValueElement(displayField);
@@ -667,7 +667,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         private string GetMetaClassForEntity(Entity entity)
         {
-            if (!string.IsNullOrEmpty(entity.FieldSetId) && entity.EntityType.FieldSets.Any(fs => fs.Id == entity.FieldSetId))
+            if (!String.IsNullOrEmpty(entity.FieldSetId) && entity.EntityType.FieldSets.Any(fs => fs.Id == entity.FieldSetId))
             {
                 return entity.EntityType.Id + "_" + entity.FieldSetId;
             }

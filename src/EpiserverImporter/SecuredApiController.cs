@@ -31,7 +31,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         protected virtual bool ValidateApiKey(HttpRequestMessage request)
         {
-            if (string.IsNullOrEmpty(ApiKeyValue))
+            if (String.IsNullOrEmpty(ApiKeyValue))
                 return false;
 
             return request.Headers.GetValues(ApiKeyName).FirstOrDefault() == ApiKeyValue;

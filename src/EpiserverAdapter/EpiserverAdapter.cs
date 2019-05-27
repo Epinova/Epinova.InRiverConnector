@@ -55,7 +55,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 _epiMappingHelper = new EpiMappingHelper(_config, _pimFieldAdapter);
                 _entityService = new EntityService(_config, _epiMappingHelper);
                 _catalogCodeGenerator = new CatalogCodeGenerator(_config, _entityService);
-                _epiApi = new EpiApi(_config, _catalogCodeGenerator, _pimFieldAdapter);
+                _epiApi = new EpiApi(_config, _catalogCodeGenerator);
                 _catalogElementFactory = new CatalogElementFactory(_config, _epiMappingHelper, _catalogCodeGenerator, _pimFieldAdapter);
                 _channelHelper = new ChannelHelper(_config, _entityService);
                 _catalogDocumentFactory = new CatalogDocumentFactory(_config, _epiApi, _catalogElementFactory, _epiMappingHelper, _channelHelper, _catalogCodeGenerator, _entityService);
@@ -120,20 +120,20 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.LanguageMapping, ConfigDefaults.LanguageMapping);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ItemToSkus, ConfigDefaults.ItemToSkus);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.CvlData, ConfigDefaults.CvlData);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.BundleTypes, string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.PackageTypes, string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.DynamicPackageTypes, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.BundleTypes, String.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.PackageTypes, String.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.DynamicPackageTypes, String.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ChannelId, "123");
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiCodeFields, string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExcludeFields, string.Empty);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiNameFields, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiCodeFields, String.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExcludeFields, String.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiNameFields, String.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.UseThreeLevelsInCommerce, ConfigDefaults.UseThreeLevelsinCommerce);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.HttpPostUrl, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.HttpPostUrl, String.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiEndpoint, ConfigDefaults.EpiEndpoint);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiApiKey, ConfigDefaults.EpiApiKey);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.EpiTimeout, ConfigDefaults.EpiTimeout);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ExportEntities, ConfigDefaults.ExportEntities);
-            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.BatchSize, string.Empty);
+            ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.BatchSize, String.Empty);
             ConfigurationManager.Instance.SetConnectorSetting(Id, ConfigKeys.ForceIncludeLinkedContent, ConfigDefaults.ForceIncludeLinkedContent);
         }
 

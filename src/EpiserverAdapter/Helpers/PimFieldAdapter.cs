@@ -121,7 +121,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             else if (displayNameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
                 var ls = (LocaleString) displayNameField.Data;
-                if (string.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
+                if (String.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
                     returnString = string.Format("[{0}]", entity.Id);
                 }
@@ -165,7 +165,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (field == null || field.IsEmpty())
             {
-                return string.Empty;
+                return String.Empty;
             }
 
             if (field.FieldType.DataType.Equals(DataType.LocaleString))
@@ -180,7 +180,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         {
             if (field == null || field.IsEmpty())
             {
-                return string.Empty;
+                return String.Empty;
             }
 
             string dataType = field.FieldType.DataType;
@@ -207,7 +207,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return field.Data.ToString();
             }
 
-            return string.Empty;
+            return String.Empty;
         }
 
         public string GetStartDate(Entity entity)

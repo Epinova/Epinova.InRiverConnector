@@ -383,7 +383,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private async Task<bool> HandleResourceUpdateAsync(Entity updatedEntity, string folderDateTime)
         {
-            var resourceIncluded = false;
             XDocument resourceDocument = _resourceElementFactory.HandleResourceUpdate(updatedEntity, folderDateTime);
             string resourcesBasePath = Path.Combine(_config.ResourcesRootPath, folderDateTime);
             _documentFileHelper.SaveDocument(resourceDocument, resourcesBasePath);
@@ -396,9 +395,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             await _epiApi.ImportResourcesAsync(resourceXmlPath, baseFilePath);
 
             await _epiApi.NotifyEpiserverPostImportAsync(resourceXmlPath);
-            resourceIncluded = true;
 
-            return resourceIncluded;
+            return true;
         }
 
         private async Task<bool> HandleSkuUpdateAsync(int entityId,
@@ -413,13 +411,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             Field previousField = fieldHistory.FirstOrDefault(f => f.Revision == currentField.Revision - 1);
 
-            string oldXml = string.Empty;
+            string oldXml = String.Empty;
             if (previousField != null && previousField.Data != null)
             {
                 oldXml = (string) previousField.Data;
             }
 
-            string newXml = string.Empty;
+            string newXml = String.Empty;
             if (currentField.Data != null)
             {
                 newXml = (string) currentField.Data;

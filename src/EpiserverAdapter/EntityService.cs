@@ -97,7 +97,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             }
 
 
-            string path = string.Empty;
+            string path = String.Empty;
 
             if (targetStructureEntity != null)
             {
@@ -110,7 +110,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         public List<StructureEntity> GetChildrenEntitiesInChannel(int entityId, string path)
         {
             var result = new List<StructureEntity>();
-            if (!string.IsNullOrEmpty(path))
+            if (!String.IsNullOrEmpty(path))
             {
                 var response = RemoteManager.ChannelService.GetChannelStructureChildrenFromPath(entityId, path);
                 if (response.Any())

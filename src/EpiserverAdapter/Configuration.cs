@@ -171,7 +171,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 
                 var value = _settings[ConfigKeys.EpiNameFields];
 
-                if (string.IsNullOrEmpty(value))
+                if (String.IsNullOrEmpty(value))
                     return _epiNameMapping;
 
                 List<FieldType> fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
@@ -180,7 +180,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 foreach (var val in values)
                 {
-                    if (string.IsNullOrEmpty(val))
+                    if (String.IsNullOrEmpty(val))
                         continue;
 
                     var fieldType = fieldTypes.FirstOrDefault(fT => fT.Id.Equals(val, StringComparison.InvariantCultureIgnoreCase));
@@ -223,7 +223,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 var value = _settings[ConfigKeys.UseThreeLevelsInCommerce];
 
-                _useThreeLevelsInCommerce = !string.IsNullOrEmpty(value) && bool.Parse(value);
+                _useThreeLevelsInCommerce = !String.IsNullOrEmpty(value) && bool.Parse(value);
 
                 return (bool)_useThreeLevelsInCommerce;
             }
@@ -239,7 +239,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (string.IsNullOrEmpty(_channelDefaultCurrency))
+                if (String.IsNullOrEmpty(_channelDefaultCurrency))
                 {
                     _channelDefaultCurrency = "USD";
                 }
@@ -266,7 +266,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 var rawValue = _settings[ConfigKeys.EpiCodeFields];
 
-                if (string.IsNullOrEmpty(rawValue))
+                if (String.IsNullOrEmpty(rawValue))
                     return _epiCodeMapping;
 
                 var fieldTypes = RemoteManager.ModelService.GetAllFieldTypes();
@@ -292,7 +292,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         {
             get
             {
-                if (string.IsNullOrEmpty(_channelWeightBase))
+                if (String.IsNullOrEmpty(_channelWeightBase))
                 {
                     _channelWeightBase = "kg";
                 }
@@ -302,7 +302,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             set => _channelWeightBase = value;
         }
 
-        public string ChannelIdPrefix { get; set; } = string.Empty;
+        public string ChannelIdPrefix { get; set; } = String.Empty;
 
         public string[] ResourceConfigurations
         {
@@ -386,7 +386,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 var value = _settings[ConfigKeys.BatchSize];
 
-                if (!int.TryParse(value, out _batchsize) || value == "0")
+                if (!Int32.TryParse(value, out _batchsize) || value == "0")
                 {
                     _batchsize = int.MaxValue;
                 }
@@ -408,7 +408,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                     return _excludedFields;
                 }
 
-                if (!_settings.ContainsKey(ConfigKeys.ExcludeFields) || string.IsNullOrEmpty(_settings[ConfigKeys.ExcludeFields]))
+                if (!_settings.ContainsKey(ConfigKeys.ExcludeFields) || String.IsNullOrEmpty(_settings[ConfigKeys.ExcludeFields]))
                 {
                     HashSet<string> excludedFieldTypes = new HashSet<string>();
                     foreach (string baseField in _epiFieldsIninRiver)
@@ -461,10 +461,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
             var setting = _settings[settingKey];
 
-            if (string.IsNullOrEmpty(setting))
+            if (String.IsNullOrEmpty(setting))
                 return new string[0];
 
-            setting = setting.Replace(" ", string.Empty);
+            setting = setting.Replace(" ", String.Empty);
             return setting.Split(',');
         }
 
@@ -483,12 +483,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
         private Dictionary<string, string> ParseResourceConfig(string setting)
         {
             Dictionary<string, string> settingsDictionary = new Dictionary<string, string>();
-            if (string.IsNullOrEmpty(setting))
+            if (String.IsNullOrEmpty(setting))
             {
                 return settingsDictionary;
             }
 
-            setting = setting.Replace(" ", string.Empty);
+            setting = setting.Replace(" ", String.Empty);
 
             var resouceConfs = setting.Split(',');
             
@@ -502,7 +502,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 }
                 else
                 {
-                    settingsDictionary.Add(resouceConf, string.Empty);
+                    settingsDictionary.Add(resouceConf, String.Empty);
                 }
             }
 

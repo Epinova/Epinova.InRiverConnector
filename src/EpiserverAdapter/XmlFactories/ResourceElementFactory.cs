@@ -262,13 +262,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 string fileType = Path.GetExtension(resourceFileNameField.Data.ToString());
                 if (displayConfiguration != Configuration.OriginalDisplayConfiguration)
                 {
-                    string extension = string.Empty;
+                    string extension = String.Empty;
                     if (_config.ResourceConfiugurationExtensions.ContainsKey(displayConfiguration))
                     {
                         extension = _config.ResourceConfiugurationExtensions[displayConfiguration];
                     }
                     
-                    if (string.IsNullOrEmpty(extension))
+                    if (String.IsNullOrEmpty(extension))
                     {
                         fileType = ".jpg";        
                     }
@@ -300,7 +300,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             var fileEnding = resource.GetField("ResourceFilename")?.Data?.ToString().Split('.').LastOrDefault();
 
-            if (string.IsNullOrWhiteSpace(fileEnding))
+            if (String.IsNullOrWhiteSpace(fileEnding))
                 return false;
 
             if (_isImageCache.ContainsKey(fileEnding))
@@ -320,7 +320,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         private string GetFolderName(string displayConfiguration, Entity resource)
         {
-            if (!string.IsNullOrEmpty(displayConfiguration) && IsImage(resource))
+            if (!String.IsNullOrEmpty(displayConfiguration) && IsImage(resource))
             {
                 return displayConfiguration;
             }

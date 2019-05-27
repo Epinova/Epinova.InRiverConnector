@@ -9,15 +9,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
 {
     public class EpiMappingHelperTests
     {
-        Mock<IConfiguration> _config;
-        EpiMappingHelper _epiMappingHelper;
-        Mock<IPimFieldAdapter> _pimFieldAdapter;
+        private readonly Mock<IConfiguration> _config;
+        private readonly EpiMappingHelper _epiMappingHelper;
 
         public EpiMappingHelperTests()
         {
             _config = new Mock<IConfiguration>();
-            _pimFieldAdapter = new Mock<IPimFieldAdapter>();
-            _epiMappingHelper = new EpiMappingHelper(_config.Object, _pimFieldAdapter.Object);
+            var pimFieldAdapter = new Mock<IPimFieldAdapter>();
+            _epiMappingHelper = new EpiMappingHelper(_config.Object, pimFieldAdapter.Object);
         }
 
         [Fact]
@@ -26,12 +25,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
             var linkTypeId = "ChannelNodeProduct";
             var linkTypes = new List<LinkType>
             {
-                new LinkType {Id = linkTypeId, SourceEntityTypeId = "ChannelNode"}
+                new LinkType { Id = linkTypeId, SourceEntityTypeId = "ChannelNode" }
             };
 
             _config.Setup(x => x.LinkTypes).Returns(linkTypes);
 
-            var result = _epiMappingHelper.IsChannelNodeLink(linkTypeId);
+            bool result = _epiMappingHelper.IsChannelNodeLink(linkTypeId);
             Assert.True(result);
         }
 
@@ -41,12 +40,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
             var linkTypeId = "ChannelNodeProduct";
             var linkTypes = new List<LinkType>
             {
-                new LinkType {Id = linkTypeId, SourceEntityTypeId = "Channel", TargetEntityTypeId = "ChannelNode"}
+                new LinkType { Id = linkTypeId, SourceEntityTypeId = "Channel", TargetEntityTypeId = "ChannelNode" }
             };
 
             _config.Setup(x => x.LinkTypes).Returns(linkTypes);
 
-            var result = _epiMappingHelper.IsChannelNodeLink(linkTypeId);
+            bool result = _epiMappingHelper.IsChannelNodeLink(linkTypeId);
             Assert.True(result);
         }
 
@@ -56,12 +55,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
             var linkTypeId = "ProductItems";
             var linkTypes = new List<LinkType>
             {
-                new LinkType {Id = linkTypeId, SourceEntityTypeId = "Product"}
+                new LinkType { Id = linkTypeId, SourceEntityTypeId = "Product" }
             };
 
             _config.Setup(x => x.LinkTypes).Returns(linkTypes);
 
-            var result = _epiMappingHelper.IsChannelNodeLink(linkTypeId);
+            bool result = _epiMappingHelper.IsChannelNodeLink(linkTypeId);
             Assert.False(result);
         }
     }

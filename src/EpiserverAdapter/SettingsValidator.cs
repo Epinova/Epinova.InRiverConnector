@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 
 namespace Epinova.InRiverConnector.EpiserverAdapter
@@ -33,7 +34,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ValidateEndpointAddress(_settings["EPI_ENDPOINT_URL"]);
 
             var timeoutString = _settings["EPI_RESTTIMEOUT"];
-            if (!SettingHasValue("EPI_RESTTIMEOUT") || !int.TryParse(timeoutString, out _))
+            if (!SettingHasValue("EPI_RESTTIMEOUT") || !Int32.TryParse(timeoutString, out _))
             {
                 throw new ConfigurationErrorsException("Missing or invalid EPI_RESTTIMEOUT. This should be a valid integer:" + timeoutString);
             }
@@ -41,12 +42,12 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
         private bool SettingHasValue(string settingKey)
         {
-            return _settings.ContainsKey(settingKey) && !string.IsNullOrWhiteSpace(_settings[settingKey]);
+            return _settings.ContainsKey(settingKey) && !String.IsNullOrWhiteSpace(_settings[settingKey]);
         }
 
         private void ValidateEndpointAddress(string address)
         {
-            if (string.IsNullOrEmpty(address))
+            if (String.IsNullOrEmpty(address))
             {
                 throw new ConfigurationErrorsException("Missing ImportEndPointAddress setting on connector. It should point to the import end point on the EPiServer Commerce web site. Please see the documentation.");
             }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.Interfaces;
 using Epinova.InRiverConnector.Interfaces.Enums;
 using inRiver.Integration.Logging;
@@ -23,7 +22,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
             Semaphore = new SemaphoreSlim(1, 1);
         }
 
-        public EpiApi(IConfiguration config, CatalogCodeGenerator catalogCodeGenerator, PimFieldAdapter pimFieldAdapter)
+        public EpiApi(IConfiguration config, CatalogCodeGenerator catalogCodeGenerator)
         {
             _config = config;
             _catalogCodeGenerator = catalogCodeGenerator;
@@ -161,7 +160,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
         internal async Task NotifyEpiserverPostImportAsync(string filepath)
         {
-            if (string.IsNullOrEmpty(_config.HttpPostUrl))
+            if (String.IsNullOrEmpty(_config.HttpPostUrl))
                 return;
 
             await ExecuteWithinLockAsync(

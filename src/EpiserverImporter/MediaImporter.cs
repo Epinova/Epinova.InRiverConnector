@@ -140,7 +140,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 {
                     foreach (var entryCode in resource.ParentEntries.EntryCode)
                     {
-                        if (string.IsNullOrEmpty(entryCode.Value))
+                        if (String.IsNullOrEmpty(entryCode.Value))
                             continue;
 
                         newRes.Codes.Add(entryCode.Value);
@@ -337,7 +337,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             MediaData editableMediaData = (MediaData)((MediaData)resource).CreateWritableClone();
 
             ResourceMetaField resourceFileId = updatedResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
-            if (resourceFileId != null && !string.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
+            if (resourceFileId != null && !String.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != int.Parse(resourceFileId.Values.First().Data))
             {
                 IBlobFactory blobFactory = ServiceLocator.Current.GetInstance<IBlobFactory>();
 
@@ -367,7 +367,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private MediaData CreateNewFile(InRiverImportResource inriverResource)
         {
             ResourceMetaField resourceFileId = inriverResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
-            if (string.IsNullOrEmpty(resourceFileId?.Values.FirstOrDefault()?.Data))
+            if (String.IsNullOrEmpty(resourceFileId?.Values.FirstOrDefault()?.Data))
             {
                 _logger.Debug($"ResourceFileId is null, won't do stuff.");
                 return null;

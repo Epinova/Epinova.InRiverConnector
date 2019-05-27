@@ -51,7 +51,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                     value = channel.DisplayName.Data.ToString();
                 }
 
-                if (string.IsNullOrEmpty(value))
+                if (String.IsNullOrEmpty(value))
                 {
                     value = channel.Id.ToString(CultureInfo.InvariantCulture);
                 }
@@ -93,7 +93,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             Field channelPrefixField = channel.Fields.FirstOrDefault(f => f.FieldType.Id.ToLower().Contains("channelprefix"));
             if (channelPrefixField == null || channelPrefixField.IsEmpty())
             {
-                return string.Empty;
+                return String.Empty;
             }
 
             return channelPrefixField.Data.ToString();

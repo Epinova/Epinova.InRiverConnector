@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using inRiver.Integration.Logging;
 using inRiver.Remoting;
@@ -75,9 +76,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public string GetEpiserverDataType(FieldType fieldType)
         {
-            string type = string.Empty;
+            string type = String.Empty;
 
-            if (fieldType == null || string.IsNullOrEmpty(fieldType.DataType))
+            if (fieldType == null || String.IsNullOrEmpty(fieldType.DataType))
             {
                 return type;
             }
@@ -181,7 +182,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (fieldType.Settings != null &&
                 fieldType.Settings.ContainsKey(FieldNames.EPiCommonField) &&
-                !string.IsNullOrEmpty(fieldType.Settings[FieldNames.EPiCommonField]))
+                !String.IsNullOrEmpty(fieldType.Settings[FieldNames.EPiCommonField]))
             {
                 name = fieldType.Settings[FieldNames.EPiCommonField];
             }
@@ -195,7 +196,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (fieldType.Settings.ContainsKey("MetaFieldLength"))
             {
-                if (!int.TryParse(fieldType.Settings["MetaFieldLength"], out defaultLength))
+                if (!Int32.TryParse(fieldType.Settings["MetaFieldLength"], out defaultLength))
                 {
                     return 150;
                 }
@@ -220,7 +221,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 nameField = GetField(entity, _config.EpiNameMapping[entity.EntityType.Id]);
             }
 
-            string returnString = string.Empty;
+            string returnString = String.Empty;
             if (nameField == null || nameField.IsEmpty())
             {
                 returnString = _pimFieldAdapter.GetDisplayName(entity, maxLength);
@@ -228,7 +229,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             else if (nameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
                 var ls = (LocaleString) nameField.Data;
-                if (!string.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
+                if (!String.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
                     returnString = ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]];
                 }
@@ -311,7 +312,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         private Field GetField(Entity entity, string fieldTypeId)
         {
-            if (string.IsNullOrEmpty(fieldTypeId))
+            if (String.IsNullOrEmpty(fieldTypeId))
                 return (Field) null;
 
             return entity.Fields.FirstOrDefault(f => f.FieldType?.Id.ToLower() == fieldTypeId.ToLower());
