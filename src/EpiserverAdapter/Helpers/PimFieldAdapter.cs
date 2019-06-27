@@ -84,8 +84,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
         public List<XElement> GetCVLValues(Field field)
         {
             var dataElements = new List<XElement>();
-            if (field == null || field.IsEmpty())
+            if (field == null)
+               return dataElements;
+
+            if (field.IsEmpty())
+            {
+                XElement dataElement = GetEmptyCvlDataElement(_config.ChannelDefaultLanguage);
+                dataElements.Add(dataElement);
                 return dataElements;
+            }
 
             CVL cvl = CVLs.FirstOrDefault(c => c.Id.Equals(field.FieldType.CVLId));
             if (cvl == null)
@@ -292,6 +299,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             var dataElement = new XElement("Data",
                 new XAttribute("language", language.Name.ToLower()),
                 new XAttribute("value", GetCvlFieldValue(field, language)));
+
+            return dataElement;
+        }
+
+        private XElement GetEmptyCvlDataElement(CultureInfo language)
+        {
+            var dataElement = new XElement("Data",
+                new XAttribute("language", language.Name.ToLower()),
+                new XAttribute("value", ""));
 
             return dataElement;
         }
