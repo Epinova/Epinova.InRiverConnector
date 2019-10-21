@@ -344,7 +344,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             CatalogNodeDto catalogNodeDto = CatalogContext.Current.GetCatalogNodeDto(nodeCode, new CatalogNodeResponseGroup(CatalogNodeResponseGroup.ResponseGroup.CatalogNodeFull));
 
             // Move node to new parent
-            _logger.Debug($"Move {nodeCode} to new parent ({newParent}).");
+            _logger.Information($"Move {nodeCode} to new parent ({newParent}).");
             catalogNodeDto.CatalogNode[0].ParentNodeId = newParent;
             CatalogContext.Current.SaveCatalogNode(catalogNodeDto);
         }
