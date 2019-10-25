@@ -23,15 +23,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntity_MappingsExist_NotValidForThisEntityType_ChannelPrefixExists_PrefixedEntityId()
         {
-            var mappedField = "ProductOtherField";
+            string mappedField = "ProductOtherField";
 
             var codeMapping = new Dictionary<string, string> { { "Product", mappedField } };
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var channelPrefix = "Prefix_";
+            string channelPrefix = "Prefix_";
             _config.Setup(x => x.ChannelIdPrefix).Returns(channelPrefix);
 
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField("ABC", mappedField));
 
@@ -42,7 +42,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntity_MappingsExist_NotValidForThisEntityType_EntityId()
         {
-            var mappedField = "ProductOtherField";
+            string mappedField = "ProductOtherField";
 
             var codeMapping = new Dictionary<string, string>
             {
@@ -51,7 +51,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
 
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField("ABC", mappedField));
 
@@ -62,10 +62,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntity_NoMappingsExist_ChannelPrefixExists_PrefixedEntityId()
         {
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
 
-            var channelPrefix = "Prefix_";
+            string channelPrefix = "Prefix_";
             _config.Setup(x => x.ChannelIdPrefix).Returns(channelPrefix);
 
             string result = _catalogCodeGenerator.GetEpiserverCode(entity);
@@ -75,7 +75,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntity_NoMappingsExist_EntityId()
         {
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
 
             string result = _catalogCodeGenerator.GetEpiserverCode(entity);
@@ -85,16 +85,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntity_ValidMappingsExist_ChannelPrefixExists_PrefixedOtherFieldValue()
         {
-            var mappedField = "ItemOtherField";
+            string mappedField = "ItemOtherField";
 
             var codeMapping = new Dictionary<string, string> { { "Item", mappedField } };
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var channelPrefix = "Prefix_";
+            string channelPrefix = "Prefix_";
             _config.Setup(x => x.ChannelIdPrefix).Returns(channelPrefix);
 
-            var id = 123;
-            var expectedCode = "ABC";
+            int id = 123;
+            string expectedCode = "ABC";
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField(expectedCode, mappedField));
 
@@ -105,7 +105,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntity_ValidMappingsExist_OtherFieldValue()
         {
-            var mappedField = "ItemOtherField";
+            string mappedField = "ItemOtherField";
 
             var codeMapping = new Dictionary<string, string>
             {
@@ -114,8 +114,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
 
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var id = 123;
-            var expectedCode = "ABC";
+            int id = 123;
+            string expectedCode = "ABC";
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField(expectedCode, mappedField));
 
@@ -133,15 +133,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntityId_MappingsExist_NotValidForThisEntityType_ChannelPrefixExists_PrefixedEntityId()
         {
-            var mappedField = "ProductOtherField";
+            string mappedField = "ProductOtherField";
 
             var codeMapping = new Dictionary<string, string> { { "Product", mappedField } };
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var channelPrefix = "Prefix_";
+            string channelPrefix = "Prefix_";
             _config.Setup(x => x.ChannelIdPrefix).Returns(channelPrefix);
 
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField("ABC", mappedField));
 
@@ -153,7 +153,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntityId_MappingsExist_NotValidForThisEntityType_EntityId()
         {
-            var mappedField = "ProductOtherField";
+            string mappedField = "ProductOtherField";
 
             var codeMapping = new Dictionary<string, string>
             {
@@ -162,7 +162,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
 
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField("ABC", mappedField));
 
@@ -174,10 +174,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntityId_NoMappingsExist_ChannelPrefixExists_PrefixedEntityId()
         {
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
 
-            var channelPrefix = "Prefix_";
+            string channelPrefix = "Prefix_";
             _config.Setup(x => x.ChannelIdPrefix).Returns(channelPrefix);
             _entityService.Setup(x => x.GetEntity(It.IsAny<int>(), It.IsAny<LoadLevel>())).Returns(entity);
 
@@ -188,7 +188,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntityId_NoMappingsExist_EntityId()
         {
-            var id = 123;
+            int id = 123;
             Entity entity = EntityFactory.CreateItem(id);
 
             _entityService.Setup(x => x.GetEntity(It.IsAny<int>(), It.IsAny<LoadLevel>())).Returns(entity);
@@ -200,16 +200,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntityId_ValidMappingsExist_ChannelPrefixExists_PrefixedOtherFieldValue()
         {
-            var mappedField = "ItemOtherField";
+            string mappedField = "ItemOtherField";
 
             var codeMapping = new Dictionary<string, string> { { "Item", mappedField } };
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var channelPrefix = "Prefix_";
+            string channelPrefix = "Prefix_";
             _config.Setup(x => x.ChannelIdPrefix).Returns(channelPrefix);
 
-            var id = 123;
-            var expectedCode = "ABC";
+            int id = 123;
+            string expectedCode = "ABC";
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField(expectedCode, mappedField));
 
@@ -221,7 +221,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         [Fact]
         public void GetEpiserverCodeWithEntityId_ValidMappingsExist_OtherFieldValue()
         {
-            var mappedField = "ItemOtherField";
+            string mappedField = "ItemOtherField";
 
             var codeMapping = new Dictionary<string, string>
             {
@@ -230,8 +230,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
 
             _config.Setup(x => x.EpiCodeMapping).Returns(codeMapping);
 
-            var id = 123;
-            var expectedCode = "ABC";
+            int id = 123;
+            string expectedCode = "ABC";
             Entity entity = EntityFactory.CreateItem(id);
             entity.Fields.Add(FieldFactory.CreateField(expectedCode, mappedField));
 

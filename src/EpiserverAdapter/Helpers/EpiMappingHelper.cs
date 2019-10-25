@@ -164,7 +164,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public int GetMetaFieldLength(FieldType fieldType)
         {
-            var defaultLength = 150;
+            int defaultLength = 150;
 
             if (fieldType.Settings.ContainsKey("MetaFieldLength"))
             {
@@ -200,7 +200,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else if (nameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                var ls = (LocaleString) nameField.Data;
+                var ls = (LocaleString)nameField.Data;
                 if (!String.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
                     returnString = ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]];

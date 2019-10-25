@@ -42,7 +42,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 if (channel.DisplayName.FieldType.DataType.Equals(DataType.LocaleString))
                 {
                     CultureInfo cultureInfo = _config.LanguageMapping[_config.ChannelDefaultLanguage];
-                    value = ((LocaleString) channel.DisplayName.Data)[cultureInfo];
+                    value = ((LocaleString)channel.DisplayName.Data)[cultureInfo];
                 }
                 else
                 {

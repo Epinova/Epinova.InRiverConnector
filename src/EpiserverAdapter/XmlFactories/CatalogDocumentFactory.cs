@@ -140,7 +140,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             _epiElementContainer = new CatalogElementContainer();
 
-            var totalLoaded = 0;
+            int totalLoaded = 0;
             int batchSize = _config.BatchSize;
 
             do
@@ -268,7 +268,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             Entity source = _entityService.GetEntity(structureEntity.ParentId, LoadLevel.DataOnly);
 
             List<string> skuCodes = _catalogElementFactory.SkuItemIds(source);
-            for (var i = 0; i < skuCodes.Count; i++)
+            for (int i = 0; i < skuCodes.Count; i++)
             {
                 skuCodes[i] = _catalogCodeGenerator.GetPrefixedCode(skuCodes[i]);
             }
@@ -473,7 +473,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             if (structureEntity.IsItem() && _config.ItemsToSkus)
             {
                 skus = _catalogElementFactory.SkuItemIds(entity);
-                for (var i = 0; i < skus.Count; i++)
+                for (int i = 0; i < skus.Count; i++)
                 {
                     skus[i] = _catalogCodeGenerator.GetPrefixedCode(skus[i]);
                 }
@@ -551,7 +551,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         private XElement GetUpdatedNode(Entity channelEntity, Entity updatedEntity)
         {
             Link nodeLink = updatedEntity.Links.Find(l => l.Source.Id == channelEntity.Id);
-            var sortOrder = 0;
+            int sortOrder = 0;
             if (nodeLink != null)
             {
                 sortOrder = nodeLink.Index;

@@ -113,7 +113,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 return connectorEvent;
 
             string folderDateTime = DateTime.Now.ToString(Constants.PublicationFolderNameTimeComponent);
-            var resourceIncluded = false;
+            bool resourceIncluded = false;
             List<StructureEntity> structureEntities = _entityService.GetStructureEntitiesForEntityInChannel(_config.ChannelId, entityId);
 
             if (updatedEntity.EntityType.Id.Equals("Resource"))
@@ -166,7 +166,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
                 parentIds.Reverse();
                 parentIds.RemoveAt(0);
 
-                for (var i = 0; i < parentIds.Count - 1; i++)
+                for (int i = 0; i < parentIds.Count - 1; i++)
                 {
                     int entityId = Int32.Parse(parentIds[i]);
                     int parentId = Int32.Parse(parentIds[i + 1]);
@@ -404,7 +404,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             ConnectorEvent connectorEvent,
             List<StructureEntity> structureEntities)
         {
-            var resourceIncluded = false;
+            bool resourceIncluded = false;
             Field currentField = RemoteManager.DataService.GetField(entityId, "SKUs");
 
             List<Field> fieldHistory = RemoteManager.DataService.GetFieldHistory(entityId, "SKUs");
@@ -414,13 +414,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             string oldXml = String.Empty;
             if (previousField?.Data != null)
             {
-                oldXml = (string) previousField.Data;
+                oldXml = (string)previousField.Data;
             }
 
             string newXml = String.Empty;
             if (currentField.Data != null)
             {
-                newXml = (string) currentField.Data;
+                newXml = (string)currentField.Data;
             }
 
             PimFieldAdapter.CompareAndParseSkuXmls(oldXml, newXml, out List<XElement> skusToAdd, out List<XElement> skusToDelete);

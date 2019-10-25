@@ -42,7 +42,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
         public string FieldIsUseInCompare(FieldType fieldType)
         {
-            var value = "False";
+            string value = "False";
 
             if (fieldType.Settings.ContainsKey("UseInComparing"))
             {
@@ -120,7 +120,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             }
             else if (displayNameField.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                var ls = (LocaleString) displayNameField.Data;
+                var ls = (LocaleString)displayNameField.Data;
                 if (String.IsNullOrEmpty(ls[_config.LanguageMapping[_config.ChannelDefaultLanguage]]))
                 {
                     returnString = $"[{entity.Id}]";
@@ -156,7 +156,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return DateTime.UtcNow.AddYears(100).ToString("u");
             }
 
-            return ((DateTime) endDateField.Data).ToUniversalTime().ToString("u");
+            return ((DateTime)endDateField.Data).ToUniversalTime().ToString("u");
         }
 
         public string GetFieldValue(Entity entity, string fieldName, CultureInfo ci)
@@ -170,7 +170,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (field.FieldType.DataType.Equals(DataType.LocaleString))
             {
-                return _config.ChannelIdPrefix + ((LocaleString) field.Data)[ci];
+                return _config.ChannelIdPrefix + ((LocaleString)field.Data)[ci];
             }
 
             return field.Data.ToString();
@@ -186,17 +186,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
             string dataType = field.FieldType.DataType;
             if (dataType == DataType.Boolean)
             {
-                return ((bool) field.Data).ToString();
+                return ((bool)field.Data).ToString();
             }
 
             if (dataType == DataType.DateTime)
             {
-                return ((DateTime) field.Data).ToString("O");
+                return ((DateTime)field.Data).ToString("O");
             }
 
             if (dataType == DataType.Double)
             {
-                return ((double) field.Data).ToString(CultureInfo.InvariantCulture);
+                return ((double)field.Data).ToString(CultureInfo.InvariantCulture);
             }
 
             if (dataType == DataType.File ||
@@ -219,7 +219,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
                 return DateTime.UtcNow.AddMinutes(-5).ToString("u");
             }
 
-            return ((DateTime) startDateField.Data).ToUniversalTime().ToString("u");
+            return ((DateTime)startDateField.Data).ToUniversalTime().ToString("u");
         }
 
         public string GetSingleCvlValue(string key, CultureInfo language, List<CVLValue> currentCvlValues, CVL cvl)
@@ -232,7 +232,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             if (cvl.DataType.Equals(DataType.LocaleString))
             {
-                var ls = (LocaleString) cvlValue.Value;
+                var ls = (LocaleString)cvlValue.Value;
 
                 if (!ls.ContainsCulture(language))
                     return null;
@@ -261,7 +261,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 
             foreach (XElement elem in oldSkus)
             {
-                var idValue = elem.Attribute("id")?.Value;
+                string idValue = elem.Attribute("id")?.Value;
                 if (newSkus.Exists(e => e.Attribute("id")?.Value == idValue))
                 {
                     if (!removables.Exists(y => y == idValue))

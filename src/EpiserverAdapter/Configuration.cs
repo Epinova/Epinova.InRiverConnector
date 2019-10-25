@@ -435,7 +435,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
             get
             {
                 if (_useThreeLevelsInCommerce != null)
-                    return (bool) _useThreeLevelsInCommerce;
+                    return (bool)_useThreeLevelsInCommerce;
 
                 if (!_settings.ContainsKey(ConfigKeys.UseThreeLevelsInCommerce))
                 {
@@ -447,7 +447,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 
                 _useThreeLevelsInCommerce = !String.IsNullOrEmpty(value) && bool.Parse(value);
 
-                return (bool) _useThreeLevelsInCommerce;
+                return (bool)_useThreeLevelsInCommerce;
             }
         }
 

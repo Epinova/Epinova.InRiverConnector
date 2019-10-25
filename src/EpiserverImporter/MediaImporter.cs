@@ -115,7 +115,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     }
                 }
 
-                var errors = 0;
+                int errors = 0;
 
                 // TODO: Degree of parallelism should be configurable, default to 2.
                 Parallel.ForEach(resources, new ParallelOptions { MaxDegreeOfParallelism = _config.DegreesOfParallelism }, resource =>
@@ -177,10 +177,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
                 IAssetContainer writableContent = null;
                 if (_contentRepository.TryGet(contentReference, out EntryContentBase entry))
-                    writableContent = (EntryContentBase) entry.CreateWritableClone();
+                    writableContent = (EntryContentBase)entry.CreateWritableClone();
 
                 if (_contentRepository.TryGet(contentReference, out NodeContent node))
-                    writableContent = (NodeContent) node.CreateWritableClone();
+                    writableContent = (NodeContent)node.CreateWritableClone();
 
                 if (writableContent == null)
                 {
@@ -205,7 +205,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     writableContent.CommerceMediaCollection.Add(media);
                 }
 
-                _contentRepository.Save((IContent) writableContent, SaveAction.Publish, AccessLevel.NoAccess);
+                _contentRepository.Save((IContent)writableContent, SaveAction.Publish, AccessLevel.NoAccess);
             }
         }
 
@@ -308,7 +308,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 return;
 
             writableContent.CommerceMediaCollection.Remove(mediaToRemove);
-            _contentRepository.Save((IContent) writableContent, SaveAction.Publish, AccessLevel.NoAccess);
+            _contentRepository.Save((IContent)writableContent, SaveAction.Publish, AccessLevel.NoAccess);
         }
 
         private List<InRiverImportResource> DeserializeRequest(ImportResourcesRequest request)
@@ -319,7 +319,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             Resources resources;
             using (XmlReader reader = XmlReader.Create(request.ResourceXmlPath))
             {
-                resources = (Resources) serializer.Deserialize(reader);
+                resources = (Resources)serializer.Deserialize(reader);
             }
 
             var resourcesForImport = new List<InRiverImportResource>();
@@ -467,7 +467,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 _logger.Debug($"Found existing resource with Resource ID: {inriverResource.ResourceId}");
 
                 // ReSharper disable once SuspiciousTypeConversion.Global
-                UpdateMetaData((IInRiverResource) existingMediaData, inriverResource);
+                UpdateMetaData((IInRiverResource)existingMediaData, inriverResource);
 
                 if (inriverResource.Action == ImporterActions.Added)
                 {
@@ -505,7 +505,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private void UpdateMetaData(IInRiverResource resource, InRiverImportResource updatedResource)
         {
             // ReSharper disable once SuspiciousTypeConversion.Global
-            var editableMediaData = (MediaData) ((MediaData) resource).CreateWritableClone();
+            var editableMediaData = (MediaData)((MediaData)resource).CreateWritableClone();
 
             ResourceMetaField resourceFileId = updatedResource.MetaFields.FirstOrDefault(m => m.Id == "ResourceFileId");
             if (resourceFileId != null && !String.IsNullOrEmpty(resourceFileId.Values.First().Data) && resource.ResourceFileId != Int32.Parse(resourceFileId.Values.First().Data))
@@ -531,7 +531,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             }
 
             // ReSharper disable once SuspiciousTypeConversion.Global
-            ((IInRiverResource) editableMediaData).HandleMetaData(updatedResource.MetaFields);
+            ((IInRiverResource)editableMediaData).HandleMetaData(updatedResource.MetaFields);
 
             _contentRepository.Save(editableMediaData, SaveAction.Publish, AccessLevel.NoAccess);
         }

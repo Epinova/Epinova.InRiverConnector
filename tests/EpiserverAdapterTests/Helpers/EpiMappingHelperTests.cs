@@ -22,7 +22,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
         [Fact]
         public void IsChannelNodeLink_SourceTypeIsChannelNode_True()
         {
-            var linkTypeId = "ChannelNodeProduct";
+            string linkTypeId = "ChannelNodeProduct";
             var linkTypes = new List<LinkType>
             {
                 new LinkType { Id = linkTypeId, SourceEntityTypeId = "ChannelNode" }
@@ -37,7 +37,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
         [Fact]
         public void IsChannelNodeLink_SourceTypeIsChannelTargetIsChannelNode_True()
         {
-            var linkTypeId = "ChannelNodeProduct";
+            string linkTypeId = "ChannelNodeProduct";
             var linkTypes = new List<LinkType>
             {
                 new LinkType { Id = linkTypeId, SourceEntityTypeId = "Channel", TargetEntityTypeId = "ChannelNode" }
@@ -52,7 +52,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Helpers
         [Fact]
         public void IsChannelNodeLink_SourceTypeIsNotChannelNode_False()
         {
-            var linkTypeId = "ProductItems";
+            string linkTypeId = "ProductItems";
             var linkTypes = new List<LinkType>
             {
                 new LinkType { Id = linkTypeId, SourceEntityTypeId = "Product" }

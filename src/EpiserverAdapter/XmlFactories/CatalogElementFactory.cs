@@ -73,7 +73,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         public XElement CreateEntryRelationElement(string parentCode, string parentEntityType, string childCode, int sortOrder)
         {
-            var relationType = "ProductVariation";
+            string relationType = "ProductVariation";
 
             if (!String.IsNullOrEmpty(parentEntityType))
             {
@@ -349,7 +349,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             XElement diaplyNameElement = CreateEpiserverLongStringField("DisplayName");
             XElement displayDescriptionElement = CreateEpiserverLongStringField("DisplayDescription");
             XElement specification = CreateEpiserverLongHtmlField("SpecificationField");
-            var addSpec = false;
+            bool addSpec = false;
 
             foreach (EntityType entityType in _config.ExportEnabledEntityTypes)
             {

@@ -280,7 +280,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 return -1;
             }
 
-            return (int) resourceFileIdField.Data;
+            return (int)resourceFileIdField.Data;
         }
 
         private string GetResourceFileName(Entity resource, int resourceFileId, string displayConfiguration)

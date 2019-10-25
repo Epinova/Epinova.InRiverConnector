@@ -95,7 +95,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
                     return parsedResponse;
                 }
 
-                string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
+                string errorMsg = $"Import failed: {(int)response.StatusCode} ({response.ReasonPhrase})";
                 IntegrationLogger.Write(LogLevel.Error, errorMsg);
             }
             catch (Exception ex) when (
@@ -119,7 +119,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Communication
 
             if (response.IsSuccessStatusCode)
                 return response.Content.ReadAsAsync<List<string>>().Result;
-            string errorMsg = $"Import failed: {(int) response.StatusCode} ({response.ReasonPhrase})";
+            string errorMsg = $"Import failed: {(int)response.StatusCode} ({response.ReasonPhrase})";
             IntegrationLogger.Write(LogLevel.Error, errorMsg);
             throw new HttpRequestException(errorMsg);
         }
