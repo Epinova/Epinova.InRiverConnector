@@ -11,6 +11,8 @@ using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
 
+// ReSharper disable IdentifierTypo
+
 namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 {
     public class CatalogDocumentFactory
@@ -159,6 +161,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return _epiElementContainer;
         }
 
+        private static bool IsSpecificationLink(Link link)
+        {
+            return link.Target.EntityType.Id == "Specification";
+        }
+
         private void AddAssociationElements(LinkType linkType, StructureEntity structureEntity, string itemCode)
         {
             IntegrationLogger.Write(LogLevel.Debug, "AddAssociationElements");
@@ -190,9 +197,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 $"Added Relation for Source {structureEntity.ParentId} and Target {structureEntity.EntityId} for LinkTypeId {linkType.Id}");
         }
 
-        private void AddEntryElements(List<StructureEntity> batch)
+        private void AddEntryElements(IEnumerable<StructureEntity> batch)
         {
-            foreach (StructureEntity structureEntity in batch.Where(x => x.EntityId != _config.ChannelId && !x.IsChannelNode()))
+            foreach (StructureEntity structureEntity in batch
+                .Where(x => x.EntityId != _config.ChannelId && !x.IsChannelNode()))
             {
                 Entity entity = _entityService.GetEntity(structureEntity.EntityId, LoadLevel.DataAndLinks);
 
@@ -202,17 +210,16 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     foreach (XElement sku in skus)
                     {
                         XElement codeElement = sku.Element("Code");
-                        if (codeElement != null && !_epiElementContainer.HasEntry(codeElement.Value))
-                        {
-                            _epiElementContainer.AddEntry(sku, codeElement.Value);
 
-                            IntegrationLogger.Write(LogLevel.Debug, $"Added Item/SKU {sku.Name.LocalName} to Entries");
-                        }
+                        if (codeElement == null || _epiElementContainer.HasEntry(codeElement.Value))
+                            continue;
+
+                        _epiElementContainer.AddEntry(sku, codeElement.Value);
+                        IntegrationLogger.Write(LogLevel.Debug, $"Added Item/SKU {sku.Name.LocalName} to Entries");
                     }
                 }
 
-                if (structureEntity.IsItem() && _config.ItemsToSkus && _config.UseThreeLevelsInCommerce ||
-                    !ShouldCreateSkus(structureEntity))
+                if ((!structureEntity.IsItem() || !_config.ItemsToSkus || !_config.UseThreeLevelsInCommerce) && ShouldCreateSkus(structureEntity)) continue;
                 {
                     if (structureEntity.IsItem() && !_channelHelper.ItemHasParentInChannel(structureEntity))
                         continue;
@@ -333,7 +340,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             AddEntryRelationElement(structureEntity, skuId, new LinkType());
         }
 
-        private async Task AddNodeElementsAsync(List<StructureEntity> batch)
+        private async Task AddNodeElementsAsync(IEnumerable<StructureEntity> batch)
         {
             IEnumerable<StructureEntity> nodeStructureEntities = batch.Where(x => x.IsChannelNode() && x.EntityId != _config.ChannelId);
 
@@ -343,7 +350,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
                 if (_config.ChannelId == structureEntity.ParentId)
                 {
-                    await _epiApi.MoveNodeToRootIfNeededAsync(entity.Id);
+                    try
+                    {
+                        await _epiApi.MoveNodeToRootIfNeededAsync(entity.Id);
+                    }
+                    catch (Exception ex)
+                    {
+                        IntegrationLogger.Write(LogLevel.Warning, $"Could not process entity {entity.Id}. Message: {ex.Message}");
+                    }
                 }
 
                 IntegrationLogger.Write(LogLevel.Debug, $"Trying to add channelNode {entity.Id} to Nodes");
@@ -431,11 +445,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             {
                 XElement newElement = _catalogElementFactory.CreateAssociationElement(structureEntity);
 
-                if (!existingAssociation.Descendants().Any(e => e.Name.LocalName == "EntryCode" && e.Value == entityCode))
-                {
-                    existingAssociation.Add(newElement);
-                    _epiElementContainer.AddAssociationKey(associationKey);
-                }
+                if (existingAssociation.Descendants().Any(e => e.Name.LocalName == "EntryCode" && e.Value == entityCode))
+                    return;
+
+                existingAssociation.Add(newElement);
+                _epiElementContainer.AddAssociationKey(associationKey);
             }
             else
             {
@@ -444,7 +458,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             }
         }
 
-        private void AddRelationElements(List<StructureEntity> allChannelStructureEntities)
+        private void AddRelationElements(IEnumerable<StructureEntity> allChannelStructureEntities)
         {
             foreach (StructureEntity structureEntity in allChannelStructureEntities.Where(x => x.EntityId != _config.ChannelId && x.Type != "Resource"))
             {
@@ -563,11 +577,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         private bool IsAssociationLinkType(LinkType linkType)
         {
             return _config.AssociationLinkTypes.Any(x => x.Id == linkType.Id);
-        }
-
-        private bool IsSpecificationLink(Link link)
-        {
-            return link.Target.EntityType.Id == "Specification";
         }
 
         private bool ShouldCreateSkus(StructureEntity structureEntity)
