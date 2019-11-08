@@ -186,8 +186,8 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 
         internal XDocument HandleResourceUpdate(Entity updatedResource, string folderDateTime)
         {
-            SaveFileToDisk(updatedResource, folderDateTime);
-
+            string folder = Path.Combine(_config.ResourcesRootPath, folderDateTime);
+            SaveFileToDisk(updatedResource, folder);
             return CreateResourceDocument(new List<Entity> { updatedResource }, ImporterActions.Updated, false);
         }
 

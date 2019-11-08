@@ -61,17 +61,23 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
         public void DeleteResource(DeleteResourceRequest request)
         {
-            var mediaData = _contentRepository.Get<MediaData>(request.ResourceGuid);
-            List<ReferenceInformation> references = _contentRepository.GetReferencesToContent(mediaData.ContentLink, false).ToList();
+            if (!_contentRepository.TryGet(request.ResourceGuid, out MediaData mediaData))
+            {
+                _logger.Information($"Deleting resource with Guid {request.ResourceGuid}. Resource not found.");
+                return;
+            }
+
+            List<ReferenceInformation> references =
+                _contentRepository.GetReferencesToContent(mediaData.ContentLink, false).ToList();
 
             if (request.EntryToRemoveFrom == null)
             {
                 _logger.Debug($"Deleting resource with GUID {request.ResourceGuid}");
                 _logger.Debug($"Found {references.Count} references to mediacontent.");
 
-                foreach (ReferenceInformation reference in references)
+                foreach (string code in references
+                    .Select(reference => _referenceConverter.GetCode(reference.OwnerID)))
                 {
-                    string code = _referenceConverter.GetCode(reference.OwnerID);
                     DeleteMediaLink(mediaData, code);
                 }
 
@@ -105,7 +111,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             try
             {
-                List<IResourceImporterHandler> importerHandlers = ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
+                List<IResourceImporterHandler> importerHandlers =
+                    ServiceLocator.Current.GetAllInstances<IResourceImporterHandler>().ToList();
 
                 if (_config.RunResourceImporterHandlers)
                 {
@@ -157,7 +164,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             return ExecuteWithinLock(() =>
             {
                 string rootFolderName = ConfigurationManager.AppSettings["InRiverConnector.ResourceFolderName"];
-                ContentReference rootFolder = _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
+                ContentReference rootFolder =
+                    _contentFolderCreator.CreateOrGetFolder(SiteDefinition.Current.GlobalAssetsRoot, rootFolderName ?? "ImportedResources");
 
                 string firstLevelFolderName = fileInfo.Name[0].ToString().ToUpper();
                 ContentReference firstLevelFolder = _contentFolderCreator.CreateOrGetFolder(rootFolder, firstLevelFolderName);
@@ -167,7 +175,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             });
         }
 
-        private void AddLinksFromMediaToCodes(MediaData contentMedia, List<EntryCode> codes)
+        private void AddLinksFromMediaToCodes(IContent contentMedia, IEnumerable<EntryCode> codes)
         {
             var media = new CommerceMedia { AssetLink = contentMedia.ContentLink, GroupName = "default", AssetType = "episerver.core.icontentmedia" };
 
@@ -262,6 +270,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             {
                 FileStream fileStream = File.OpenRead(fileInfo.FullName);
                 fileStream.CopyTo(stream);
+                fileStream.Dispose();
             }
 
             newFile.BinaryData = blob;
@@ -525,9 +534,11 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 {
                     FileStream fileStream = File.OpenRead(fileInfo.FullName);
                     fileStream.CopyTo(s);
+                    fileStream.Dispose();
                 }
 
                 editableMediaData.BinaryData = blob;
+                editableMediaData.Name = fileInfo.Name;
             }
 
             // ReSharper disable once SuspiciousTypeConversion.Global

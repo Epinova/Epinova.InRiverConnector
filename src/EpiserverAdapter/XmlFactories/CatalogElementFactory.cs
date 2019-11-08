@@ -8,6 +8,7 @@ using inRiver.Integration.Logging;
 using inRiver.Remoting;
 using inRiver.Remoting.Log;
 using inRiver.Remoting.Objects;
+// ReSharper disable IdentifierTypo
 
 namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
 {
@@ -60,7 +61,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             return new XElement("Catalog",
                 new XAttribute("name", _mappingHelper.GetNameForEntity(channel, 100)),
-                new XAttribute("lastmodified", channel.LastModified.ToString("O")),
+                new XAttribute(@"lastmodified", channel.LastModified.ToString("O")),
                 new XAttribute("startDate", _pimFieldAdapter.GetStartDate(channel)),
                 new XAttribute("endDate", _pimFieldAdapter.GetEndDate(channel)),
                 new XAttribute("defaultCurrency", _config.ChannelDefaultCurrency),
@@ -68,27 +69,28 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XAttribute("defaultLanguage", _config.ChannelDefaultLanguage.Name.ToLower()),
                 new XAttribute("sortOrder", 0),
                 new XAttribute("isActive", "True"),
-                new XAttribute("languages", string.Join(",", _pimFieldAdapter.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
+                new XAttribute("languages", String.Join(",", _pimFieldAdapter.CultureInfosToStringArray(_config.LanguageMapping.Keys.ToArray()))));
         }
 
         public XElement CreateEntryRelationElement(string parentCode, string parentEntityType, string childCode, int sortOrder)
         {
             string relationType = "ProductVariation";
 
-            if (!String.IsNullOrEmpty(parentEntityType))
-            {
-                string sourceType = _mappingHelper.GetEntryType(parentEntityType);
-                switch (sourceType)
-                {
-                    case "Package":
-                    case "DynamicPackage":
-                        relationType = "PackageEntry";
-                        break;
-                    case "Bundle":
-                        relationType = "BundleEntry";
-                        break;
-                }
-            }
+            if (String.IsNullOrEmpty(parentEntityType))
+                return new XElement(
+                    "EntryRelation",
+                    new XElement("ParentEntryCode", parentCode),
+                    new XElement("ChildEntryCode", childCode),
+                    new XElement("RelationType", relationType),
+                    new XElement("Quantity", 0),
+                    new XElement("GroupName", "default"),
+                    new XElement("SortOrder", sortOrder));
+            string sourceType = _mappingHelper.GetEntryType(parentEntityType);
+
+            if (sourceType == "Package" || sourceType == "DynamicPackage")
+                relationType = "PackageEntry";
+            else if (sourceType == "Bundle") 
+                relationType = "BundleEntry";
 
             return new XElement(
                 "EntryRelation",
@@ -104,7 +106,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             return new XElement(
                 "MetaField",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
+                new XElement("Namespace", @"Mediachase.Commerce.Catalog"),
                 new XElement("Name", name),
                 new XElement("FriendlyName", name),
                 new XElement("Description", "From inRiver"),
@@ -118,14 +120,14 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("Tag"),
                 new XElement(
                     "Attributes",
-                    new XElement("Attribute", new XElement("Key", "useincomparing"), new XElement("Value", "False"))));
+                    new XElement("Attribute", new XElement("Key", @"useincomparing"), new XElement("Value", "False"))));
         }
 
         public XElement CreateEpiserverLongStringField(string name)
         {
             return new XElement(
                 "MetaField",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
+                new XElement("Namespace", @"Mediachase.Commerce.Catalog"),
                 new XElement("Name", name),
                 new XElement("FriendlyName", name),
                 new XElement("Description", "From inRiver"),
@@ -138,7 +140,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("IsSystem", "False"),
                 new XElement("Tag"),
                 new XElement("Attributes",
-                    new XElement("Attribute", new XElement("Key", "useincomparing"), new XElement("Value", "True"))));
+                    new XElement("Attribute", new XElement("Key", @"useincomparing"), new XElement("Value", "True"))));
         }
 
         public XElement CreateNodeElement(Entity entity, int parentId, int sortOrder)
@@ -212,17 +214,17 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             var seoInfo = new XElement("SeoInfo");
             foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
             {
-                string uri = _pimFieldAdapter.GetFieldValue(entity, "seouri", culturePair.Value);
-                string title = _pimFieldAdapter.GetFieldValue(entity, "seotitle", culturePair.Value);
-                string description = _pimFieldAdapter.GetFieldValue(entity, "seodescription", culturePair.Value);
-                string keywords = _pimFieldAdapter.GetFieldValue(entity, "seokeywords", culturePair.Value);
-                string urisegment = _pimFieldAdapter.GetFieldValue(entity, "seourisegment", culturePair.Value);
+                string uri = _pimFieldAdapter.GetFieldValue(entity, @"seouri", culturePair.Value);
+                string title = _pimFieldAdapter.GetFieldValue(entity, @"seotitle", culturePair.Value);
+                string description = _pimFieldAdapter.GetFieldValue(entity, @"seodescription", culturePair.Value);
+                string keywords = _pimFieldAdapter.GetFieldValue(entity, @"seokeywords", culturePair.Value);
+                string uriSegment = _pimFieldAdapter.GetFieldValue(entity, @"seourisegment", culturePair.Value);
 
                 if (String.IsNullOrEmpty(uri) &&
                     String.IsNullOrEmpty(title) &&
                     String.IsNullOrEmpty(description) &&
                     String.IsNullOrEmpty(keywords) &&
-                    String.IsNullOrEmpty(urisegment))
+                    String.IsNullOrEmpty(uriSegment))
                     continue;
 
                 seoInfo.Add(
@@ -232,7 +234,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                         String.IsNullOrEmpty(title) ? null : new XElement("Title", title),
                         String.IsNullOrEmpty(description) ? null : new XElement("Description", description),
                         String.IsNullOrEmpty(keywords) ? null : new XElement("Keywords", keywords),
-                        String.IsNullOrEmpty(urisegment) ? null : new XElement("UriSegment", urisegment)));
+                        String.IsNullOrEmpty(uriSegment) ? null : new XElement("UriSegment", uriSegment)));
             }
 
             return seoInfo;
@@ -356,9 +358,10 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 if (entityType.LinkTypes.Find(a => a.TargetEntityTypeId == "Specification") != null && entityType.Id != "Specification")
                 {
                     specification.Add(new XElement("OwnerMetaClass", entityType.Id));
-                    foreach (FieldSet fieldSet in entityType.FieldSets)
+                    
+                    foreach (string name in entityType.FieldSets
+                        .Select(fieldSet => entityType.Id + "_" + fieldSet.Id))
                     {
-                        string name = entityType.Id + "_" + fieldSet.Id;
                         specification.Add(new XElement("OwnerMetaClass", name));
                     }
 
@@ -407,9 +410,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                     }
                     else
                     {
-                        foreach (FieldSet fieldSet in entityType.FieldSets)
+                        foreach (string name in entityType.FieldSets
+                            .Select(fieldSet => entityType.Id + "_" + fieldSet.Id))
                         {
-                            string name = entityType.Id + "_" + fieldSet.Id;
                             metaField.Add(new XElement("OwnerMetaClass", name));
                         }
                     }
@@ -425,11 +428,11 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                             XElement nameElement = mf.Element("Name");
                             return nameElement != null && nameElement.Value.Equals(_mappingHelper.GetEpiserverFieldName(fieldType));
                         });
-                        if (existingMetaField != null)
-                        {
-                            IEnumerable<XElement> movefields = metaField.Elements("OwnerMetaClass");
-                            existingMetaField.Add(movefields);
-                        }
+                        
+                        if (existingMetaField == null) continue;
+
+                        IEnumerable<XElement> movefields = metaField.Elements("OwnerMetaClass");
+                        existingMetaField.Add(movefields);
                     }
                     else
                     {
@@ -461,15 +464,13 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 var ls = field.Data as LocaleString;
                 if (!field.IsEmpty())
                 {
-                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping)
+                    foreach (KeyValuePair<CultureInfo, CultureInfo> culturePair in _config.LanguageMapping
+                        .Where(culturePair => ls != null))
                     {
-                        if (ls != null)
-                        {
-                            metaField.Add(
-                                new XElement("Data",
-                                    new XAttribute("language", culturePair.Key.Name.ToLower()),
-                                    new XAttribute("value", ls[culturePair.Value] ?? String.Empty)));
-                        }
+                        metaField.Add(
+                            new XElement("Data",
+                                new XAttribute("language", culturePair.Key.Name.ToLower()),
+                                new XAttribute("value", ls?[culturePair.Value] ?? String.Empty)));
                     }
                 }
                 else
@@ -527,7 +528,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             return new XElement(
                 "MetaClass",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog.User"),
+                new XElement("Namespace", @"Mediachase.Commerce.Catalog.User"),
                 new XElement("Name", name),
                 new XElement("FriendlyName", name),
                 new XElement("MetaClassType", "User"),
@@ -545,7 +546,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
         {
             return new XElement(
                 "MetaField",
-                new XElement("Namespace", "Mediachase.Commerce.Catalog"),
+                new XElement("Namespace", @"Mediachase.Commerce.Catalog"),
                 new XElement("Name", _mappingHelper.GetEpiserverFieldName(fieldType)),
                 new XElement("FriendlyName", _mappingHelper.GetEpiserverFieldName(fieldType)),
                 new XElement("Description", "From inRiver"),
@@ -559,7 +560,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
                 new XElement("Tag"),
                 new XElement("Attributes",
                     new XElement("Attribute",
-                        new XElement("Key", "useincomparing"),
+                        new XElement("Key", @"useincomparing"),
                         new XElement("Value", _pimFieldAdapter.FieldIsUseInCompare(fieldType)))),
                 new XElement("OwnerMetaClass", fieldType.EntityTypeId));
         }
@@ -600,7 +601,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return new List<string>();
         }
 
-        private Guid GetChannelEntityGuid(int channelId, int entityId)
+        private static Guid GetChannelEntityGuid(int channelId, int entityId)
         {
             string concatIds = channelId.ToString().PadLeft(16, '0') + entityId.ToString().PadLeft(16, '0');
             return new Guid(concatIds);
@@ -634,47 +635,39 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.XmlFactories
             return element;
         }
 
-        private string GetMetaClassForEntity(Entity entity)
+        private static string GetMetaClassForEntity(Entity entity)
         {
             if (!String.IsNullOrEmpty(entity.FieldSetId) && entity.EntityType.FieldSets.Any(fs => fs.Id == entity.FieldSetId))
-            {
                 return entity.EntityType.Id + "_" + entity.FieldSetId;
-            }
-
+            
             return entity.EntityType.Id;
         }
 
-        private bool UseField(Entity entity, Field field)
+        private static bool UseField(Entity entity, Field field)
         {
             if (!field.FieldType.ExcludeFromDefaultView)
-            {
                 return true;
-            }
+            
+            List<FieldSet> otherFieldSets = entity.EntityType.FieldSets
+                .Where(fs => !fs.Id.Equals(entity.FieldSetId)).ToList();
 
-            List<FieldSet> otherFieldSets = entity.EntityType.FieldSets.Where(fs => !fs.Id.Equals(entity.FieldSetId)).ToList();
             if (otherFieldSets.Count == 0)
-            {
                 return true;
-            }
+            
+            FieldSet fieldSet = entity.EntityType.FieldSets
+                .Find(fs => fs.Id.Equals(entity.FieldSetId));
+            
+            if (fieldSet == null)
+                return otherFieldSets
+                    .All(fs => !fs.FieldTypes
+                        .Contains(field.FieldType.Id));
 
-            FieldSet fieldSet = entity.EntityType.FieldSets.Find(fs => fs.Id.Equals(entity.FieldSetId));
-            if (fieldSet != null)
-            {
-                if (fieldSet.FieldTypes.Contains(field.FieldType.Id))
-                {
-                    return true;
-                }
-            }
-
-            foreach (FieldSet fs in otherFieldSets)
-            {
-                if (fs.FieldTypes.Contains(field.FieldType.Id))
-                {
-                    return false;
-                }
-            }
-
-            return true;
+            if (fieldSet.FieldTypes.Contains(field.FieldType.Id))
+                return true;
+            
+            return otherFieldSets
+                .All(fs => !fs.FieldTypes
+                    .Contains(field.FieldType.Id));
         }
     }
 }
