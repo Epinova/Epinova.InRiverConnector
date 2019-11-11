@@ -5,14 +5,14 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 {
     public interface ICatalogImporter
     {
-        void ImportCatalogXml([FromBody] string path);
-        bool ImportUpdateCompleted(ImportUpdateCompletedData data);
-        void MoveNodeToRootIfNeeded(string catalogNodeId);
-        void DeleteCatalogEntry(string code);
+        void DeleteAssociation(string sourceCode, string targetCode);
         void DeleteCatalog(int catalogId);
+        void DeleteCatalogEntry(string code);
         void DeleteCatalogNode(string code);
         bool DeleteCompleted(DeleteCompletedData data);
         void DeleteRelation(string sourceCode, string targetCode);
-        void DeleteAssociation(string sourceCode, string targetCode);
+        void ImportCatalogXml([FromBody] string path);
+        bool ImportUpdateCompleted(ImportUpdateCompletedData data);
+        void MoveNodeToRootIfNeeded(string catalogNodeId);
     }
 }

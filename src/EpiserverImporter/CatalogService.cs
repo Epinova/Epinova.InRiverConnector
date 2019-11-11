@@ -24,8 +24,8 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         /// <returns></returns>
         public IEnumerable<EntryContentBase> GetChildren(EntryContentBase entry)
         {
-            var relations = _relationRepository.GetChildren<EntryRelation>(entry.ContentLink);
-            var variations = relations.Select(x => _contentLoader.Get<EntryContentBase>(x.Child));
+            IEnumerable<EntryRelation> relations = _relationRepository.GetChildren<EntryRelation>(entry.ContentLink);
+            IEnumerable<EntryContentBase> variations = relations.Select(x => _contentLoader.Get<EntryContentBase>(x.Child));
             return variations.Where(x => x != null);
         }
 

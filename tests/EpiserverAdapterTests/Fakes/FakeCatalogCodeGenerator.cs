@@ -7,7 +7,6 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests.Fakes
     {
         public FakeCatalogCodeGenerator() : base(new Mock<IConfiguration>().Object, new Mock<IEntityService>().Object)
         {
-
         }
     }
 }

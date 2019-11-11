@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Xml.Linq;
 using Epinova.InRiverConnector.EpiserverAdapter;
 using Epinova.InRiverConnector.EpiserverAdapter.Helpers;
 using Epinova.InRiverConnector.EpiserverAdapter.XmlFactories;
@@ -14,25 +15,19 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
 {
     public class CatalogElementFactoryTests
     {
-        private readonly FakeCatalogCodeGenerator _catalogCodeGenerator;
         private readonly CatalogElementFactory _catalogElementFactory;
-        private readonly Mock<IConfiguration> _configMock;
-        private readonly FakeEpiMappingHelper _mappingHelper;
         private readonly Mock<IPimFieldAdapter> _pimFieldAdapterMock;
 
         public CatalogElementFactoryTests()
         {
-            _configMock = new Mock<IConfiguration>();
-            _mappingHelper = new FakeEpiMappingHelper();
-            _catalogCodeGenerator = new FakeCatalogCodeGenerator();
+            var configMock = new Mock<IConfiguration>();
+            var mappingHelper = new FakeEpiMappingHelper();
+            var catalogCodeGenerator = new FakeCatalogCodeGenerator();
             _pimFieldAdapterMock = new Mock<IPimFieldAdapter>();
 
-            _catalogElementFactory = new CatalogElementFactory(_configMock.Object,
-                _mappingHelper, _catalogCodeGenerator,
-                _pimFieldAdapterMock.Object);
+            _catalogElementFactory = new CatalogElementFactory(configMock.Object, mappingHelper, catalogCodeGenerator, _pimFieldAdapterMock.Object);
 
-            _configMock.Setup(m => m.LanguageMapping).Returns(new Dictionary<CultureInfo, CultureInfo>
-                {{CultureInfo.CurrentCulture, CultureInfo.CurrentCulture}});
+            configMock.Setup(m => m.LanguageMapping).Returns(new Dictionary<CultureInfo, CultureInfo> { { CultureInfo.CurrentCulture, CultureInfo.CurrentCulture } });
         }
 
         [Theory]
@@ -49,9 +44,9 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
 
             _pimFieldAdapterMock
                 .Setup(m => m.GetFieldValue(It.IsAny<Entity>(), It.Is<string>(s => !s.Equals(name)), It.IsAny<CultureInfo>()))
-                .Returns(string.Empty);
+                .Returns(String.Empty);
 
-            var result = _catalogElementFactory.CreateSEOInfoElement(EntityFactory.CreateItem(123));
+            XElement result = _catalogElementFactory.CreateSeoInfoElement(EntityFactory.CreateItem(123));
 
             Assert.Equal(3, result.Descendants().Count());
         }

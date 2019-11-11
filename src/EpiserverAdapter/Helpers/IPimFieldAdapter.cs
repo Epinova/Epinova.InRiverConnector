@@ -7,15 +7,15 @@ namespace Epinova.InRiverConnector.EpiserverAdapter.Helpers
 {
     public interface IPimFieldAdapter
     {
+        IEnumerable<string> CultureInfosToStringArray(CultureInfo[] cultureInfo);
+        string FieldIsUseInCompare(FieldType fieldType);
         bool FieldTypeIsMultiLanguage(FieldType fieldType);
         string GetAllowSearch(FieldType fieldType);
-        IEnumerable<string> CultureInfosToStringArray(CultureInfo[] cultureInfo);
-        string GetStartDate(Entity entity);
-        string GetEndDate(Entity entity);
-        string FieldIsUseInCompare(FieldType fieldType);
-        string GetDisplayName(Entity entity, int maxLength);
-        string GetFieldValue(Entity entity, string fieldName, CultureInfo ci);
         List<XElement> GetCVLValues(Field field);
+        string GetDisplayName(Entity entity, int maxLength);
+        string GetEndDate(Entity entity);
+        string GetFieldValue(Entity entity, string fieldName, CultureInfo ci);
         string GetFlatFieldData(Field field);
+        string GetStartDate(Entity entity);
     }
 }

@@ -22,7 +22,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         private bool GetBoolSetting(string key)
         {
             string setting = ConfigurationManager.AppSettings[key];
-            return setting != null && setting.Equals(true.ToString(), StringComparison.CurrentCultureIgnoreCase);
+            return setting != null && setting.Equals(Boolean.TrueString, StringComparison.CurrentCultureIgnoreCase);
         }
     }
 }

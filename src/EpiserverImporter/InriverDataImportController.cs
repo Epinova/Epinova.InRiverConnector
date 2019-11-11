@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web.Http;
-using System.Xml;
-using System.Xml.Serialization;
 using Epinova.InRiverConnector.Interfaces;
-using Epinova.InRiverConnector.Interfaces.Poco;
 using EPiServer.Logging;
 using EPiServer.ServiceLocation;
 
@@ -27,25 +23,20 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         public InriverDataImportController(ICatalogImporter catalogImporter,
-                                           ILogger logger,
-                                           MediaImporter mediaImporter)
+            ILogger logger,
+            MediaImporter mediaImporter)
         {
             _catalogImporter = catalogImporter;
             _logger = logger;
             _mediaImporter = mediaImporter;
         }
-      
-        [HttpGet]
-        public string IsImporting()
+
+        [HttpPost]
+        public void DeleteCatalog([FromBody] int catalogId)
         {
-            _logger.Debug("IsImporting");
+            _logger.Debug("DeleteCatalog");
 
-            if (ImportStatusContainer.Instance.IsImporting)
-            {
-                return ImportStatus.IsImporting;
-            }
-
-            return ImportStatusContainer.Instance.Message;
+            _catalogImporter.DeleteCatalog(catalogId);
         }
 
         [HttpPost]
@@ -53,18 +44,10 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         {
             _logger.Debug("DeleteCatalogEntry");
 
-            foreach (var code in request.Codes)
+            foreach (string code in request.Codes)
             {
                 _catalogImporter.DeleteCatalogEntry(code);
             }
-        }
-
-        [HttpPost]
-        public void DeleteCatalog([FromBody] int catalogId)
-        {
-            _logger.Debug("DeleteCatalog");
-            
-            _catalogImporter.DeleteCatalog(catalogId);
         }
 
         [HttpPost]
@@ -76,18 +59,9 @@ namespace Epinova.InRiverConnector.EpiserverImporter
         }
 
         [HttpPost]
-        public void MoveNodeToRootIfNeeded([FromBody] string catalogNodeId)
+        public void DeleteCompleted(DeleteCompletedData data)
         {
-            _logger.Debug("MoveNodeToRootIfNeeded");
-
-            _catalogImporter.MoveNodeToRootIfNeeded(catalogNodeId);
-        }
-
-        [HttpPost]
-        public void DeleteResource(DeleteResourceRequest request)
-        {
-            _logger.Debug($"DeleteResource with ID {request.ResourceGuid}");
-            DoWithErrorHandling(() => _mediaImporter.DeleteResource(request));
+            DoWithErrorHandling(() => _catalogImporter.DeleteCompleted(data));
         }
 
         [HttpPost]
@@ -102,6 +76,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         _catalogImporter.DeleteAssociation(request.SourceCode, request.TargetCode);
                 }
             );
+        }
+
+        [HttpPost]
+        public void DeleteResource(DeleteResourceRequest request)
+        {
+            _logger.Debug($"DeleteResource with ID {request.ResourceGuid}");
+            DoWithErrorHandling(() => _mediaImporter.DeleteResource(request));
         }
 
         public string Get()
@@ -133,7 +114,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                         _mediaImporter.ImportResources(request);
 
                         ImportStatusContainer.Instance.IsImporting = false;
-                        ImportStatusContainer.Instance.Message = "Import Sucessful";
+                        ImportStatusContainer.Instance.Message = "Import Successful";
                     });
             });
             return ImportStatusContainer.Instance.Message;
@@ -145,10 +126,25 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             return _catalogImporter.ImportUpdateCompleted(data);
         }
 
-        [HttpPost]
-        public void DeleteCompleted(DeleteCompletedData data)
+        [HttpGet]
+        public string IsImporting()
         {
-            DoWithErrorHandling(() => _catalogImporter.DeleteCompleted(data));
+            _logger.Debug("IsImporting");
+
+            if (ImportStatusContainer.Instance.IsImporting)
+            {
+                return ImportStatus.IsImporting;
+            }
+
+            return ImportStatusContainer.Instance.Message;
+        }
+
+        [HttpPost]
+        public void MoveNodeToRootIfNeeded([FromBody] string catalogNodeId)
+        {
+            _logger.Debug("MoveNodeToRootIfNeeded");
+
+            _catalogImporter.MoveNodeToRootIfNeeded(catalogNodeId);
         }
 
         private void DoWithErrorHandling(Action action)

@@ -8,7 +8,7 @@ namespace Epinova.InRiverConnector.EpiserverAdapterTests
         {
             return new Field
             {
-                FieldType = new FieldType {Id = typeId},
+                FieldType = new FieldType { Id = typeId },
                 Data = value
             };
         }

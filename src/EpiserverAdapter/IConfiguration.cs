@@ -7,35 +7,35 @@ namespace Epinova.InRiverConnector.EpiserverAdapter
 {
     public interface IConfiguration
     {
-        int EpiRestTimeout { get; }
-        string EpiApiKey { get; }
-        string EpiEndpoint { get; }
-        EndpointCollection Endpoints { get; set; }
-        string Id { get; }
-        List<LinkType> LinkTypes { get; set; }
+        CVLDataMode ActiveCVLDataMode { get; }
+        LinkType[] AssociationLinkTypes { get; }
+        int BatchSize { get; }
+        string[] BundleEntityTypes { get; }
+        string ChannelDefaultCurrency { get; set; }
+        CultureInfo ChannelDefaultLanguage { get; set; }
+        string ChannelDefaultWeightBase { get; set; }
         int ChannelId { get; }
-        string PublicationsRootPath { get; }
+        string ChannelIdPrefix { get; set; }
+        string[] DynamicPackageEntityTypes { get; }
+        EndpointCollection Endpoints { get; set; }
+        string EpiApiKey { get; }
+        Dictionary<string, string> EpiCodeMapping { get; }
+        string EpiEndpoint { get; }
+        HashSet<string> EPiFieldsIninRiver { get; }
+        Dictionary<string, string> EpiNameMapping { get; }
+        int EpiRestTimeout { get; }
         List<EntityType> ExportEnabledEntityTypes { get; }
         bool ForceIncludeLinkedContent { get; }
         string HttpPostUrl { get; }
+        string Id { get; }
+        bool ItemsToSkus { get; }
         Dictionary<CultureInfo, CultureInfo> LanguageMapping { get; }
-        Dictionary<string, string> EpiNameMapping { get; }
-        string ResourcesRootPath { get; }
-        bool UseThreeLevelsInCommerce { get; }
-        CultureInfo ChannelDefaultLanguage { get; set; }
-        string ChannelDefaultCurrency { get; set; }
-        Dictionary<string, string> EpiCodeMapping { get; }
-        string ChannelDefaultWeightBase { get; set; }
-        string ChannelIdPrefix { get; set; }
+        List<LinkType> LinkTypes { get; set; }
+        string[] PackageEntityTypes { get; }
+        string PublicationsRootPath { get; }
         string[] ResourceConfigurations { get; }
         Dictionary<string, string> ResourceConfiugurationExtensions { get; }
-        LinkType[] AssociationLinkTypes { get; }
-        bool ItemsToSkus { get; }
-        int BatchSize { get; }
-        string[] BundleEntityTypes { get; }
-        string[] PackageEntityTypes { get; }
-        string[] DynamicPackageEntityTypes { get; }
-        HashSet<string> EPiFieldsIninRiver { get; }
-        CVLDataMode ActiveCVLDataMode { get; }
+        string ResourcesRootPath { get; }
+        bool UseThreeLevelsInCommerce { get; }
     }
 }
