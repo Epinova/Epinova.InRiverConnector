@@ -134,7 +134,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     catch (Exception ex)
                     {
                         errors++;
-                        _logger.Error("Importing resource failed:", ex);
+                        _logger.Error($"Importing resource failed: action: {resource.Action} - id: {resource.ResourceId} - path: {resource.Path} - ", ex);
                     }
                 });
 
@@ -175,13 +175,13 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             });
         }
 
-        private void AddLinksFromMediaToCodes(IContent contentMedia, IEnumerable<EntryCode> codes)
+        private void AddLinksFromMediaToCodes(MediaData contentMedia, IEnumerable<EntryCode> codes)
         {
             var media = new CommerceMedia { AssetLink = contentMedia.ContentLink, GroupName = "default", AssetType = "episerver.core.icontentmedia" };
 
             foreach (EntryCode entryCode in codes)
             {
-                ContentReference contentReference = _referenceConverter.GetContentLink(entryCode.Code);
+                var contentReference = _referenceConverter.GetContentLink(entryCode.Code);
 
                 IAssetContainer writableContent = null;
                 if (_contentRepository.TryGet(contentReference, out EntryContentBase entry))
@@ -196,9 +196,16 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     continue;
                 }
 
-                CommerceMedia existingMedia = writableContent.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.AssetLink));
+                var existingMedia = writableContent.CommerceMediaCollection.FirstOrDefault(x => x.AssetLink.Equals(media.AssetLink));
                 if (existingMedia != null)
                     writableContent.CommerceMediaCollection.Remove(existingMedia);
+
+                //if image been delete the media is linked with status "Media not found" in UI - then need to be removed, else it will throw System.ComponentModel.DataAnnotations.ValidationException: Media is not found. Navigate to Assets tab and remove it in order to publish. at EPiServer.Core.ContentProvider.ThrowValidationException(ICollection`1 errors) at EPiServer.Core.Internal.DefaultContentRepository.Save(IContent content, SaveAction action, AccessLevel access)
+                var unlinkedAssets = writableContent.CommerceMediaCollection.Where(x => ContentReference.IsNullOrEmpty(x.AssetLink)).ToList();
+                foreach (var asset in unlinkedAssets)
+                {
+                    writableContent.CommerceMediaCollection.Remove(asset);
+                }
 
                 if (entryCode.IsMainPicture)
                 {
@@ -213,7 +220,15 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                     writableContent.CommerceMediaCollection.Add(media);
                 }
 
-                _contentRepository.Save((IContent)writableContent, SaveAction.Publish, AccessLevel.NoAccess);
+                try
+                {
+                    _contentRepository.Save((IContent)writableContent, SaveAction.Publish | SaveAction.SkipValidation, AccessLevel.NoAccess);
+                }
+                catch (Exception e)
+                {
+                    _logger.Error($"Something went wrong connecting assets code: {entryCode.Code} cr: {contentReference.ID}, media: {media.AssetLink.ID} {contentMedia.Name}. Continuing... ", e);
+                    continue;
+                }
             }
         }
 
@@ -277,7 +292,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
 
             _logger.Debug($"New mediadata is ready to be saved: {newFile.Name}, from path {inriverResource.Path}");
 
-            ContentReference contentReference = _contentRepository.Save(newFile, SaveAction.Publish, AccessLevel.NoAccess);
+            ContentReference contentReference = _contentRepository.Save(newFile, SaveAction.Publish | SaveAction.SkipValidation, AccessLevel.NoAccess);
             var mediaData = _contentRepository.Get<MediaData>(contentReference);
 
             _logger.Debug($"Saved file {fileInfo.Name} with Content ID {contentReference?.ID}.");
@@ -317,12 +332,12 @@ namespace Epinova.InRiverConnector.EpiserverImporter
                 return;
 
             writableContent.CommerceMediaCollection.Remove(mediaToRemove);
-            _contentRepository.Save((IContent)writableContent, SaveAction.Publish, AccessLevel.NoAccess);
+            _contentRepository.Save((IContent)writableContent, SaveAction.Publish | SaveAction.SkipValidation, AccessLevel.NoAccess);
         }
 
         private List<InRiverImportResource> DeserializeRequest(ImportResourcesRequest request)
         {
-            _logger.Debug($"Deserializing and preparing {request.ResourceXmlPath} for import.");
+            _logger.Debug($"Deserializing and preparing {request.ResourceXmlPath} for import. basepath is: {request.BasePath}");
 
             var serializer = new XmlSerializer(typeof(Resources));
             Resources resources;
@@ -503,6 +518,7 @@ namespace Epinova.InRiverConnector.EpiserverImporter
             else if (resource.Action == ImporterActions.Deleted)
             {
                 _logger.Debug($"Got delete action for resource id: {resource.ResourceId}.");
+                HandleUnlink(resource);//always unlink before delete
                 HandleDelete(resource);
             }
             else if (resource.Action == ImporterActions.Unlinked)
